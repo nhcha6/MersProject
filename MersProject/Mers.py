@@ -1,8 +1,5 @@
 from Bio import SeqIO
 
-# In[243]:
-
-
 # Monoisotopic mass
 monoAminoMass = {
     'A': 71.03711,
@@ -69,8 +66,6 @@ def splitDictPeptide(peptide, maxed):
     return splits, splitRef
 
 
-# In[5]:
-
 
 """Input: splits: list of splits, splitRef: list of the character indexes for splits, mined/maxed: min and max
    size requirements, overlapFlag: boolean value true if overlapping combinations are undesired.
@@ -120,17 +115,12 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag):
     return combine
 
 
-# In[6]:
-
 
 # ensures length of split is smaller than or equal to max
 def maxSize(split, maxed):
     if (len(split) >= maxed):
         return False
     return True
-
-
-# In[7]:
 
 
 # ensures length of split is greater than min
@@ -140,7 +130,7 @@ def minSize(split, mined):
     return True
 
 
-# In[8]:
+
 
 
 # checks if there is an intersection between two strings. Likely input it the splitRef data.
@@ -153,7 +143,7 @@ def overlapComp(ref1, ref2):
     return False
 
 
-# In[9]:
+
 
 
 # opens FASTA file
@@ -166,7 +156,6 @@ def addSequenceList(input_file):
     return sequenceDictionary
 
 
-# In[231]:
 
 
 # Adapted from https://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-whilst-preserving-order
@@ -186,7 +175,6 @@ def removeDups(seq):
     return final
 
 
-# In[232]:
 
 
 """
@@ -198,7 +186,7 @@ def combRemove(ref1, ref2):
     return (len(ref1) == len(ref2) and sorted(ref1) == sorted(ref2))
 
 
-# In[234]:
+
 
 
 # combines an array of strings into one string. Used for ultimately segments from multiple peptides
@@ -207,7 +195,7 @@ def combinePeptides(peptideList):
     return finalPeptide
 
 
-# In[235]:
+
 
 
 # generates most of the permutations possible when switching from A to a in all strings originally containing an A
@@ -245,13 +233,12 @@ splits, splitRef = splitDictPeptide("ARDCE", maxed)
 
 splits = removeDups(splits)
 
-# In[252]:
+
 
 
 print(splits)
 print(len(splits))
 
-# In[253]:
 
 
 combine = combineOverlapPeptide(splits, splitRef, mined, maxed, overlap)
@@ -263,7 +250,7 @@ print(len(combine))
 massDict = combMass(combine)
 print(massDict)
 
-# In[215]:
+
 
 
 modcomb = modTest(combine)

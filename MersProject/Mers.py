@@ -1,6 +1,33 @@
 from Bio import SeqIO
 
+
+
+
+# taking FASTA dictionary and passing through our splits and combine functions
+#sequenceDictionary = addSequenceList("Example.fasta")
+'''
+for key, value in sequenceDictionary.items():
+    splits, splitRef = splitDictPeptide(value, maxed)
+
+    splits = removeDupsQuick(splits)
+    combine = combineOverlapPeptide(splits, splitRef, mined, maxed, overlap)
+    combine = removeDupsQuick(combine)
+
+    print(len(splits))
+    print(len(combine))
+
+    break;
+
+'''
+
 H20_MASS = 18.010565
+
+
+maxed = 12
+mined = 0
+maxDistance = 25
+overlap = True
+
 # hello hello hello
 # Monoisotopic mass
 monoAminoMass = {
@@ -26,6 +53,42 @@ monoAminoMass = {
     'V': 99.06841,
 
 }
+
+'''
+Function that literally combines everything to generate output
+'''
+def generateOutput(peptide, mined, maxed, overlapFlag, maxDistance=None):
+    candidates = []
+    if(maxDistance!=None):
+        candidates = splitIntoMax(peptide,maxDistance)
+    else:
+        candidates.append(peptide)
+
+    finalCombinations = []
+    for peptide in candidates:
+
+        splits, splitRef = splitDictPeptide(peptide, maxed, max)
+        splits = removeDupsQuick(splits)
+
+        combined = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag)
+        combined = removeDupsQuick(combined)
+        finalCombinations.append(combined)
+
+
+
+    return finalCombinations
+
+
+def splitIntoMax(peptide, maxDistance):
+    temp = []
+
+    if (maxDistance != None):
+        for i in range(0, len(peptide) - maxDistance):
+            str = ""
+            for j in range(i, i + maxDistance - 1):
+                str += peptide[j]
+            temp.append(str)
+    return temp
 
 """Inputs: peptide string, max length of split peptide. 
    Outputs: all possible splits that could be formed that are smaller in length than the maxed input """
@@ -241,68 +304,10 @@ def combMass(combine):
     return massDict
 
 
-maxed = 12
-mined = 0
-overlap = True
-splits, splitRef = splitDictPeptide("AADDA", maxed)
-#splits = removeDups(splits)
-combine = combineOverlapPeptide(splits,splitRef,mined,maxed,overlap)
-print(combine)
-print(len(combine))
-combineQuick = removeDupsQuick(combine)
-#combine = removeDups(combine)
-print(len(combineQuick))
-#print(len(combine))
 
 
 
 
-
-#print(splits)
-#print(len(splits))
-
-
-
-#combine = combineOverlapPeptide(splits, splitRef, mined, maxed, overlap)
-#combine = removeDups(combine)
-
-#print(combine)
-#print(len(combine))
-
-#massDict = combMass(combine)
-#print(massDict)
-
-
-
-
-#modcomb = modTest(combine)
-
-#print("Combine original")
-#print(combine)
-
-# print("Modcomb")
-# print(modcomb)
-
-
-# In[21]:
-
-
-# taking FASTA dictionary and passing through our splits and combine functions
-#sequenceDictionary = addSequenceList("Example.fasta")
-'''
-for key, value in sequenceDictionary.items():
-    splits, splitRef = splitDictPeptide(value, maxed)
-
-    splits = removeDupsQuick(splits)
-    combine = combineOverlapPeptide(splits, splitRef, mined, maxed, overlap)
-    combine = removeDupsQuick(combine)
-
-    print(len(splits))
-    print(len(combine))
-
-    break;
-
-'''
 # Analysis of removing duplicates at split level and combined level:
 #     - Split level: 3.1 mil to 1.8 mil
 #     - Combined level: 1.8 mil to 1.6 mil

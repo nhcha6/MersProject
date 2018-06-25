@@ -1,5 +1,6 @@
 from Bio import SeqIO
 
+H20_MASS = 18.010565
 # hello hello hello
 # Monoisotopic mass
 monoAminoMass = {
@@ -235,6 +236,7 @@ def combMass(combine):
         totalMass = 0
         for character in combination:
             totalMass += monoAminoMass[character]
+        totalMass+=H20_MASS
         massDict[combination] = totalMass
     return massDict
 
@@ -242,7 +244,7 @@ def combMass(combine):
 maxed = 12
 mined = 0
 overlap = True
-splits, splitRef = splitDictPeptide("AADDAFDSGDFA", maxed)
+splits, splitRef = splitDictPeptide("AADDA", maxed)
 #splits = removeDups(splits)
 combine = combineOverlapPeptide(splits,splitRef,mined,maxed,overlap)
 print(combine)
@@ -286,8 +288,8 @@ print(len(combineQuick))
 
 
 # taking FASTA dictionary and passing through our splits and combine functions
-sequenceDictionary = addSequenceList("Example.fasta")
-
+#sequenceDictionary = addSequenceList("Example.fasta")
+'''
 for key, value in sequenceDictionary.items():
     splits, splitRef = splitDictPeptide(value, maxed)
 
@@ -300,7 +302,7 @@ for key, value in sequenceDictionary.items():
 
     break;
 
-
+'''
 # Analysis of removing duplicates at split level and combined level:
 #     - Split level: 3.1 mil to 1.8 mil
 #     - Combined level: 1.8 mil to 1.6 mil

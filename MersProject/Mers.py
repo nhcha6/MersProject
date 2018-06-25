@@ -21,8 +21,6 @@ for key, value in sequenceDictionary.items():
 '''
 
 H20_MASS = 18.010565
-
-
 maxed = 12
 mined = 0
 maxDistance = 25
@@ -58,37 +56,21 @@ monoAminoMass = {
 Function that literally combines everything to generate output
 '''
 def generateOutput(peptide, mined, maxed, overlapFlag, maxDistance=None):
-    candidates = []
-    if(maxDistance!=None):
-        candidates = splitIntoMax(peptide,maxDistance)
-    else:
-        candidates.append(peptide)
 
-    finalCombinations = []
-    for peptide in candidates:
+    splits, splitRef = splitDictPeptide(peptide, maxed)
+    splits = removeDupsQuick(splits)
 
-        splits, splitRef = splitDictPeptide(peptide, maxed, max)
-        splits = removeDupsQuick(splits)
-
-        combined = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag)
-        combined = removeDupsQuick(combined)
-        finalCombinations.append(combined)
+    combined = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
+    combined = removeDupsQuick(combined)
 
 
+    return combined
 
-    return finalCombinations
 
-
-def splitIntoMax(peptide, maxDistance):
-    temp = []
-
-    if (maxDistance != None):
-        for i in range(0, len(peptide) - maxDistance):
-            str = ""
-            for j in range(i, i + maxDistance - 1):
-                str += peptide[j]
-            temp.append(str)
-    return temp
+"""
+Inputs: peptide string, max length of split peptide. 
+ Outputs: all possible splits that could be formed that are smaller in length than the maxed input
+"""
 
 """Inputs: peptide string, max length of split peptide. 
    Outputs: all possible splits that could be formed that are smaller in length than the maxed input """
@@ -131,22 +113,22 @@ def splitDictPeptide(peptide, maxed):
     return splits, splitRef
 
 
-
 """Input: splits: list of splits, splitRef: list of the character indexes for splits, mined/maxed: min and max
    size requirements, overlapFlag: boolean value true if overlapping combinations are undesired.
    Output: all combinations of possible splits which meets criteria"""
 
 
-def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag):
+def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance=None):
     # initialise combinations array to hold the possible combinations from the input splits
     combine = []
 
     # iterate through all of the splits and build up combinations which meet min/max/overlap criteria
     for i in range(0, len(splits)):
+
         if (minSize(splits[i], mined)):
             # Add linear peptide, can include option if necessary
             combine.append(splits[i])
-
+        
         # toAdd holds temporary for insertion in final matrix if it meets criteria
         toAdd = ""
 
@@ -156,12 +138,14 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag):
             toAdd += splits[j]
 
             # look to combine all checks together in a future for clarity
-            if (maxSize(toAdd, maxed) and minSize(toAdd, mined)):
+            if (maxSize(toAdd, maxed) and minSize(toAdd, mined) and maxDistCheck(splitRef[i], splitRef[j],
+                                                                                 maxDistance)):
 
                 if (overlapFlag == True):
                     if (overlapComp(splitRef[i], splitRef[j])):
                         combine.append(toAdd)
                 else:
+
                     combine.append(toAdd)
 
             # create backwards combination of i and j
@@ -169,7 +153,8 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag):
             toAdd += splits[j]
             toAdd += splits[i]
 
-            if (maxSize(toAdd, maxed) and minSize(toAdd, mined)):
+            if (maxSize(toAdd, maxed) and minSize(toAdd, mined) and maxDistCheck(splitRef[i], splitRef[j],
+                                                                                 maxDistance)):
                 if (overlapFlag == True):
                     if (overlapComp(splitRef[i], splitRef[j])):
                         combine.append(toAdd)
@@ -180,6 +165,15 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag):
     return combine
 
 
+def maxDistCheck(ref1, ref2, maxDistance):
+    if (maxDistance == None):
+        return True
+    valid = ref2[-1] - ref1[0]
+
+    if (valid > maxDistance):
+        return False
+
+    return True
 
 # ensures length of split is smaller than or equal to max
 def maxSize(split, maxed):
@@ -223,21 +217,7 @@ def addSequenceList(input_file):
 
 
 
-# Adapted from https://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-whilst-preserving-order
-# removes duplicates given a list
-def removeDups(seq):
-    seen = set()
-    seen_add = seen.add
-    initial = [x for x in seq if not (x in seen or seen_add(x))]
-    temp = []
-    #Remove permutations
-    for i in range(0, len(initial)):
-        for j in range(i + 1, len(initial)):
-            if (combRemove(initial[i], initial[j])):
-                temp.append(initial[j])
 
-    final = [x for x in initial if x not in temp]
-    return final
 
 def removeDupsQuick(seq):
     seq = [''.join(sorted(s)) for s in seq]
@@ -254,13 +234,7 @@ def removeDupsQuick(seq):
         # final = [x for x in initial if x not in temp]
     return initial
 
-"""
-Returns true if two strings are a permutation of each other -> Called in removeDups
-"""
 
-
-def combRemove(ref1, ref2):
-    return (len(ref1) == len(ref2) and sorted(ref1) == sorted(ref2))
 
 
 
@@ -272,7 +246,13 @@ def combinePeptides(peptideList):
     return finalPeptide
 
 
+def removeDupsQuick(seq):
+    seq = [''.join(sorted(s)) for s in seq]
+    seen = set()
+    seen_add = seen.add
+    initial = [x for x in seq if not (x in seen or seen_add(x))]
 
+    return initial
 
 
 # generates most of the permutations possible when switching from A to a in all strings originally containing an A
@@ -312,3 +292,4 @@ def combMass(combine):
 #     - Split level: 3.1 mil to 1.8 mil
 #     - Combined level: 1.8 mil to 1.6 mil
 
+print(generateOutput('ABCDEFGHIJKLMNOPQRST', mined, maxed, overlap, 2))

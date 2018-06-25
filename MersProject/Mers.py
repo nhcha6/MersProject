@@ -166,7 +166,7 @@ def removeDups(seq):
     seen_add = seen.add
     initial = [x for x in seq if not (x in seen or seen_add(x))]
     temp = []
-    # Remove permutations
+    #Remove permutations
     for i in range(0, len(initial)):
         for j in range(i + 1, len(initial)):
             if (combRemove(initial[i], initial[j])):
@@ -175,8 +175,20 @@ def removeDups(seq):
     final = [x for x in initial if x not in temp]
     return final
 
+def removeDupsQuick(seq):
+    seq = [''.join(sorted(s)) for s in seq]
+    seen = set()
+    seen_add = seen.add
+    initial = [x for x in seq if not (x in seen or seen_add(x))]
+        # temp = []
+        # Remove permutations
+        # for i in range(0, len(initial)):
+        # for j in range(i + 1, len(initial)):
+        # if (combRemove(initial[i], initial[j])):
+        # temp.append(initial[j])
 
-
+        # final = [x for x in initial if x not in temp]
+    return initial
 
 """
 Returns true if two strings are a permutation of each other -> Called in removeDups
@@ -230,34 +242,41 @@ def combMass(combine):
 maxed = 12
 mined = 0
 overlap = True
-splits, splitRef = splitDictPeptide("ARDCE", maxed)
-
-splits = removeDups(splits)
-
-
-
-
-print(splits)
-print(len(splits))
-
-
-
-combine = combineOverlapPeptide(splits, splitRef, mined, maxed, overlap)
-combine = removeDups(combine)
-
+splits, splitRef = splitDictPeptide("AADDAFDSGDFA", maxed)
+#splits = removeDups(splits)
+combine = combineOverlapPeptide(splits,splitRef,mined,maxed,overlap)
 print(combine)
 print(len(combine))
+combineQuick = removeDupsQuick(combine)
+#combine = removeDups(combine)
+print(len(combineQuick))
+#print(len(combine))
 
-massDict = combMass(combine)
-print(massDict)
 
 
 
 
-modcomb = modTest(combine)
+#print(splits)
+#print(len(splits))
 
-print("Combine original")
-print(combine)
+
+
+#combine = combineOverlapPeptide(splits, splitRef, mined, maxed, overlap)
+#combine = removeDups(combine)
+
+#print(combine)
+#print(len(combine))
+
+#massDict = combMass(combine)
+#print(massDict)
+
+
+
+
+#modcomb = modTest(combine)
+
+#print("Combine original")
+#print(combine)
 
 # print("Modcomb")
 # print(modcomb)
@@ -272,16 +291,17 @@ sequenceDictionary = addSequenceList("Example.fasta")
 for key, value in sequenceDictionary.items():
     splits, splitRef = splitDictPeptide(value, maxed)
 
-    splits = removeDups(splits)
+    splits = removeDupsQuick(splits)
     combine = combineOverlapPeptide(splits, splitRef, mined, maxed, overlap)
-    combine = removeDups(combine)
+    combine = removeDupsQuick(combine)
 
     print(len(splits))
     print(len(combine))
 
     break;
 
+
 # Analysis of removing duplicates at split level and combined level:
 #     - Split level: 3.1 mil to 1.8 mil
 #     - Combined level: 1.8 mil to 1.6 mil
-#
+

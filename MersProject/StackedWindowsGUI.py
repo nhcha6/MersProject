@@ -47,8 +47,8 @@ class MyTableWidget(QWidget):
         self.pushButton1 = QPushButton("PyQt5 button")
         self.pushButton1.clicked.connect(self.showDialog)
         self.tab1.layout.addWidget(self.pushButton1)
-        self.lineEdit1 = QLineEdit(self)
-        self.tab1.layout.addWidget(self.lineEdit1)
+        self.tab1.textEdit1 = QTextEdit()
+        self.tab1.layout.addWidget(self.tab1.textEdit1)
         self.tab1.setLayout(self.tab1.layout)
 
         # Create second tab
@@ -82,7 +82,7 @@ class MyTableWidget(QWidget):
             with f:
 
                 data = f.read()
-                self.textEdit.setText(data)
+                self.tab1.textEdit1.setText(data)
 
     @pyqtSlot()
     def on_click(self):

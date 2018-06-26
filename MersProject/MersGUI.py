@@ -1,7 +1,6 @@
 import sys
-from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QAction, QTabWidget, QVBoxLayout, \
-                            QLineEdit, QTextEdit, qApp, QFileDialog, QAction, QGridLayout, QLabel, QComboBox, QCheckBox
-from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTabWidget, QVBoxLayout, \
+                            QFileDialog, QGridLayout, QLabel, QComboBox, QCheckBox
 from PyQt5.QtCore import pyqtSlot
 from Mers import *
 
@@ -17,8 +16,6 @@ class App(QMainWindow):
         self.height = 300
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
-
-
 
         self.table_widget = MyTableWidget(self)
         self.setCentralWidget(self.table_widget)
@@ -43,7 +40,6 @@ class MyTableWidget(QWidget):
         # Add tabs
         self.tabs.addTab(self.tab1, "Tab 1")
         self.tabs.addTab(self.tab2, "Tab 2")
-
 
         # Create first tab
         self.tab1.layout = QVBoxLayout(self)
@@ -78,7 +74,6 @@ class MyTableWidget(QWidget):
         self.tab2.output = QPushButton('Generate Output!', self)
         self.tab2.output.clicked.connect(self.printValues)
 
-
         for i in range(0, 26):
             self.tab2.minimumCombo.addItem(str(i))
             self.tab2.maximumCombo.addItem(str(i))
@@ -87,7 +82,7 @@ class MyTableWidget(QWidget):
         # All the labels added
         self.tab2.layout.addWidget(self.tab2.minimum, 1, 3)
         self.tab2.layout.addWidget(self.tab2.maximum, 2, 3)
-        self.tab2.layout.addWidget(self.tab2.maxDistance,3, 3)
+        self.tab2.layout.addWidget(self.tab2.maxDistance, 3, 3)
         self.tab2.layout.addWidget(self.tab2.mod1, 4, 3)
         self.tab2.layout.addWidget(self.tab2.mod2, 5, 3)
         self.tab2.layout.addWidget(self.tab2.mod3, 6, 3)
@@ -101,21 +96,6 @@ class MyTableWidget(QWidget):
 
         self.tab2.setLayout(self.tab2.layout)
 
-
-
-        #openFile = QAction(QIcon('open.png'), 'Open', self)
-        #openFile.setShortcut('Ctrl+O')
-        #openFile.setStatusTip('Open New File')
-        #openFile.triggered.connect(self.showDialog)
-
-
-
-        #self.setGeometry(300, 300, 350, 300)
-        #self.setWindowTitle('File dialog')
-        #self.show()
-
-
-
         # Add tabs to widget
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
@@ -125,9 +105,8 @@ class MyTableWidget(QWidget):
         fname = QFileDialog.getOpenFileName(self, 'Open File', '/home')
         self.fasta = Fasta(addSequenceList(fname[0]))
 
-
-    #def genButton(self, parent, peptide, mined, maxed, overlapFlag, maxDistance):
-     #   self.fasta.generateOutput(peptide, mined, maxed, overlapFlag, maxDistance)
+    # def genButton(self, parent, peptide, mined, maxed, overlapFlag, maxDistance):
+    # self.fasta.generateOutput(peptide, mined, maxed, overlapFlag, maxDistance)
 
     def printValues(self, parent):
         mined = int(self.tab2.minimumCombo.currentText())
@@ -135,22 +114,15 @@ class MyTableWidget(QWidget):
         maxDistance = int(self.tab2.maxDistCombo.currentText())
         overlapFlag = self.tab2.overlap.isChecked()
         combineFlag = self.tab2.cistrans.isChecked()
-        peptide = "ABBCS"
-        #self.fasta.generateOutput(peptide,mined,maxed,overlapFlag,maxDistance)
+        # peptide = "ABBCS"
+        # self.fasta.generateOutput(peptide,mined,maxed,overlapFlag,maxDistance)
         self.fasta.generateOutput(mined, maxed, overlapFlag, combineFlag, maxDistance)
-
-
-
-
 
     @pyqtSlot()
     def on_click(self):
         print("\n")
         for currentQTableWidgetItem in self.tableWidget.selectedItems():
             print(currentQTableWidgetItem.row(), currentQTableWidgetItem.column(), currentQTableWidgetItem.text())
-
-
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

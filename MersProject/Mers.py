@@ -23,17 +23,16 @@ class Fasta:
     def generateOutput(self, mined, maxed, overlapFlag, combineFlag, maxDistance=None):
         if (combineFlag):
             finalPeptide = combinePeptides(self.seqDict)
-            print(outputCreate(self, finalPeptide, mined,maxed, overlapFlag, maxDistance))
-        #else
-
-
-            #for key, value in self.seqDict.items():
-
+            print(finalPeptide)
+            print(len(outputCreate(finalPeptide, mined,maxed, overlapFlag, maxDistance)))
+        else:
+            for key, value in self.seqDict.items():
+                print(len(outputCreate(value, mined, maxed, overlapFlag, maxDistance)))
 
 # taking FASTA dictionary and passing through our splits and combine functions
 #sequenceDictionary = addSequenceList("Example.fasta")
 
-def outputCreate(self, peptide, mined, maxed, overlapFlag, maxDistance=None):
+def outputCreate(peptide, mined, maxed, overlapFlag, maxDistance=None):
     # Produces splits and splitRef arrays which are passed through combined
     splits, splitRef = splitDictPeptide(peptide, maxed)
     # splits = removeDupsQuick(splits)

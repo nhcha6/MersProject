@@ -77,7 +77,20 @@ modTable = {
     'Methylation(KR)': ['K', 'R', 14.01565],
     'Methylation(others)': ['T', 'S', 'C', 'H', 'D', 'E', 14.01565],
     'Oxidation (HW)': ['H', 'W', 15.994915],
-    
+    'Oxidation (M)': ['M',15.994915],
+    'Palmitoylation': ['C', 'S', 'T', 'K', 238.22966],
+    'Phosphopantetheine': ['S', 340.0858],
+    'Phosphorylation (HCDR)': ['H', 'C', 'D', 'R', 79.96633],
+    'Phosphorylation (STY)': ['S', 'T', 'Y', 79.96633],
+    'Propionamide': ['C', 71.03712],
+    'Pyridoxal phosphate': ['K', 229.014],
+    'S-pyridylethylation': ['C', 105.057846],
+    'Sulfation': ['Y', 'S', 'T', 79.95682],
+    'Sulphone': ['M', 31.989828],
+    'Ubiquitin': ['T', 'S', 'C', 'K', 114.04293],
+    'Ubiquitination': ['K', 383.2281],
+
+
 }
 
 # hello hello hello

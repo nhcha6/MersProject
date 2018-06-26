@@ -147,10 +147,10 @@ class MyTableWidget(QWidget):
         maxed = int(self.tab2.maximumCombo.currentText())
         maxDistance = int(self.tab2.maxDistCombo.currentText())
         overlapFlag = self.tab2.overlap.isChecked()
-        combineAllFlag = self.tab2.cistrans.isChecked()
+        combineFlag = self.tab2.cistrans.isChecked()
         peptide = "ABBCS"
-        #self.fasta.addToMined(mined)
-        self.fasta.generateOutput(peptide,mined,maxed,overlapFlag,maxDistance)
+        #self.fasta.generateOutput(peptide,mined,maxed,overlapFlag,maxDistance)
+        self.fasta.generateOutput(mined, maxed, overlapFlag, combineFlag, maxDistance)
 
 
 

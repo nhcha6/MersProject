@@ -54,15 +54,18 @@ monoAminoMass = {
 
 '''
 Function that literally combines everything to generate output
+
 '''
 def generateOutput(peptide, mined, maxed, overlapFlag, maxDistance=None):
 
+    # Produces splits and splitRef arrays which are passed through combined
     splits, splitRef = splitDictPeptide(peptide, maxed)
-    splits = removeDupsQuick(splits)
+    #splits = removeDupsQuick(splits)
+    print(splits)
 
+    # pass splits through combined overlap peptide and then delete all duplicates
     combined = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
     combined = removeDupsQuick(combined)
-
 
     return combined
 
@@ -74,6 +77,7 @@ Inputs: peptide string, max length of split peptide.
 
 """Inputs: peptide string, max length of split peptide. 
    Outputs: all possible splits that could be formed that are smaller in length than the maxed input """
+
 
 
 def splitDictPeptide(peptide, maxed):
@@ -125,43 +129,30 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
     # iterate through all of the splits and build up combinations which meet min/max/overlap criteria
     for i in range(0, len(splits)):
 
-        if (minSize(splits[i], mined)):
-            # Add linear peptide, can include option if necessary
-            combine.append(splits[i])
-        
-        # toAdd holds temporary for insertion in final matrix if it meets criteria
-        toAdd = ""
+        # toAdd variables hold temporary combinations for insertion in final matrix if it meets criteria
+        toAddForward = ""
+        toAddReverse = ""
 
         for j in range(i + 1, len(splits)):
             # create forward combinaiton of i and j
-            toAdd += splits[i]
-            toAdd += splits[j]
+            toAddForward += splits[i]
+            toAddForward += splits[j]
+            toAddReverse += splits[j]
+            toAddReverse += splits[i]
 
             # look to combine all checks together in a future for clarity
-            if (maxSize(toAdd, maxed) and minSize(toAdd, mined) and maxDistCheck(splitRef[i], splitRef[j],
-                                                                                 maxDistance)):
+            if combineCheck(toAddForward,mined,maxed,splitRef[i],splitRef[j],maxDistance):
 
                 if (overlapFlag == True):
                     if (overlapComp(splitRef[i], splitRef[j])):
-                        combine.append(toAdd)
+                        combine.append(toAddForward)
+                        combine.append(toAddReverse)
                 else:
+                    combine.append(toAddForward)
+                    combine.append(toAddReverse)
 
-                    combine.append(toAdd)
-
-            # create backwards combination of i and j
-            toAdd = ""
-            toAdd += splits[j]
-            toAdd += splits[i]
-
-            if (maxSize(toAdd, maxed) and minSize(toAdd, mined) and maxDistCheck(splitRef[i], splitRef[j],
-                                                                                 maxDistance)):
-                if (overlapFlag == True):
-                    if (overlapComp(splitRef[i], splitRef[j])):
-                        combine.append(toAdd)
-                else:
-                    combine.append(toAdd)
-
-            toAdd = ""
+            toAddForward = ""
+            toAddReverse = ""
     return combine
 
 
@@ -188,12 +179,15 @@ def minSize(split, mined):
         return False
     return True
 
-
+def combineCheck(split, mined, maxed, ref1, ref2, maxDistance):
+    booleanCheck = maxSize(split,maxed) and minSize(split,mined) and maxDistCheck(ref1,ref2,maxDistance)
+    return booleanCheck
 
 
 
 # checks if there is an intersection between two strings. Likely input it the splitRef data.
 # Outputs True if no intersection
+# overlapComp needs to delete paired reference number if being applied to the splits output
 def overlapComp(ref1, ref2):
     S1 = set(ref1)
     S2 = set(ref2)
@@ -215,31 +209,6 @@ def addSequenceList(input_file):
     return sequenceDictionary
 
 
-
-
-
-
-def removeDupsQuick(seq):
-    seq = [''.join(sorted(s)) for s in seq]
-    seen = set()
-    seen_add = seen.add
-    initial = [x for x in seq if not (x in seen or seen_add(x))]
-        # temp = []
-        # Remove permutations
-        # for i in range(0, len(initial)):
-        # for j in range(i + 1, len(initial)):
-        # if (combRemove(initial[i], initial[j])):
-        # temp.append(initial[j])
-
-        # final = [x for x in initial if x not in temp]
-    return initial
-
-
-
-
-
-
-
 # combines an array of strings into one string. Used for ultimately segments from multiple peptides
 def combinePeptides(peptideList):
     finalPeptide = ''.join(peptideList)
@@ -247,7 +216,7 @@ def combinePeptides(peptideList):
 
 
 def removeDupsQuick(seq):
-    seq = [''.join(sorted(s)) for s in seq]
+    #seq = [''.join(sorted(s)) for s in seq]
     seen = set()
     seen_add = seen.add
     initial = [x for x in seq if not (x in seen or seen_add(x))]
@@ -257,6 +226,7 @@ def removeDupsQuick(seq):
 
 # generates most of the permutations possible when switching from A to a in all strings originally containing an A
 # input is a list of all combinations
+#need to look to create all possible combinations
 def modTest(combine):
     # A, B, C  convert to a, b, c
     modComb = []
@@ -292,4 +262,4 @@ def combMass(combine):
 #     - Split level: 3.1 mil to 1.8 mil
 #     - Combined level: 1.8 mil to 1.6 mil
 
-print(generateOutput('ABCDEFGHIJKLMNOPQRST', mined, maxed, overlap, 2))
+print(generateOutput('ABC', mined, maxed, overlap))

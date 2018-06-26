@@ -233,19 +233,19 @@ def removeDupsQuick(seq):
 # generates most of the permutations possible when switching from A to a in all strings originally containing an A
 # input is a list of all combinations
 #need to look to create all possible combinations
-def modTest(combine):
+def genericMod(combine, character):
     # A, B, C  convert to a, b, c
     modComb = []
     for string in combine:
-        if 'A' in string:
-
-            numOccur = string.count('A')
-
-            for i in range(0, numOccur):
+        if character in string:
+            numOccur = string.count(character)
+            temp = string
+            for j in range(0,numOccur):
+                for i in range(0, numOccur-j):
+                    print(temp)
+                    temp = nth_replace(temp,character,character.lower(),j+1)
+                    modComb.append(temp)
                 temp = string
-                temp = temp.replace("A", "a", i + 1)
-
-                modComb.append(temp)
     return modComb
 
 
@@ -259,9 +259,30 @@ def combMass(combine):
         massDict[combination] = totalMass
     return massDict
 
-
-
-
+# https://stackoverflow.com/questions/35091557/replace-nth-occurrence-of-substring-in-string
+def nth_replace(string, old, new, n=1, option='only nth'):
+    """
+    This function replaces occurrences of string 'old' with string 'new'.
+    There are three types of replacement of string 'old':
+    1) 'only nth' replaces only nth occurrence (default).
+    2) 'all left' replaces nth occurrence and all occurrences to the left.
+    3) 'all right' replaces nth occurrence and all occurrences to the right.
+    """
+    if option == 'only nth':
+        left_join = old
+        right_join = old
+    elif option == 'all left':
+        left_join = new
+        right_join = old
+    elif option == 'all right':
+        left_join = old
+        right_join = new
+    else:
+        print("Invalid option. Please choose from: 'only nth' (default), 'all left' or 'all right'")
+        return None
+    groups = string.split(old)
+    nth_split = [left_join.join(groups[:n]), right_join.join(groups[n:])]
+    return new.join(nth_split)
 
 
 # Analysis of removing duplicates at split level and combined level:

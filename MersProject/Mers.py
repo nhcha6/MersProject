@@ -18,7 +18,7 @@ class Fasta:
 
     '''
 
-    def generateOutput(peptide, mined, maxed, overlapFlag, maxDistance=None):
+    def generateOutput(self, peptide, mined, maxed, overlapFlag, maxDistance=None):
         # Produces splits and splitRef arrays which are passed through combined
         splits, splitRef = splitDictPeptide(peptide, maxed)
         # splits = removeDupsQuick(splits)
@@ -50,11 +50,9 @@ for key, value in sequenceDictionary.items():
 
 '''
 
+
+
 H20_MASS = 18.010565
-maxed = 12
-mined = 0
-maxDistance = 25
-overlap = True
 
 # hello hello hello
 # Monoisotopic mass

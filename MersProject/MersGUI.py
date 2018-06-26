@@ -149,7 +149,8 @@ class MyTableWidget(QWidget):
         overlapFlag = self.tab2.overlap.isChecked()
         combineAllFlag = self.tab2.cistrans.isChecked()
         peptide = "ABBCS"
-        #fasta.generateOutput(peptide,mined,maxed,overlapFlag,maxDistance)
+        #self.fasta.addToMined(mined)
+        self.fasta.generateOutput(peptide,mined,maxed,overlapFlag,maxDistance)
 
 
 

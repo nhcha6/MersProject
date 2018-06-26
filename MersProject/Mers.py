@@ -1,6 +1,12 @@
 from Bio import SeqIO
 
+class Fasta:
 
+    def __init__(self, seqDict):
+        self.seqDict = seqDict
+        print(seqDict)
+
+    min = None;
 
 
 # taking FASTA dictionary and passing through our splits and combine functions

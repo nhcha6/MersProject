@@ -2,15 +2,16 @@ import sys
 from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QAction, QTabWidget, QVBoxLayout, QLineEdit, QTextEdit, qApp, QFileDialog, QAction
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSlot
+from Mers import *
 
 
 class App(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.title = 'PyQt5 tabs - pythonspot.com'
-        self.left = 0
-        self.top = 0
+        self.title = 'Peptide Splicer'
+        self.left = 500
+        self.top = 300
         self.width = 300
         self.height = 300
         self.setWindowTitle(self.title)
@@ -29,6 +30,7 @@ class MyTableWidget(QWidget):
     def __init__(self, parent):
         super(QWidget, self).__init__(parent)
         self.layout = QVBoxLayout(self)
+        self.fasta = None
 
         # Initialize tab screen
         self.tabs = QTabWidget()
@@ -44,9 +46,15 @@ class MyTableWidget(QWidget):
 
         # Create first tab
         self.tab1.layout = QVBoxLayout(self)
-        self.pushButton1 = QPushButton("PyQt5 button")
+
+        self.pushButton1 = QPushButton("Select File")
         self.pushButton1.clicked.connect(self.showDialog)
+
+        self.pushButton2 = QPushButton("PRINT PATH")
+        self.pushButton2.clicked.connect(self.createFasta)
+
         self.tab1.layout.addWidget(self.pushButton1)
+        self.tab1.layout.addWidget(self.pushButton2)
         self.tab1.textEdit1 = QTextEdit()
         self.tab1.layout.addWidget(self.tab1.textEdit1)
         self.tab1.setLayout(self.tab1.layout)
@@ -74,15 +82,12 @@ class MyTableWidget(QWidget):
     def showDialog(self, parent):
 
         fname = QFileDialog.getOpenFileName(self, 'Open File', '/home')
+        self.fasta = Fasta(addSequenceList(fname[0]))
 
-        if fname[0]:
+    def createFasta(self, parent):
+        self.fasta.min = 3
+        print(self.fasta.min)
 
-            f = open(fname[0], 'r')
-
-            with f:
-
-                data = f.read()
-                self.tab1.textEdit1.setText(data)
 
     @pyqtSlot()
     def on_click(self):

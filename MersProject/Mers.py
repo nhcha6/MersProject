@@ -14,7 +14,10 @@ class Fasta:
         if (combineFlag):
             finalPeptide = combinePeptides(self.seqDict)
             print(finalPeptide)
-            print(len(outputCreate(finalPeptide, mined,maxed, overlapFlag, maxDistance)))
+            combined = outputCreate(finalPeptide, mined,maxed, overlapFlag, maxDistance)
+            print(len(combined))
+            massDict = combMass(combined)
+            print(massDict['MV'])
         else:
             for key, value in self.seqDict.items():
                 print(key)
@@ -51,6 +54,31 @@ for key, value in sequenceDictionary.items():
 
 
 H20_MASS = 18.010565
+
+modTable = {
+
+    '4-hydroxynonenal (HNE)': ['C', 'H', 'K', 156.11504],
+    'Acetylation (K)': ['K', 42.010567],
+    'Beta-methylthiolation': ['C', 45.98772],
+    'Carbamidomethylation': ['C', 57.021465],
+    'Carboxylation (E)': ['E', 43.98983],
+    'Carboxymethyl': ['C', 58.005478],
+    'Citrullination': ['R', 0.984016],
+    'Deamidation (NQ)': ['N', 'Q', 0.984016],
+    'Dimethylation(KR)': ['K', 'R', 28.0313],
+    'Dioxidation (M)': ['M', 31.989828],
+    'FAD': ['C', 'H', 'Y', 783.1415],
+    'Farnesylation': ['C', 204.1878],
+    'Geranyl-geranyl': ['C', 272.2504 ],
+    'Guanidination': ['K', 42.021797],
+    'HexNAcylation (N)': ['N', 203.07938],
+    'Hexose (NSY)': ['N', 'S', 'Y', 162.0528],
+    'Lipoyl': ['K', 188.03296],
+    'Methylation(KR)': ['K', 'R', 14.01565],
+    'Methylation(others)': ['T', 'S', 'C', 'H', 'D', 'E', 14.01565],
+    'Oxidation (HW)': ['H', 'W', 15.994915],
+    
+}
 
 # hello hello hello
 # Monoisotopic mass
@@ -236,6 +264,8 @@ def removeDupsQuick(seq):
     initial = [x for x in seq if not (x in seen or seen_add(x))]
 
     return initial
+
+
 
 
 # generates most of the permutations possible when switching from A to a in all strings originally containing an A

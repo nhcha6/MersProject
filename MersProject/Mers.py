@@ -6,7 +6,31 @@ class Fasta:
         self.seqDict = seqDict
         print(seqDict)
 
-    min = None;
+    mined = None
+    maxed = None
+    overlapFlag = False
+    maxDistance = None
+    mod1 = None
+    mod2 = None
+    mod3 = None
+    '''
+    Function that literally combines everything to generate output
+
+    '''
+
+    def generateOutput(peptide, mined, maxed, overlapFlag, maxDistance=None):
+        # Produces splits and splitRef arrays which are passed through combined
+        splits, splitRef = splitDictPeptide(peptide, maxed)
+        # splits = removeDupsQuick(splits)
+
+        # pass splits through combined overlap peptide and then delete all duplicates
+        combined = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
+        combined = removeDupsQuick(combined)
+        print(peptide)
+        print(splits)
+        print(combined)
+
+        return combined
 
 
 # taking FASTA dictionary and passing through our splits and combine functions
@@ -58,22 +82,6 @@ monoAminoMass = {
 
 }
 
-'''
-Function that literally combines everything to generate output
-
-'''
-def generateOutput(peptide, mined, maxed, overlapFlag, maxDistance=None):
-
-    # Produces splits and splitRef arrays which are passed through combined
-    splits, splitRef = splitDictPeptide(peptide, maxed)
-    #splits = removeDupsQuick(splits)
-    print(splits)
-
-    # pass splits through combined overlap peptide and then delete all duplicates
-    combined = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
-    combined = removeDupsQuick(combined)
-
-    return combined
 
 
 """
@@ -289,4 +297,4 @@ def nth_replace(string, old, new, n=1, option='only nth'):
 #     - Split level: 3.1 mil to 1.8 mil
 #     - Combined level: 1.8 mil to 1.6 mil
 
-print(generateOutput('ABC', mined, maxed, overlap))
+#print(generateOutput('ABC', mined, maxed, overlap))

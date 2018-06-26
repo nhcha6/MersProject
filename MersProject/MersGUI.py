@@ -81,7 +81,7 @@ class MyTableWidget(QWidget):
         self.tab2.cistrans = QCheckBox('Combine All ', self)
 
         self.tab2.output = QPushButton('Generate Output!', self)
-
+        self.tab2.output.clicked.connect(self.printValues)
 
 
         for i in range(0, 26):
@@ -133,6 +133,26 @@ class MyTableWidget(QWidget):
     def createFasta(self, parent):
         self.fasta.min = 3
         print(self.fasta.min)
+
+    """
+    def changeCombo(self):
+        sender = self.sender()
+        print(sender.text() + sender.currentText())"""
+
+    #def genButton(self, parent, peptide, mined, maxed, overlapFlag, maxDistance):
+     #   self.fasta.generateOutput(peptide, mined, maxed, overlapFlag, maxDistance)
+
+    def printValues(self, parent):
+        mined = int(self.tab2.minimumCombo.currentText())
+        maxed = int(self.tab2.maximumCombo.currentText())
+        maxDistance = int(self.tab2.maxDistCombo.currentText())
+        overlapFlag = self.tab2.overlap.isChecked()
+        combineAllFlag = self.tab2.cistrans.isChecked()
+        peptide = "ABBCS"
+        #fasta.generateOutput(peptide,mined,maxed,overlapFlag,maxDistance)
+
+
+
 
 
     @pyqtSlot()

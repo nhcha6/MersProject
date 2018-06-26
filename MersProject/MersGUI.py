@@ -1,5 +1,6 @@
 import sys
-from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QAction, QTabWidget, QVBoxLayout, QLineEdit, QTextEdit, qApp, QFileDialog, QAction
+from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QAction, QTabWidget, QVBoxLayout, \
+                            QLineEdit, QTextEdit, qApp, QFileDialog, QAction, QGridLayout, QLabel, QComboBox, QCheckBox
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSlot
 from Mers import *
@@ -36,13 +37,13 @@ class MyTableWidget(QWidget):
         self.tabs = QTabWidget()
         self.tab1 = QWidget()
         self.tab2 = QWidget()
-        self.tab3 = QWidget()
+
         self.tabs.resize(300, 200)
 
         # Add tabs
         self.tabs.addTab(self.tab1, "Tab 1")
         self.tabs.addTab(self.tab2, "Tab 2")
-        self.tabs.addTab(self.tab3, "Tab 3")
+
 
         # Create first tab
         self.tab1.layout = QVBoxLayout(self)
@@ -60,6 +61,51 @@ class MyTableWidget(QWidget):
         self.tab1.setLayout(self.tab1.layout)
 
         # Create second tab
+        self.tab2.layout = QGridLayout(self)
+        self.tab2.layout.setSpacing(10)
+
+        # Minimum/maximum values
+        self.tab2.minimum = QLabel('Minimum Value : ')
+        self.tab2.minimumCombo = QComboBox(self)
+        self.tab2.maximum = QLabel('Maximum Value : ')
+        self.tab2.maximumCombo = QComboBox(self)
+
+        self.tab2.maxDistance = QLabel('Maximum Distance : ')
+        self.tab2.maxDistCombo = QComboBox(self)
+
+        self.tab2.mod1 = QLabel('Modification 1 : ')
+        self.tab2.mod2 = QLabel('Modification 2 : ')
+        self.tab2.mod3 = QLabel('Modification 3 : ')
+
+        self.tab2.overlap = QCheckBox('Overlap: ', self)
+        self.tab2.cistrans = QCheckBox('Combine All ', self)
+
+        self.tab2.output = QPushButton('Generate Output!', self)
+
+
+
+        for i in range(0, 26):
+            self.tab2.minimumCombo.addItem(str(i))
+            self.tab2.maximumCombo.addItem(str(i))
+            self.tab2.maxDistCombo.addItem(str(i))
+
+        # All the labels added
+        self.tab2.layout.addWidget(self.tab2.minimum, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.maximum, 2, 3)
+        self.tab2.layout.addWidget(self.tab2.maxDistance,3, 3)
+        self.tab2.layout.addWidget(self.tab2.mod1, 4, 3)
+        self.tab2.layout.addWidget(self.tab2.mod2, 5, 3)
+        self.tab2.layout.addWidget(self.tab2.mod3, 6, 3)
+        self.tab2.layout.addWidget(self.tab2.overlap, 7, 3)
+        self.tab2.layout.addWidget(self.tab2.cistrans, 8, 3)
+
+        self.tab2.layout.addWidget(self.tab2.minimumCombo, 1, 4)
+        self.tab2.layout.addWidget(self.tab2.maximumCombo, 2, 4)
+        self.tab2.layout.addWidget(self.tab2.maxDistCombo, 3, 4)
+        self.tab2.layout.addWidget(self.tab2.output, 9, 4)
+
+        self.tab2.setLayout(self.tab2.layout)
+
 
 
         #openFile = QAction(QIcon('open.png'), 'Open', self)

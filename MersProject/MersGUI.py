@@ -51,13 +51,8 @@ class MyTableWidget(QWidget):
         self.pushButton1 = QPushButton("Select File")
         self.pushButton1.clicked.connect(self.showDialog)
 
-        self.pushButton2 = QPushButton("PRINT PATH")
-        self.pushButton2.clicked.connect(self.createFasta)
-
         self.tab1.layout.addWidget(self.pushButton1)
-        self.tab1.layout.addWidget(self.pushButton2)
-        self.tab1.textEdit1 = QTextEdit()
-        self.tab1.layout.addWidget(self.tab1.textEdit1)
+
         self.tab1.setLayout(self.tab1.layout)
 
         # Create second tab
@@ -130,14 +125,6 @@ class MyTableWidget(QWidget):
         fname = QFileDialog.getOpenFileName(self, 'Open File', '/home')
         self.fasta = Fasta(addSequenceList(fname[0]))
 
-    def createFasta(self, parent):
-        self.fasta.min = 3
-        print(self.fasta.min)
-
-    """
-    def changeCombo(self):
-        sender = self.sender()
-        print(sender.text() + sender.currentText())"""
 
     #def genButton(self, parent, peptide, mined, maxed, overlapFlag, maxDistance):
      #   self.fasta.generateOutput(peptide, mined, maxed, overlapFlag, maxDistance)

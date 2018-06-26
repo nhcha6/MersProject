@@ -18,30 +18,31 @@ class Fasta:
 
     '''
 
-    def outputCreate(self, peptide, mined, maxed, overlapFlag, maxDistance=None):
-        # Produces splits and splitRef arrays which are passed through combined
-        splits, splitRef = splitDictPeptide(peptide, maxed)
-        # splits = removeDupsQuick(splits)
 
-        # pass splits through combined overlap peptide and then delete all duplicates
-        combined = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
-        combined = removeDupsQuick(combined)
-
-        return combined
 
     def generateOutput(self, mined, maxed, overlapFlag, combineFlag, maxDistance=None):
         if (combineFlag):
             finalPeptide = combinePeptides(self.seqDict)
-            print(len(self.outputCreate(self, finalPeptide, mined,maxed, overlapFlag, maxDistance)))
+            print(outputCreate(self, finalPeptide, mined,maxed, overlapFlag, maxDistance))
         #else
 
 
             #for key, value in self.seqDict.items():
 
 
-
 # taking FASTA dictionary and passing through our splits and combine functions
 #sequenceDictionary = addSequenceList("Example.fasta")
+
+def outputCreate(self, peptide, mined, maxed, overlapFlag, maxDistance=None):
+    # Produces splits and splitRef arrays which are passed through combined
+    splits, splitRef = splitDictPeptide(peptide, maxed)
+    # splits = removeDupsQuick(splits)
+
+    # pass splits through combined overlap peptide and then delete all duplicates
+    combined = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
+    combined = removeDupsQuick(combined)
+
+    return combined
 '''
 for key, value in sequenceDictionary.items():
     splits, splitRef = splitDictPeptide(value, maxed)

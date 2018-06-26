@@ -78,6 +78,7 @@ class MyTableWidget(QWidget):
             self.tab2.minimumCombo.addItem(str(i))
             self.tab2.maximumCombo.addItem(str(i))
             self.tab2.maxDistCombo.addItem(str(i))
+        self.tab2.maxDistCombo.addItem('None')
 
         # All the labels added
         self.tab2.layout.addWidget(self.tab2.minimum, 1, 3)
@@ -111,9 +112,12 @@ class MyTableWidget(QWidget):
     def printValues(self, parent):
         mined = int(self.tab2.minimumCombo.currentText())
         maxed = int(self.tab2.maximumCombo.currentText())
-        maxDistance = int(self.tab2.maxDistCombo.currentText())
         overlapFlag = self.tab2.overlap.isChecked()
         combineFlag = self.tab2.cistrans.isChecked()
+        maxDistance = self.tab2.maxDistCombo.currentText()
+        if maxDistance != 'None':
+            maxDistance = int(maxDistance)
+
         # peptide = "ABBCS"
         # self.fasta.generateOutput(peptide,mined,maxed,overlapFlag,maxDistance)
         self.fasta.generateOutput(mined, maxed, overlapFlag, combineFlag, maxDistance)

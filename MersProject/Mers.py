@@ -6,27 +6,18 @@ class Fasta:
         self.seqDict = seqDict
         print(seqDict)
 
-    mined = None
-    maxed = None
-    overlapFlag = False
-    maxDistance = None
-    mod1 = None
-    mod2 = None
-    mod3 = None
     '''
     Function that literally combines everything to generate output
 
     '''
-
-
-
-    def generateOutput(self, mined, maxed, overlapFlag, combineFlag, maxDistance=None):
+    def generateOutput(self, mined, maxed, overlapFlag, combineFlag, maxDistance):
         if (combineFlag):
             finalPeptide = combinePeptides(self.seqDict)
             print(finalPeptide)
             print(len(outputCreate(finalPeptide, mined,maxed, overlapFlag, maxDistance)))
         else:
             for key, value in self.seqDict.items():
+                print(key)
                 print(len(outputCreate(value, mined, maxed, overlapFlag, maxDistance)))
 
 # taking FASTA dictionary and passing through our splits and combine functions
@@ -141,7 +132,7 @@ def splitDictPeptide(peptide, maxed):
    Output: all combinations of possible splits which meets criteria"""
 
 
-def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance=None):
+def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance):
     # initialise combinations array to hold the possible combinations from the input splits
     combine = []
 
@@ -176,7 +167,7 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
 
 
 def maxDistCheck(ref1, ref2, maxDistance):
-    if (maxDistance == None):
+    if (maxDistance == 'None'):
         return True
     valid = ref2[-1] - ref1[0]
 

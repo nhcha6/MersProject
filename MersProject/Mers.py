@@ -28,6 +28,7 @@ class Fasta:
 
             with open('dict.csv', 'w', newline='') as csv_file:
                 writer = csv.writer(csv_file, delimiter = ',')
+                writer.writerow(['Combined', ' '])
                 writer.writerow(['Peptide', 'Mass'])
                 for key, value in combined.items():
 
@@ -46,7 +47,7 @@ class Fasta:
 
                 combined = applyMods(tempDict, modList)
                 print(combined)
-                combined = {'combined': combined}
+                
                 if (counter == 0):
                     with open('output.txt', 'w') as file:
                         file.write(json.dumps(combined)) # use `json.loads` to do the reverse

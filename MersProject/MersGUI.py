@@ -4,6 +4,14 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTa
 from PyQt5.QtCore import pyqtSlot
 from Mers import *
 
+#Move to mers
+modificationList = ['4-hydroxynonenal (HNE)', 'Acetylation (K)', 'Beta-methylthiolation', 'Carbamidomethylation',
+                 'Carboxylation (E)','Carboxymethyl','Citrullination', 'Deamidation (NQ)','Dimethylation(KR)',
+                 'Dioxidation (M)', 'FAD', 'Farnesylation', 'Geranyl-geranyl', 'Guanidination', 'HexNAcylation (N)',
+                 'Hexose (NSY)','Lipoyl','Methylation(KR)','Methylation(others)','Oxidation (HW)','Oxidation (M)',
+                 'Palmitoylation','Phosphopantetheine','Phosphorylation (HCDR)', 'Phosphorylation (STY)',
+                 'Propionamide','Pyridoxal phosphate','S-pyridylethylation','Sulfation','Sulphone','Ubiquitin',
+                 'Ubiquitination']
 
 class App(QMainWindow):
 
@@ -64,9 +72,27 @@ class MyTableWidget(QWidget):
         self.tab2.maxDistance = QLabel('Maximum Distance : ')
         self.tab2.maxDistCombo = QComboBox(self)
 
+        for i in range(0, 26):
+            self.tab2.minimumCombo.addItem(str(i))
+            self.tab2.maximumCombo.addItem(str(i))
+            self.tab2.maxDistCombo.addItem(str(i))
+        self.tab2.maxDistCombo.addItem('None')
+
+        # Modifications drop downs and labels
         self.tab2.mod1 = QLabel('Modification 1 : ')
         self.tab2.mod2 = QLabel('Modification 2 : ')
         self.tab2.mod3 = QLabel('Modification 3 : ')
+        self.tab2.mod1Combo = QComboBox(self)
+        self.tab2.mod2Combo = QComboBox(self)
+        self.tab2.mod3Combo = QComboBox(self)
+
+        self.tab2.mod1Combo.addItem("None")
+        self.tab2.mod2Combo.addItem("None")
+        self.tab2.mod3Combo.addItem("None")
+        for modification in modificationList:
+            self.tab2.mod1Combo.addItem(modification)
+            self.tab2.mod2Combo.addItem(modification)
+            self.tab2.mod3Combo.addItem(modification)
 
         self.tab2.overlap = QCheckBox('Overlap: ', self)
         self.tab2.cistrans = QCheckBox('Combine All ', self)
@@ -74,11 +100,7 @@ class MyTableWidget(QWidget):
         self.tab2.output = QPushButton('Generate Output!', self)
         self.tab2.output.clicked.connect(self.output)
 
-        for i in range(0, 26):
-            self.tab2.minimumCombo.addItem(str(i))
-            self.tab2.maximumCombo.addItem(str(i))
-            self.tab2.maxDistCombo.addItem(str(i))
-        self.tab2.maxDistCombo.addItem('None')
+
 
         # All the labels added
         self.tab2.layout.addWidget(self.tab2.minimum, 1, 3)
@@ -93,6 +115,9 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.minimumCombo, 1, 4)
         self.tab2.layout.addWidget(self.tab2.maximumCombo, 2, 4)
         self.tab2.layout.addWidget(self.tab2.maxDistCombo, 3, 4)
+        self.tab2.layout.addWidget(self.tab2.mod1Combo, 4, 4)
+        self.tab2.layout.addWidget(self.tab2.mod2Combo, 5, 4)
+        self.tab2.layout.addWidget(self.tab2.mod3Combo, 6, 4)
         self.tab2.layout.addWidget(self.tab2.output, 9, 4)
 
         self.tab2.setLayout(self.tab2.layout)
@@ -113,7 +138,8 @@ class MyTableWidget(QWidget):
         overlapFlag = self.tab2.overlap.isChecked()
         combineFlag = self.tab2.cistrans.isChecked()
         maxDistance = self.tab2.maxDistCombo.currentText()
-        modList = ['Acetylation (K)', 'None', 'None']
+        modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(), self.tab2.mod3Combo.currentText()]
+        print(modList)
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
 

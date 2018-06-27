@@ -49,14 +49,23 @@ class Fasta:
                 print(combined)
                 
                 if (counter == 0):
-                    with open('output.txt', 'w') as file:
-                        file.write(json.dumps(combined)) # use `json.loads` to do the reverse
-                        counter += 1
+
+                    with open('dict.csv', 'w', newline='') as csv_file:
+                        writer = csv.writer(csv_file, delimiter=',')
+                        writer.writerow([key, ' '])
+                        writer.writerow(['Peptide', 'Mass'])
+                        for key, value in combined.items():
+                            writer.writerow([key, value])
+                    counter+=1
+
                 #massDict.update(tempDict)
                 else:
-                    with open('output.txt', 'a') as file:
-                        file.write(json.dumps(combined))  # use `json.loads` to do the reverse
-
+                    with open('dict.csv', 'a', newline='') as csv_file:
+                        writer = csv.writer(csv_file, delimiter=',')
+                        writer.writerow([key, ' '])
+                        writer.writerow(['Peptide', 'Mass'])
+                        for key, value in combined.items():
+                            writer.writerow([key, value])
 
 
 

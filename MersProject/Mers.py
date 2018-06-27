@@ -12,65 +12,52 @@ class Fasta:
 
     '''
     Function that literally combines everything to generate output
-
     '''
     def generateOutput(self, mined, maxed, overlapFlag, combineFlag, modList, maxDistance):
-        massDict = {}
+
         if (combineFlag):
+
             finalPeptide = combinePeptides(self.seqDict)
+            massDict = genMassDict(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance)
+            writeToCsv(massDict, 'w', 'Combined')
 
-            combined, combinedRef = outputCreate(finalPeptide, mined,maxed, overlapFlag, maxDistance)
-            massDict = combMass(combined, combinedRef)
-            massDict = applyMods(massDict, modList)
-
-            print(len(massDict))
-            #combined = {'combined': combined}
-
-            with open('dict.csv', 'w', newline='') as csv_file:
-                writer = csv.writer(csv_file, delimiter = ',')
-                writer.writerow(['Combined', ' ', ' '])
-                writer.writerow(['Peptide', 'Mass', 'Positions'])
-                for key, value in massDict.items():
-
-                    writer.writerow([key, value[0], value[1]])
-
+            # combined = {'combined': combined}
             #with open('output.txt', 'wb') as file:
              #   file.write(json.dumps(combined))  # use `json.loads` to do the reverse
 
         else:
             counter = 0
-            print('NO COMBINING')
             for key, value in self.seqDict.items():
-                
-                combined, combinedRef = outputCreate(value, mined, maxed, overlapFlag, maxDistance)
-                massDict = combMass(combined,combinedRef)
+                massDict = genMassDict(value, mined, maxed, overlapFlag, modList, maxDistance)
 
-                massDict = applyMods(massDict, modList)
-                print(len(massDict))
-                
                 if (counter == 0):
-
-                    with open('dict.csv', 'w', newline='') as csv_file:
-                        writer = csv.writer(csv_file, delimiter=',')
-                        writer.writerow([key, ' ', ' '])
-                        writer.writerow(['Peptide', 'Mass', 'Positions'])
-                        for key, value in massDict.items():
-                            writer.writerow([key, value[0], value[1]])
+                    writeToCsv(massDict, 'w', key)
                     counter+=1
 
-                #massDict.update(tempDict)
                 else:
-                    with open('dict.csv', 'a', newline='') as csv_file:
-                        writer = csv.writer(csv_file, delimiter=',')
-                        writer.writerow([key, ' ', ' '])
-                        writer.writerow(['Peptide', 'Mass', 'Positions'])
-                        for key, value in massDict.items():
-                            writer.writerow([key, value[0], value[1]])
+                    writeToCsv(massDict, 'a', key)
+
 
 
 
 
         #print combined to file
+
+def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance):
+    combined, combinedRef = outputCreate(peptide, mined, maxed, overlapFlag, maxDistance)
+    massDict = combMass(combined, combinedRef)
+    massDict = applyMods(massDict, modList)
+
+    print(len(massDict))
+    return massDict
+
+def writeToCsv(massDict, writeFlag, header):
+    with open('dict.csv', writeFlag, newline='') as csv_file:
+        writer = csv.writer(csv_file, delimiter=',')
+        writer.writerow([header, ' ', ' '])
+        writer.writerow(['Peptide', 'Mass', 'Positions'])
+        for key, value in massDict.items():
+            writer.writerow([key, value[0], value[1]])
 
 # taking FASTA dictionary and passing through our splits and combine functions
 #sequenceDictionary = addSequenceList("Example.fasta")

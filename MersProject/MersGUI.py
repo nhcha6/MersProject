@@ -72,7 +72,7 @@ class MyTableWidget(QWidget):
         self.tab2.cistrans = QCheckBox('Combine All ', self)
 
         self.tab2.output = QPushButton('Generate Output!', self)
-        self.tab2.output.clicked.connect(self.printValues)
+        self.tab2.output.clicked.connect(self.output)
 
         for i in range(0, 26):
             self.tab2.minimumCombo.addItem(str(i))
@@ -106,10 +106,8 @@ class MyTableWidget(QWidget):
         fname = QFileDialog.getOpenFileName(self, 'Open File', '/home')
         self.fasta = Fasta(addSequenceList(fname[0]))
 
-    # def genButton(self, parent, peptide, mined, maxed, overlapFlag, maxDistance):
-    # self.fasta.generateOutput(peptide, mined, maxed, overlapFlag, maxDistance)
 
-    def printValues(self, parent):
+    def output(self, parent):
         mined = int(self.tab2.minimumCombo.currentText())
         maxed = int(self.tab2.maximumCombo.currentText())
         overlapFlag = self.tab2.overlap.isChecked()
@@ -118,8 +116,6 @@ class MyTableWidget(QWidget):
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
 
-        # peptide = "ABBCS"
-        # self.fasta.generateOutput(peptide,mined,maxed,overlapFlag,maxDistance)
         self.fasta.generateOutput(mined, maxed, overlapFlag, combineFlag, maxDistance)
 
     @pyqtSlot()

@@ -297,4 +297,4 @@ def nth_replace(string, old, new, n=1, option='only nth'):
 #     - Split level: 3.1 mil to 1.8 mil
 #     - Combined level: 1.8 mil to 1.6 mil
 
-#print(generateOutput('ABC', mined, maxed, overlap))
+print(genericMod(["ADSABADS"],'A'))

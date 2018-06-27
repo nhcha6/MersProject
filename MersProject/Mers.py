@@ -120,11 +120,25 @@ monoAminoMass = {
 }
 
 
+# combin
+def applyMods(combineDict, modList):
+    # convert combDICT TO LIST OF TUPLES
+    # GIVE THIS TO GENMOD
+    # ADD MODDICT TO THIS
+    modNo = 0
+    for mod in modList:
+        modNo += 1
+        print(mod)
+        if mod != 'None':
+            aminoList = modTable[mod]
+            for i in range(0, len(aminoList) - 1):
+                char = aminoList[i]
+                massChange = aminoList[-1]
+                modDict = genericMod(combineDict, char, massChange, str(modNo))
+                print(modDict)
+                combineDict.update(modDict)
+    return combineDict
 
-"""
-Inputs: peptide string, max length of split peptide. 
- Outputs: all possible splits that could be formed that are smaller in length than the maxed input
-"""
 
 """Inputs: peptide string, max length of split peptide. 
    Outputs: all possible splits that could be formed that are smaller in length than the maxed input """
@@ -284,20 +298,24 @@ def removeDupsQuick(seq):
 # generates most of the permutations possible when switching from A to a in all strings originally containing an A
 # input is a list of all combinations
 #need to look to create all possible combinations
-def genericMod(combine, character):
+def genericMod(combineDict, character, massChange, modNo):
     # A, B, C  convert to a, b, c
-    modComb = []
-    for string in combine:
+    modTupList = []
+
+    for string in combineDict.keys():
+        currentMass = combineDict[string]
         if character in string:
             numOccur = string.count(character)
-            temp = string
-            for j in range(0,numOccur):
-                for i in range(0, numOccur-j):
-                    print(temp)
-                    temp = nth_replace(temp,character,character.lower(),j+1)
-                    modComb.append(temp)
+
+            for j in range(0, numOccur):
                 temp = string
-    return modComb
+                for i in range(0, numOccur - j):
+                    newMass = currentMass + (i + 1) * massChange
+                    temp = nth_replace(temp, character, character.lower() + modNo, j + 1)
+                    print(temp)
+                    modTupList.append((temp, newMass))
+
+    return modTupList
 
 
 def combMass(combine):

@@ -130,10 +130,12 @@ class MyTableWidget(QWidget):
 
         fname = QFileDialog.getOpenFileName(self, 'Open File', '/home')
         self.fasta = Fasta(addSequenceList(fname[0]))
-
+        print(fname[0])
 
     def output(self, parent):
         start = time.time()
+        self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
+
         mined = int(self.tab2.minimumCombo.currentText())
         maxed = int(self.tab2.maximumCombo.currentText())
         overlapFlag = self.tab2.overlap.isChecked()

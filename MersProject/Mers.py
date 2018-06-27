@@ -3,6 +3,7 @@ import json
 import csv
 import time
 
+
 class Fasta:
 
     def __init__(self, seqDict):

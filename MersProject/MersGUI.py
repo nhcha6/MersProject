@@ -139,7 +139,7 @@ class MyTableWidget(QWidget):
         combineFlag = self.tab2.cistrans.isChecked()
         maxDistance = self.tab2.maxDistCombo.currentText()
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(), self.tab2.mod3Combo.currentText()]
-        print(modList)
+
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
 

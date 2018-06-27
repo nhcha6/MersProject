@@ -18,7 +18,7 @@ class Fasta:
 
             combined = outputCreate(finalPeptide, mined,maxed, overlapFlag, maxDistance)
             massDict = combMass(combined)
-            print(len(combined))
+
         else:
             for key, value in self.seqDict.items():
 
@@ -27,6 +27,7 @@ class Fasta:
                 massDict.update(tempDict)
 
         combined = applyMods(massDict, modList)
+        print(combined)
         combined = {'combined': combined}
 
         with open('output.txt', 'w') as file:
@@ -124,7 +125,7 @@ def applyMods(combineDict, modList):
     modNo = 0
     for mod in modList:
         modNo += 1
-        print(mod)
+
         if mod != 'None':
             aminoList = modTable[mod]
             for i in range(0, len(aminoList) - 1):
@@ -354,5 +355,3 @@ def nth_replace(string, old, new, n=1, option='only nth'):
 #     - Split level: 3.1 mil to 1.8 mil
 #     - Combined level: 1.8 mil to 1.6 mil
 
-print(genericMod({'AAA':2,'AAB':1},'A',10,'1'))
-print(applyMods({'CHK':2, "a":9}, ['None','None','None']))

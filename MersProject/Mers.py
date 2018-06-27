@@ -326,7 +326,7 @@ def addSequenceList(input_file):
     fasta_sequences = SeqIO.parse(open(input_file), 'fasta')
     sequenceDictionary = {}
     for fasta in fasta_sequences:
-        name, sequence = fasta.id, fasta.seq.tostring()
+        name, sequence = fasta.id, str(fasta.seq)
         sequenceDictionary[name] = sequence
     return sequenceDictionary
 

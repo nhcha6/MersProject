@@ -1,5 +1,6 @@
 from Bio import SeqIO
 import json
+import csv
 import time
 
 class Fasta:
@@ -22,10 +23,18 @@ class Fasta:
 
             combined = applyMods(massDict, modList)
             print(combined)
-            combined = {'combined': combined}
+            print(len(combined))
+            #combined = {'combined': combined}
 
-            with open('output.txt', 'w') as file:
-                file.write(json.dumps(combined))  # use `json.loads` to do the reverse
+            with open('dict.csv', 'w', newline='') as csv_file:
+                writer = csv.writer(csv_file, delimiter = ',')
+                writer.writerow(['Peptide', 'Mass'])
+                for key, value in combined.items():
+
+                    writer.writerow([key, value])
+
+            #with open('output.txt', 'wb') as file:
+             #   file.write(json.dumps(combined))  # use `json.loads` to do the reverse
 
         else:
             counter = 0

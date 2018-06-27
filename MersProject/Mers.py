@@ -300,7 +300,7 @@ def removeDupsQuick(seq):
 #need to look to create all possible combinations
 def genericMod(combineDict, character, massChange, modNo):
     # A, B, C  convert to a, b, c
-    modTupList = []
+    modComb = {}
 
     for string in combineDict.keys():
         currentMass = combineDict[string]
@@ -313,9 +313,9 @@ def genericMod(combineDict, character, massChange, modNo):
                     newMass = currentMass + (i + 1) * massChange
                     temp = nth_replace(temp, character, character.lower() + modNo, j + 1)
                     print(temp)
-                    modTupList.append((temp, newMass))
+                    modComb[temp] = newMass
 
-    return modTupList
+    return modComb
 
 
 def combMass(combine):

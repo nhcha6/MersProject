@@ -113,10 +113,11 @@ class MyTableWidget(QWidget):
         overlapFlag = self.tab2.overlap.isChecked()
         combineFlag = self.tab2.cistrans.isChecked()
         maxDistance = self.tab2.maxDistCombo.currentText()
+        modList = ['Acetylation (K)', 'None', 'None']
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
 
-        self.fasta.generateOutput(mined, maxed, overlapFlag, combineFlag, maxDistance)
+        self.fasta.generateOutput(mined, maxed, overlapFlag, combineFlag, modList, maxDistance)
 
     @pyqtSlot()
     def on_click(self):

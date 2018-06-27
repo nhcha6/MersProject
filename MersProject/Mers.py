@@ -10,18 +10,25 @@ class Fasta:
     Function that literally combines everything to generate output
 
     '''
-    def generateOutput(self, mined, maxed, overlapFlag, combineFlag, maxDistance):
+    def generateOutput(self, mined, maxed, overlapFlag, combineFlag, modList, maxDistance):
+        massDict = {}
         if (combineFlag):
             finalPeptide = combinePeptides(self.seqDict)
-            print(finalPeptide)
+
             combined = outputCreate(finalPeptide, mined,maxed, overlapFlag, maxDistance)
-            print(len(combined))
             massDict = combMass(combined)
-            print(massDict['MV'])
+            print(len(combined))
         else:
             for key, value in self.seqDict.items():
-                print(key)
-                print(len(outputCreate(value, mined, maxed, overlapFlag, maxDistance)))
+
+                combined = outputCreate(value, mined, maxed, overlapFlag, maxDistance)
+                tempDict = combMass(combined)
+                massDict.update(tempDict)
+
+        combined = applyMods(massDict, modList)
+        print(massDict)
+
+        #print combined to file
 
 # taking FASTA dictionary and passing through our splits and combine functions
 #sequenceDictionary = addSequenceList("Example.fasta")
@@ -133,11 +140,34 @@ def applyMods(combineDict, modList):
             aminoList = modTable[mod]
             for i in range(0, len(aminoList) - 1):
                 char = aminoList[i]
+
                 massChange = aminoList[-1]
+
                 modDict = genericMod(combineDict, char, massChange, str(modNo))
-                print(modDict)
+
                 combineDict.update(modDict)
     return combineDict
+# generates most of the permutations possible when switching from A to a in all strings originally containing an A
+# input is a list of all combinations
+#need to look to create all possible combinations
+def genericMod(combineDict, character, massChange, modNo):
+    # A, B, C  convert to a, b, c
+    modComb = {}
+
+    for string in combineDict.keys():
+        currentMass = combineDict[string]
+        if character in string:
+            numOccur = string.count(character)
+
+            for j in range(0, numOccur):
+                temp = string
+                for i in range(0, numOccur - j):
+                    newMass = currentMass + (i + 1) * massChange
+                    temp = nth_replace(temp, character, character.lower() + modNo, j + 1)
+
+                    modComb[temp] = newMass
+
+    return modComb
 
 
 """Inputs: peptide string, max length of split peptide. 
@@ -295,29 +325,6 @@ def removeDupsQuick(seq):
 
 
 
-# generates most of the permutations possible when switching from A to a in all strings originally containing an A
-# input is a list of all combinations
-#need to look to create all possible combinations
-def genericMod(combineDict, character, massChange, modNo):
-    # A, B, C  convert to a, b, c
-    modComb = {}
-
-    for string in combineDict.keys():
-        currentMass = combineDict[string]
-        if character in string:
-            numOccur = string.count(character)
-
-            for j in range(0, numOccur):
-                temp = string
-                for i in range(0, numOccur - j):
-                    newMass = currentMass + (i + 1) * massChange
-                    temp = nth_replace(temp, character, character.lower() + modNo, j + 1)
-                    print(temp)
-                    modComb[temp] = newMass
-
-    return modComb
-
-
 def combMass(combine):
     massDict = {}
     for combination in combine:
@@ -358,4 +365,5 @@ def nth_replace(string, old, new, n=1, option='only nth'):
 #     - Split level: 3.1 mil to 1.8 mil
 #     - Combined level: 1.8 mil to 1.6 mil
 
-print(genericMod(["ADSABADS"],'A'))
+print(genericMod({'AAA':2,'AAB':1},'A',10,'1'))
+print(applyMods({'CHK':2, "a":9}, ['None','None','None']))

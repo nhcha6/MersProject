@@ -21,10 +21,9 @@ class Fasta:
 
             combined, combinedRef = outputCreate(finalPeptide, mined,maxed, overlapFlag, maxDistance)
             massDict = combMass(combined, combinedRef)
-            print(massDict)
-            #combined = applyMods(massDict, modList)
-            print(combined)
-            print(len(combined))
+            massDict = applyMods(massDict, modList)
+
+            print(len(massDict))
             #combined = {'combined': combined}
 
             with open('dict.csv', 'w', newline='') as csv_file:
@@ -42,12 +41,12 @@ class Fasta:
             counter = 0
             print('NO COMBINING')
             for key, value in self.seqDict.items():
+                
+                combined, combinedRef = outputCreate(value, mined, maxed, overlapFlag, maxDistance)
+                massDict = combMass(combined,combinedRef)
 
-                combined = outputCreate(value, mined, maxed, overlapFlag, maxDistance)
-                tempDict = combMass(combined)
-
-                #combined = applyMods(tempDict, modList)
-                print(combined)
+                massDict = applyMods(massDict, modList)
+                print(len(massDict))
                 
                 if (counter == 0):
 
@@ -55,7 +54,7 @@ class Fasta:
                         writer = csv.writer(csv_file, delimiter=',')
                         writer.writerow([key, ' ', ' '])
                         writer.writerow(['Peptide', 'Mass', 'Positions'])
-                        for key, value in combined.items():
+                        for key, value in massDict.items():
                             writer.writerow([key, value[0], value[1]])
                     counter+=1
 
@@ -63,10 +62,10 @@ class Fasta:
                 else:
                     with open('dict.csv', 'a', newline='') as csv_file:
                         writer = csv.writer(csv_file, delimiter=',')
-                        writer.writerow([key, ' '])
-                        writer.writerow(['Peptide', 'Mass'])
-                        for key, value in combined.items():
-                            writer.writerow([key, value])
+                        writer.writerow([key, ' ', ' '])
+                        writer.writerow(['Peptide', 'Mass', 'Positions'])
+                        for key, value in massDict.items():
+                            writer.writerow([key, value[0], value[1]])
 
 
 
@@ -188,7 +187,8 @@ def genericMod(combineModlessDict, character, massChange, modNo):
     modDict = {}
 
     for string in combineModlessDict.keys():
-        currentMass = combineModlessDict[string]
+        currentMass = combineModlessDict[string][0]
+        currentRef = combineModlessDict[string][1]
         if character in string:
             numOccur = string.count(character)
 
@@ -198,7 +198,7 @@ def genericMod(combineModlessDict, character, massChange, modNo):
                     newMass = currentMass + (i + 1) * massChange
                     temp = nth_replace(temp, character, character.lower() + modNo, j + 1)
 
-                    modDict[temp] = newMass
+                    modDict[temp] = [newMass,currentRef]
 
     return modDict
 

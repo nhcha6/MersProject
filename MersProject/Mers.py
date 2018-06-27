@@ -1,4 +1,5 @@
 from Bio import SeqIO
+import json
 
 class Fasta:
 
@@ -26,7 +27,10 @@ class Fasta:
                 massDict.update(tempDict)
 
         combined = applyMods(massDict, modList)
-        print(massDict)
+        combined = {'combined': combined}
+
+        with open('output.txt', 'w') as file:
+            file.write(json.dumps(combined))  # use `json.loads` to do the reverse
 
         #print combined to file
 
@@ -43,21 +47,6 @@ def outputCreate(peptide, mined, maxed, overlapFlag, maxDistance=None):
     combined = removeDupsQuick(combined)
 
     return combined
-'''
-for key, value in sequenceDictionary.items():
-    splits, splitRef = splitDictPeptide(value, maxed)
-
-    splits = removeDupsQuick(splits)
-    combine = combineOverlapPeptide(splits, splitRef, mined, maxed, overlap)
-    combine = removeDupsQuick(combine)
-
-    print(len(splits))
-    print(len(combine))
-
-    break;
-
-'''
-
 
 
 H20_MASS = 18.010565

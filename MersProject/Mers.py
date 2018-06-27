@@ -20,19 +20,30 @@ class Fasta:
             combined = outputCreate(finalPeptide, mined,maxed, overlapFlag, maxDistance)
             massDict = combMass(combined)
 
+            combined = applyMods(massDict, modList)
+            print(combined)
+            combined = {'combined': combined}
+
+            with open('output.txt', 'w') as file:
+                file.write(json.dumps(combined))  # use `json.loads` to do the reverse
+
         else:
+            print('NO COMBINING')
             for key, value in self.seqDict.items():
 
                 combined = outputCreate(value, mined, maxed, overlapFlag, maxDistance)
                 tempDict = combMass(combined)
-                massDict.update(tempDict)
 
-        combined = applyMods(massDict, modList)
-        print(combined)
-        combined = {'combined': combined}
+                combined = applyMods(tempDict, modList)
+                print(combined)
+                combined = {'combined': combined}
 
-        with open('output.txt', 'w') as file:
-            file.write(json.dumps(combined))  # use `json.loads` to do the reverse
+                with open('output.txt', 'a') as file:
+                    file.write(json.dumps(combined))  # use `json.loads` to do the reverse
+                #massDict.update(tempDict)
+
+
+
 
         #print combined to file
 

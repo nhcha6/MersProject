@@ -145,11 +145,12 @@ monoAminoMass = {
 }
 
 
-# combin
-def applyMods(combineDict, modList):
-    # convert combDICT TO LIST OF TUPLES
-    # GIVE THIS TO GENMOD
-    # ADD MODDICT TO THIS
+"""
+Calls the genericMod function and accesses the modification table to 
+append modified combinations to the end of the combination dictionary
+"""
+
+def applyMods(combineModlessDict, modList):
     modNo = 0
     for mod in modList:
         modNo += 1
@@ -161,19 +162,23 @@ def applyMods(combineDict, modList):
 
                 massChange = aminoList[-1]
 
-                modDict = genericMod(combineDict, char, massChange, str(modNo))
+                modDict = genericMod(combineModlessDict, char, massChange, str(modNo))
 
-                combineDict.update(modDict)
-    return combineDict
-# generates most of the permutations possible when switching from A to a in all strings originally containing an A
-# input is a list of all combinations
-#need to look to create all possible combinations
-def genericMod(combineDict, character, massChange, modNo):
-    # A, B, C  convert to a, b, c
-    modComb = {}
+                combineModlessDict.update(modDict)
+    return combineModlessDict
 
-    for string in combineDict.keys():
-        currentMass = combineDict[string]
+"""
+From the modless dictionary of possible combinations, this function returns a 
+dictionary containing all the modifications that arise from changing character. The
+key of the output is simply the modified peptide, and the value is the mass which
+results as set by massChange
+"""
+def genericMod(combineModlessDict, character, massChange, modNo):
+    # A, B, C  convert to ai, bi, ci where i is the modNo
+    modDict = {}
+
+    for string in combineModlessDict.keys():
+        currentMass = combineModlessDict[string]
         if character in string:
             numOccur = string.count(character)
 
@@ -183,15 +188,19 @@ def genericMod(combineDict, character, massChange, modNo):
                     newMass = currentMass + (i + 1) * massChange
                     temp = nth_replace(temp, character, character.lower() + modNo, j + 1)
 
-                    modComb[temp] = newMass
+                    modDict[temp] = newMass
 
-    return modComb
-
+    return modDict
 
 """Inputs: peptide string, max length of split peptide. 
    Outputs: all possible splits that could be formed that are smaller in length than the maxed input """
 
 
+
+"""
+Inputs: peptide string, max length of split peptide. 
+Outputs: all possible splits that could be formed that are smaller in length than the maxed input 
+"""
 
 def splitDictPeptide(peptide, maxed):
     length = len(peptide)
@@ -230,6 +239,7 @@ def splitDictPeptide(peptide, maxed):
     return splits, splitRef
 
 
+
 """Input: splits: list of splits, splitRef: list of the character indexes for splits, mined/maxed: min and max
    size requirements, overlapFlag: boolean value true if overlapping combinations are undesired.
    Output: all combinations of possible splits which meets criteria"""
@@ -237,7 +247,7 @@ def splitDictPeptide(peptide, maxed):
 
 def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance):
     # initialise combinations array to hold the possible combinations from the input splits
-    combine = []
+    combModless = []
 
     # iterate through all of the splits and build up combinations which meet min/max/overlap criteria
     for i in range(0, len(splits)):
@@ -253,20 +263,19 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
             toAddReverse += splits[j]
             toAddReverse += splits[i]
 
-            # look to combine all checks together in a future for clarity
+            # max, min and max distance checks combined into one function for clarity for clarity
             if combineCheck(toAddForward,mined,maxed,splitRef[i],splitRef[j],maxDistance):
-
                 if (overlapFlag == True):
                     if (overlapComp(splitRef[i], splitRef[j])):
-                        combine.append(toAddForward)
-                        combine.append(toAddReverse)
+                        combModless.append(toAddForward)
+                        combModless.append(toAddReverse)
                 else:
-                    combine.append(toAddForward)
-                    combine.append(toAddReverse)
+                    combModless.append(toAddForward)
+                    combModless.append(toAddReverse)
 
             toAddForward = ""
             toAddReverse = ""
-    return combine
+    return combModless
 
 
 def maxDistCheck(ref1, ref2, maxDistance):

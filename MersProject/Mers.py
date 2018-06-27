@@ -1,5 +1,6 @@
 from Bio import SeqIO
 import json
+import time
 
 class Fasta:
 

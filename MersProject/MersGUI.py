@@ -133,6 +133,7 @@ class MyTableWidget(QWidget):
 
 
     def output(self, parent):
+        start = time.time()
         mined = int(self.tab2.minimumCombo.currentText())
         maxed = int(self.tab2.maximumCombo.currentText())
         overlapFlag = self.tab2.overlap.isChecked()
@@ -144,6 +145,8 @@ class MyTableWidget(QWidget):
             maxDistance = int(maxDistance)
 
         self.fasta.generateOutput(mined, maxed, overlapFlag, combineFlag, modList, maxDistance)
+        end = time.time()
+        print(end - start)
 
     @pyqtSlot()
     def on_click(self):

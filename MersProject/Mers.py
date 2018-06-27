@@ -28,6 +28,7 @@ class Fasta:
                 file.write(json.dumps(combined))  # use `json.loads` to do the reverse
 
         else:
+            counter = 0
             print('NO COMBINING')
             for key, value in self.seqDict.items():
 
@@ -37,10 +38,15 @@ class Fasta:
                 combined = applyMods(tempDict, modList)
                 print(combined)
                 combined = {'combined': combined}
-
-                with open('output.txt', 'a') as file:
-                    file.write(json.dumps(combined))  # use `json.loads` to do the reverse
+                if (counter == 0):
+                    with open('output.txt', 'w') as file:
+                        file.write(json.dumps(combined)) # use `json.loads` to do the reverse
+                        counter += 1
                 #massDict.update(tempDict)
+                else:
+                    with open('output.txt', 'a') as file:
+                        file.write(json.dumps(combined))  # use `json.loads` to do the reverse
+
 
 
 

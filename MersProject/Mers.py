@@ -19,21 +19,21 @@ class Fasta:
         if (combineFlag):
             finalPeptide = combinePeptides(self.seqDict)
 
-            combined = outputCreate(finalPeptide, mined,maxed, overlapFlag, maxDistance)
-            massDict = combMass(combined)
-
-            combined = applyMods(massDict, modList)
+            combined, combinedRef = outputCreate(finalPeptide, mined,maxed, overlapFlag, maxDistance)
+            massDict = combMass(combined, combinedRef)
+            print(massDict)
+            #combined = applyMods(massDict, modList)
             print(combined)
             print(len(combined))
             #combined = {'combined': combined}
 
             with open('dict.csv', 'w', newline='') as csv_file:
                 writer = csv.writer(csv_file, delimiter = ',')
-                writer.writerow(['Combined', ' '])
-                writer.writerow(['Peptide', 'Mass'])
-                for key, value in combined.items():
+                writer.writerow(['Combined', ' ', ' '])
+                writer.writerow(['Peptide', 'Mass', 'Positions'])
+                for key, value in massDict.items():
 
-                    writer.writerow([key, value])
+                    writer.writerow([key, value[0], value[1]])
 
             #with open('output.txt', 'wb') as file:
              #   file.write(json.dumps(combined))  # use `json.loads` to do the reverse
@@ -46,17 +46,17 @@ class Fasta:
                 combined = outputCreate(value, mined, maxed, overlapFlag, maxDistance)
                 tempDict = combMass(combined)
 
-                combined = applyMods(tempDict, modList)
+                #combined = applyMods(tempDict, modList)
                 print(combined)
                 
                 if (counter == 0):
 
                     with open('dict.csv', 'w', newline='') as csv_file:
                         writer = csv.writer(csv_file, delimiter=',')
-                        writer.writerow([key, ' '])
-                        writer.writerow(['Peptide', 'Mass'])
+                        writer.writerow([key, ' ', ' '])
+                        writer.writerow(['Peptide', 'Mass', 'Positions'])
                         for key, value in combined.items():
-                            writer.writerow([key, value])
+                            writer.writerow([key, value[0], value[1]])
                     counter+=1
 
                 #massDict.update(tempDict)
@@ -82,10 +82,10 @@ def outputCreate(peptide, mined, maxed, overlapFlag, maxDistance=None):
     # splits = removeDupsQuick(splits)
 
     # pass splits through combined overlap peptide and then delete all duplicates
-    combined = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
-    combined = removeDupsQuick(combined)
+    combined, combinedRef = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
+    combined, combinedRef = removeDupsQuick(combined, combinedRef)
 
-    return combined
+    return combined, combinedRef
 
 
 H20_MASS = 18.010565
@@ -258,20 +258,23 @@ def splitDictPeptide(peptide, maxed):
 def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance):
     # initialise combinations array to hold the possible combinations from the input splits
     combModless = []
-
+    combModlessRef = []
     # iterate through all of the splits and build up combinations which meet min/max/overlap criteria
     for i in range(0, len(splits)):
 
         # toAdd variables hold temporary combinations for insertion in final matrix if it meets criteria
         toAddForward = ""
+        addForwardRef = []
         toAddReverse = ""
-
+        addReverseRef = []
         for j in range(i + 1, len(splits)):
             # create forward combinaiton of i and j
             toAddForward += splits[i]
             toAddForward += splits[j]
+            addForwardRef = splitRef[i] + splitRef[j]
             toAddReverse += splits[j]
             toAddReverse += splits[i]
+            addReverseRef = splitRef[j] + splitRef[i]
 
             # max, min and max distance checks combined into one function for clarity for clarity
             if combineCheck(toAddForward,mined,maxed,splitRef[i],splitRef[j],maxDistance):
@@ -279,13 +282,19 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
                     if (overlapComp(splitRef[i], splitRef[j])):
                         combModless.append(toAddForward)
                         combModless.append(toAddReverse)
+                        combModlessRef.append(addForwardRef)
+                        combModlessRef.append(addReverseRef)
                 else:
                     combModless.append(toAddForward)
                     combModless.append(toAddReverse)
+                    combModlessRef.append(addForwardRef)
+                    combModlessRef.append(addReverseRef)
 
             toAddForward = ""
             toAddReverse = ""
-    return combModless
+            addForwardRef = []
+            addReverseRef = []
+    return combModless, combModlessRef
 
 
 def maxDistCheck(ref1, ref2, maxDistance):
@@ -351,26 +360,38 @@ def combinePeptides(dict):
     return finalPeptide
 
 
-def removeDupsQuick(seq):
+def removeDupsQuick(seq, seqRef):
     #seq = [''.join(sorted(s)) for s in seq]
     seen = set()
     seen_add = seen.add
-    initial = [x for x in seq if not (x in seen or seen_add(x))]
 
-    return initial
+    initial = []
+    initialRef = []
+    #initial = [x for x in seq if not (x in seen or seen_add(x))]
+    for i in range(0, len(seq)):
+        if not (seq[i] in seen or seen_add(seq[i])):
+            initial.append(seq[i])
+            initialRef.append(seqRef[i])
+
+
+
+    return initial, initialRef
 
 
 
 
-def combMass(combine):
+def combMass(combine, combineRef):
     massDict = {}
-    for combination in combine:
+    for i in range(0, len(combine)):
         totalMass = 0
-        for character in combination:
-            totalMass += monoAminoMass[character]
+        for j in range(0, len(combine[i])):
+            totalMass+=monoAminoMass[combine[i][j]]
         totalMass+=H20_MASS
-        massDict[combination] = totalMass
+        massRefPair = [totalMass, combineRef[i]]
+        massDict[combine[i]] = massRefPair
     return massDict
+
+
 
 # https://stackoverflow.com/questions/35091557/replace-nth-occurrence-of-substring-in-string
 def nth_replace(string, old, new, n=1, option='only nth'):

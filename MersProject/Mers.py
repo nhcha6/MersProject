@@ -245,21 +245,26 @@ def splitDictPeptide(peptide, mined, maxed, linearFlag):
         character = peptide[i]
         toAdd = ""
         # add and append first character and add and append reference number which indexes this character
+
         toAdd += character
-        splits.append(toAdd)
-        ref = []
+        ref=[]
         ref.append(i)
         temp = list(ref)  # use list because otherwise shared memory overwrites
-        splitRef.append(temp)
+
+        if(minSize(toAdd, mined)):
+
+            splits.append(toAdd)
+            splitRef.append(temp)
 
         # iterates through every character after current and adds it to the most recent string if max size
         # requirement is satisfied
         for j in range(i + 1, length):
             toAdd += peptide[j]
             if linearFlag:
+                ref.append(j)
                 if maxSize(toAdd, maxed) and minSize(toAdd, mined):
                     splits.append(toAdd)
-                    ref.append(j)
+
                     temp = list(ref)
 
                     splitRef.append(temp)
@@ -393,7 +398,8 @@ def removeDupsQuick(seq, seqRef):
     #seq = [''.join(sorted(s)) for s in seq]
     seen = set()
     seen_add = seen.add
-
+    print('Sequence is')
+    print(seq)
     initial = []
     initialRef = []
     #initial = [x for x in seq if not (x in seen or seen_add(x))]
@@ -401,7 +407,9 @@ def removeDupsQuick(seq, seqRef):
         if not (seq[i] in seen or seen_add(seq[i])):
             initial.append(seq[i])
             initialRef.append(seqRef[i])
+    print('Initial is')
     print(initial)
+    print('Initial Ref is')
     print(initialRef)
 
 

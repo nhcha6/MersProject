@@ -73,8 +73,7 @@ def genMassLinear(peptide, mined, maxed, linearFlag, modList):
 
 
 def writeToCsv(massDict, writeFlag, header, outputPath, linkType):
-    dateTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    finalPath = str(outputPath) + '/' + dateTime + ' ' + linkType + '.csv'
+    finalPath = str(outputPath) + '/' + linkType + '.csv'
     with open(finalPath, writeFlag, newline='') as csv_file:
         print(finalPath)
         writer = csv.writer(csv_file, delimiter=',')
@@ -399,8 +398,6 @@ def removeDupsQuick(seq, seqRef):
     #seq = [''.join(sorted(s)) for s in seq]
     seen = set()
     seen_add = seen.add
-    print('Sequence is')
-    print(seq)
     initial = []
     initialRef = []
     #initial = [x for x in seq if not (x in seen or seen_add(x))]
@@ -408,11 +405,6 @@ def removeDupsQuick(seq, seqRef):
         if not (seq[i] in seen or seen_add(seq[i])):
             initial.append(seq[i])
             initialRef.append(seqRef[i])
-    print('Initial is')
-    print(initial)
-    print('Initial Ref is')
-    print(initialRef)
-
 
     return initial, initialRef
 

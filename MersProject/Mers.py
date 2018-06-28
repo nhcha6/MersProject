@@ -12,83 +12,73 @@ class Fasta:
 
     '''
     Function that literally combines everything to generate output
-
     '''
     def generateOutput(self, mined, maxed, overlapFlag, combineFlag, modList, maxDistance):
-        massDict = {}
+
         if (combineFlag):
+
             finalPeptide = combinePeptides(self.seqDict)
+            massDict = genMassDict(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance)
+            writeToCsv(massDict, 'w', 'Combined')
 
-            combined, combinedRef = outputCreate(finalPeptide, mined,maxed, overlapFlag, maxDistance)
-            massDict = combMass(combined, combinedRef)
-            massDict = applyMods(massDict, modList)
-
-            print(len(massDict))
-            #combined = {'combined': combined}
-
-            with open('dict.csv', 'w', newline='') as csv_file:
-                writer = csv.writer(csv_file, delimiter = ',')
-                writer.writerow(['Combined', ' ', ' '])
-                writer.writerow(['Peptide', 'Mass', 'Positions'])
-                for key, value in massDict.items():
-
-                    writer.writerow([key, value[0], value[1]])
-
+            # combined = {'combined': combined}
             #with open('output.txt', 'wb') as file:
              #   file.write(json.dumps(combined))  # use `json.loads` to do the reverse
 
         else:
             counter = 0
-            print('NO COMBINING')
             for key, value in self.seqDict.items():
-                
-                combined, combinedRef = outputCreate(value, mined, maxed, overlapFlag, maxDistance)
-                massDict = combMass(combined,combinedRef)
+                massDict = genMassDict(value, mined, maxed, overlapFlag, modList, maxDistance)
 
-                massDict = applyMods(massDict, modList)
-                print(len(massDict))
-                
                 if (counter == 0):
-
-                    with open('dict.csv', 'w', newline='') as csv_file:
-                        writer = csv.writer(csv_file, delimiter=',')
-                        writer.writerow([key, ' ', ' '])
-                        writer.writerow(['Peptide', 'Mass', 'Positions'])
-                        for key, value in massDict.items():
-                            writer.writerow([key, value[0], value[1]])
+                    writeToCsv(massDict, 'w', key)
                     counter+=1
 
-                #massDict.update(tempDict)
                 else:
-                    with open('dict.csv', 'a', newline='') as csv_file:
-                        writer = csv.writer(csv_file, delimiter=',')
-                        writer.writerow([key, ' ', ' '])
-                        writer.writerow(['Peptide', 'Mass', 'Positions'])
-                        for key, value in massDict.items():
-                            writer.writerow([key, value[0], value[1]])
+                    writeToCsv(massDict, 'a', key)
 
 
+def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance):
+
+    combined, combinedRef = outputCreate(peptide, mined, maxed, overlapFlag, maxDistance)
+    massDict = combMass(combined, combinedRef)
+    massDict = applyMods(massDict, modList)
+
+    print(len(massDict))
+    return massDict
 
 
-        #print combined to file
+def writeToCsv(massDict, writeFlag, header):
+
+    with open('dict.csv', writeFlag, newline='') as csv_file:
+        writer = csv.writer(csv_file, delimiter=',')
+        writer.writerow([header, ' ', ' '])
+        writer.writerow(['Peptide', 'Mass', 'Positions'])
+        for key, value in massDict.items():
+            writer.writerow([key, value[0], value[1]])
 
 # taking FASTA dictionary and passing through our splits and combine functions
 #sequenceDictionary = addSequenceList("Example.fasta")
 
 def outputCreate(peptide, mined, maxed, overlapFlag, maxDistance=None):
+
+    # Splits eg: ['A', 'AB', 'AD', 'B', 'BD']
+    # SplitRef eg: [[0], [0,1], [0,2], [1], [1,2]]
     # Produces splits and splitRef arrays which are passed through combined
     splits, splitRef = splitDictPeptide(peptide, maxed)
-    # splits = removeDupsQuick(splits)
 
+    # combined eg: ['ABC', 'BCA', 'ACD', 'DCA']
+    # combinedRef eg: [[0,1,2], [1,0,2], [0,2,3], [3,2,0]]
     # pass splits through combined overlap peptide and then delete all duplicates
     combined, combinedRef = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
     combined, combinedRef = removeDupsQuick(combined, combinedRef)
 
     return combined, combinedRef
 
-
+# MASS OF H20 is added for mass calculations
 H20_MASS = 18.010565
 
+# All possible modifications
 modTable = {
 
     '4-hydroxynonenal (HNE)': ['C', 'H', 'K', 156.11504],
@@ -127,8 +117,7 @@ modTable = {
 
 }
 
-# hello hello hello
-# Monoisotopic mass
+# Mono-isotopic mass
 monoAminoMass = {
     'A': 71.03711,
     'R': 156.10111,
@@ -154,25 +143,30 @@ monoAminoMass = {
 }
 
 
-"""
-Calls the genericMod function and accesses the modification table to 
-append modified combinations to the end of the combination dictionary
-"""
 
 def applyMods(combineModlessDict, modList):
+
+    """
+    Calls the genericMod function and accesses the modification table to
+    append modified combinations to the end of the combination dictionary
+    """
     modNo = 0
     for mod in modList:
+        # Keep track of which modification is taking place
         modNo += 1
 
+        # Don't need to worry about it if no modification!
         if mod != 'None':
+            # Get the list of modifications taking place
             aminoList = modTable[mod]
+            # Go through each character in the modification one by one
             for i in range(0, len(aminoList) - 1):
+
                 char = aminoList[i]
-
                 massChange = aminoList[-1]
-
+                # get the dictionary of mods and their mass
                 modDict = genericMod(combineModlessDict, char, massChange, str(modNo))
-
+                # Add it to the current list!
                 combineModlessDict.update(modDict)
     return combineModlessDict
 
@@ -186,12 +180,17 @@ def genericMod(combineModlessDict, character, massChange, modNo):
     # A, B, C  convert to ai, bi, ci where i is the modNo
     modDict = {}
 
+    # Go through each combination and mod it if necessary
     for string in combineModlessDict.keys():
+
         currentMass = combineModlessDict[string][0]
         currentRef = combineModlessDict[string][1]
-        if character in string:
-            numOccur = string.count(character)
 
+        # Only need to mod it if it exists (ie : A in ABC)
+        if character in string:
+
+            numOccur = string.count(character)
+            # Generate all permutations with the mods
             for j in range(0, numOccur):
                 temp = string
                 for i in range(0, numOccur - j):
@@ -201,10 +200,6 @@ def genericMod(combineModlessDict, character, massChange, modNo):
                     modDict[temp] = [newMass,currentRef]
 
     return modDict
-
-"""Inputs: peptide string, max length of split peptide. 
-   Outputs: all possible splits that could be formed that are smaller in length than the maxed input """
-
 
 
 """

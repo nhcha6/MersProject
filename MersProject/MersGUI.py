@@ -19,6 +19,7 @@ class App(QMainWindow):
         super().__init__()
         self.title = 'Peptide Splicer'
         self.left = 500
+        self.fastaTest = False
         self.top = 300
         self.width = 300
         self.height = 300
@@ -129,22 +130,25 @@ class MyTableWidget(QWidget):
     def showDialog(self, parent):
 
         fname = QFileDialog.getOpenFileName(self, 'Open File', '/home')
-        fastaTest = fname[0][-5:]
-        if fastaTest == 'fasta':
+        self.fastaTest = fname[0][-5:]
+        if self.fastaTest == 'fasta':
             self.fasta = Fasta(addSequenceList(fname[0]))
             print(fname[0])
             QMessageBox.about(self, "Message", 'fasta file successfully imported!')
         else:
             QMessageBox.about(self, "Message", 'Please Select a fasta file!')
 
-
     def confirmationFunction(self, parent):
-        reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input',
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if self.fasta == None:
+            QMessageBox.about(self, "Message", 'Please Select a fasta file!')
+        else:
+            reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?',
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
-        if reply == QMessageBox.Yes:
-            self.output(self)
 
+            if reply == QMessageBox.Yes:
+
+                self.output(self)
 
 
 

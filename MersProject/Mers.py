@@ -10,6 +10,7 @@ class Fasta:
         self.seqDict = seqDict
         print(seqDict)
 
+    min = 3
     '''
     Function that literally combines everything to generate output
     '''

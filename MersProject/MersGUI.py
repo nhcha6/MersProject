@@ -105,7 +105,7 @@ class MyTableWidget(QWidget):
             self.tab2.mod2Combo.addItem(modification)
             self.tab2.mod3Combo.addItem(modification)
 
-        self.tab2.overlap = QCheckBox('Overlap: ', self)
+        self.tab2.overlap = QCheckBox('Overlap Off', self)
         self.tab2.trans = QCheckBox('Trans', self)
         self.tab2.cis = QCheckBox('Cis', self)
         self.tab2.linear = QCheckBox('Linear', self)

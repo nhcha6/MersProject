@@ -19,7 +19,7 @@ class Fasta:
 
             finalPeptide = combinePeptides(self.seqDict)
             massDict = genMassDict(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance)
-            writeToCsv(massDict, 'w', 'Combined',outputPath)
+            writeToCsv(massDict, 'w', 'Combined',outputPath,'trans')
 
             # combined = {'combined': combined}
             #with open('output.txt', 'wb') as file:
@@ -32,11 +32,11 @@ class Fasta:
                 massDict = genMassDict(value, mined, maxed, overlapFlag, modList, maxDistance)
 
                 if (counter == 0):
-                    writeToCsv(massDict, 'w', key, outputPath)
+                    writeToCsv(massDict, 'w', key, outputPath,'cis')
                     counter+=1
 
                 else:
-                    writeToCsv(massDict, 'a', key, outputPath)
+                    writeToCsv(massDict, 'a', key, outputPath,'cis')
 
         #if (linearFlag):
             #linear dictionary function which converts splits and splits ref to the dictionary output desired
@@ -52,8 +52,8 @@ def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance):
     return massDict
 
 
-def writeToCsv(massDict, writeFlag, header, outputPath):
-    finalPath = str(outputPath)+'/dict.csv'
+def writeToCsv(massDict, writeFlag, header, outputPath, linkType):
+    finalPath = str(outputPath) + '/' + linkType + '.csv'
     with open(finalPath, writeFlag, newline='') as csv_file:
         print(finalPath)
         writer = csv.writer(csv_file, delimiter=',')

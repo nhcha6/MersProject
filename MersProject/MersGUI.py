@@ -20,6 +20,10 @@ class App(QMainWindow):
         self.title = 'Peptide Splicer'
         self.left = 500
         self.fastaTest = False
+        self.statusbar = self.statusBar()
+
+
+
         self.top = 300
         self.width = 300
         self.height = 300
@@ -130,35 +134,19 @@ class MyTableWidget(QWidget):
     def showDialog(self, parent):
 
         fname = QFileDialog.getOpenFileName(self, 'Open File', '/home')
+        print(fname)
         self.fastaTest = fname[0][-5:]
         if self.fastaTest == 'fasta':
             self.fasta = Fasta(addSequenceList(fname[0]))
             print(fname[0])
-            QMessageBox.about(self, "Message", 'fasta file successfully imported!')
+            QMessageBox.about(self, "Message", 'Fasta file successfully imported!')
+        elif fname[0] == '':
+            print('')
         else:
-            QMessageBox.about(self, "Message", 'Please Select a fasta file!')
+            print(fname[0])
+            QMessageBox.about(self, "Message", 'Please select a Fasta file!')
 
     def confirmationFunction(self, parent):
-        if self.fasta == None:
-            QMessageBox.about(self, "Message", 'Please Select a fasta file!')
-        else:
-            reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?',
-                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-
-
-            if reply == QMessageBox.Yes:
-
-                self.output(self)
-
-
-
-
-
-
-    def output(self, parent):
-        start = time.time()
-        #self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
-        #self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
 
         mined = int(self.tab2.minimumCombo.currentText())
         maxed = int(self.tab2.maximumCombo.currentText())
@@ -166,12 +154,41 @@ class MyTableWidget(QWidget):
         combineFlag = self.tab2.cistrans.isChecked()
         maxDistance = self.tab2.maxDistCombo.currentText()
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(), self.tab2.mod3Combo.currentText()]
+        if self.fasta == None:
+            QMessageBox.about(self, "Message", 'Please select a Fasta file!')
+        else:
+            reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' +
+                                         'Minimum Length: ' + str(mined) + '\n' +
+                                         'Maximum Length: ' + str(maxed) + '\n' +
+                                         'Overlap Flag: ' + str(overlapFlag) + '\n' +
+                                         'Combine Flag: ' + str(combineFlag) + '\n' +
+                                         'Mod List: ' + str(modList) + '\n' +
+                                         'Maximum Distance: ' + str(maxDistance) + '\n',
+                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+
+            if reply == QMessageBox.Yes:
+                self.output(self,mined, maxed, overlapFlag,combineFlag, modList, maxDistance)
+
+
+
+
+
+
+
+    def output(self, parent, mined, maxed, overlapFlag, combineFlag, modList, maxDistance):
+        start = time.time()
+        self.parent().statusbar.showMessage('Processing Data')
+        #self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
+        #self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
+
 
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
 
         self.fasta.generateOutput(mined, maxed, overlapFlag, combineFlag, modList, maxDistance)
         end = time.time()
+        self.parent().statusbar.hide()
         print(end - start)
 
     @pyqtSlot()

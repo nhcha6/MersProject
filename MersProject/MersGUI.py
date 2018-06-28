@@ -157,7 +157,7 @@ class MyTableWidget(QWidget):
         self.outputPath = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
 
         if self.outputPath == '':
-            QMessageBox.about(self, "Message", 'Invalid Path')
+            print('')
         else:
             #convert to tool tip later
             QMessageBox.about(self, "Message", 'Valid Path Selected')
@@ -170,8 +170,8 @@ class MyTableWidget(QWidget):
         combineFlag = self.tab2.cistrans.isChecked()
         maxDistance = self.tab2.maxDistCombo.currentText()
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(), self.tab2.mod3Combo.currentText()]
-        if self.fasta == None:
-            QMessageBox.about(self, "Message", 'Please select a Fasta file!')
+        if self.fasta == None or self.outputPath == "":
+            QMessageBox.about(self, "Message", 'Please check that a valid Fasta file and output file location have been selected')
         else:
             reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' +
                                          'Minimum Length: ' + str(mined) + '\n' +

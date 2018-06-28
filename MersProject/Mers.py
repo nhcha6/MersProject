@@ -2,7 +2,7 @@ from Bio import SeqIO
 import json
 import csv
 import time
-
+import datetime
 
 class Fasta:
 
@@ -73,7 +73,8 @@ def genMassLinear(peptide, mined, maxed, linearFlag, modList):
 
 
 def writeToCsv(massDict, writeFlag, header, outputPath, linkType):
-    finalPath = str(outputPath) + '/' + linkType + '.csv'
+    dateTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    finalPath = str(outputPath) + '/' + dateTime + ' ' + linkType + '.csv'
     with open(finalPath, writeFlag, newline='') as csv_file:
         print(finalPath)
         writer = csv.writer(csv_file, delimiter=',')

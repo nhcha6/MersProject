@@ -14,8 +14,8 @@ class Fasta:
     '''
     Function that literally combines everything to generate output
     '''
-    def generateOutput(self, mined, maxed, overlapFlag, combineFlag, modList, maxDistance, outputPath):
-        if (combineFlag):
+    def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag , modList, maxDistance, outputPath):
+        if (transFlag):
 
             finalPeptide = combinePeptides(self.seqDict)
             massDict = genMassDict(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance)
@@ -25,7 +25,8 @@ class Fasta:
             #with open('output.txt', 'wb') as file:
              #   file.write(json.dumps(combined))  # use `json.loads` to do the reverse
 
-        else:
+        if (cisFlag):
+
             counter = 0
             for key, value in self.seqDict.items():
                 massDict = genMassDict(value, mined, maxed, overlapFlag, modList, maxDistance)
@@ -36,6 +37,9 @@ class Fasta:
 
                 else:
                     writeToCsv(massDict, 'a', key, outputPath)
+
+        #if (linearFlag):
+            #linear dictionary function which converts splits and splits ref to the dictionary output desired
 
 
 def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance):

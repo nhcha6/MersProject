@@ -106,7 +106,8 @@ class MyTableWidget(QWidget):
             self.tab2.mod3Combo.addItem(modification)
 
         self.tab2.overlap = QCheckBox('Overlap: ', self)
-        self.tab2.cistrans = QCheckBox('Combine All ', self)
+        self.tab2.trans = QCheckBox('Trans', self)
+        self.tab2.cis = QCheckBox('Cis', self)
 
         self.tab2.output = QPushButton('Generate Output!', self)
         self.tab2.output.clicked.connect(self.confirmationFunction)
@@ -121,7 +122,8 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.mod2, 5, 3)
         self.tab2.layout.addWidget(self.tab2.mod3, 6, 3)
         self.tab2.layout.addWidget(self.tab2.overlap, 7, 3)
-        self.tab2.layout.addWidget(self.tab2.cistrans, 8, 3)
+        self.tab2.layout.addWidget(self.tab2.trans, 8, 3)
+        self.tab2.layout.addWidget(self.tab2.cis, 9, 3)
 
         self.tab2.layout.addWidget(self.tab2.minimumCombo, 1, 4)
         self.tab2.layout.addWidget(self.tab2.maximumCombo, 2, 4)
@@ -129,7 +131,7 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.mod1Combo, 4, 4)
         self.tab2.layout.addWidget(self.tab2.mod2Combo, 5, 4)
         self.tab2.layout.addWidget(self.tab2.mod3Combo, 6, 4)
-        self.tab2.layout.addWidget(self.tab2.output, 9, 4)
+        self.tab2.layout.addWidget(self.tab2.output, 11, 4)
 
         self.tab2.setLayout(self.tab2.layout)
 
@@ -167,7 +169,8 @@ class MyTableWidget(QWidget):
         mined = int(self.tab2.minimumCombo.currentText())
         maxed = int(self.tab2.maximumCombo.currentText())
         overlapFlag = self.tab2.overlap.isChecked()
-        combineFlag = self.tab2.cistrans.isChecked()
+        transFlag = self.tab2.trans.isChecked()
+        cisFlag = self.tab2.cis.isChecked()
         maxDistance = self.tab2.maxDistCombo.currentText()
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(), self.tab2.mod3Combo.currentText()]
         if self.fasta == None or self.outputPath == "":
@@ -177,17 +180,18 @@ class MyTableWidget(QWidget):
                                          'Minimum Length: ' + str(mined) + '\n' +
                                          'Maximum Length: ' + str(maxed) + '\n' +
                                          'Overlap Flag: ' + str(overlapFlag) + '\n' +
-                                         'Combine Flag: ' + str(combineFlag) + '\n' +
+                                         'Trans Flag: ' + str(transFlag) + '\n' +
+                                         'Cis Flag: ' + str(cisFlag) + '\n' +
                                          'Mod List: ' + str(modList) + '\n' +
                                          'Maximum Distance: ' + str(maxDistance) + '\n',
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
 
             if reply == QMessageBox.Yes:
-                self.output(self,mined, maxed, overlapFlag,combineFlag, modList, maxDistance,self.outputPath)
+                self.output(self,mined, maxed, overlapFlag,transFlag, cisFlag, modList, maxDistance,self.outputPath)
 
 
-    def output(self, parent, mined, maxed, overlapFlag, combineFlag, modList, maxDistance,outputPath):
+    def output(self, parent, mined, maxed, overlapFlag, transFlag, cisFlag, modList, maxDistance,outputPath):
         start = time.time()
 
         self.parent().statusbar.showMessage('Processing Data')
@@ -198,7 +202,7 @@ class MyTableWidget(QWidget):
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
 
-        self.fasta.generateOutput(mined, maxed, overlapFlag, combineFlag, modList, maxDistance,outputPath)
+        self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, modList, maxDistance,outputPath)
         end = time.time()
         self.parent().statusbar.hide()
         print(end - start)

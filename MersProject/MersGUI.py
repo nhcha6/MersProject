@@ -117,7 +117,12 @@ class MyTableWidget(QWidget):
         self.tab2.output = QPushButton('Generate Output!', self)
         self.tab2.output.clicked.connect(self.confirmationFunction)
 
-
+        self.tab2.chargeLabel = QLabel('Charge states (z): ')
+        self.tab2.plusOne = QCheckBox('+1', self)
+        self.tab2.plusTwo = QCheckBox('+2', self)
+        self.tab2.plusThree = QCheckBox('+3', self)
+        self.tab2.plusFour = QCheckBox('+4', self)
+        self.tab2.plusFive = QCheckBox('+5', self)
 
         # All the labels added
         self.tab2.layout.addWidget(self.tab2.minimum, 1, 3)
@@ -130,16 +135,22 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.trans, 8, 3)
         self.tab2.layout.addWidget(self.tab2.cis, 9, 3)
         self.tab2.layout.addWidget(self.tab2.linear, 10, 3)
+        self.tab2.layout.addWidget(self.tab2.chargeLabel, 11, 3)
 
 
 
-        self.tab2.layout.addWidget(self.tab2.minimumCombo, 1, 4)
-        self.tab2.layout.addWidget(self.tab2.maximumCombo, 2, 4)
-        self.tab2.layout.addWidget(self.tab2.maxDistCombo, 3, 4)
-        self.tab2.layout.addWidget(self.tab2.mod1Combo, 4, 4)
-        self.tab2.layout.addWidget(self.tab2.mod2Combo, 5, 4)
-        self.tab2.layout.addWidget(self.tab2.mod3Combo, 6, 4)
-        self.tab2.layout.addWidget(self.tab2.output, 11, 4)
+        self.tab2.layout.addWidget(self.tab2.minimumCombo, 1, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.maximumCombo, 2, 4,1,3)
+        self.tab2.layout.addWidget(self.tab2.maxDistCombo, 3, 4,1,3)
+        self.tab2.layout.addWidget(self.tab2.mod1Combo, 4, 4,1,3)
+        self.tab2.layout.addWidget(self.tab2.mod2Combo, 5, 4,1,3)
+        self.tab2.layout.addWidget(self.tab2.mod3Combo, 6, 4,1,3)
+        self.tab2.layout.addWidget(self.tab2.plusOne, 11, 4)
+        self.tab2.layout.addWidget(self.tab2.plusTwo, 11, 5)
+        self.tab2.layout.addWidget(self.tab2.plusThree, 11, 6)
+        self.tab2.layout.addWidget(self.tab2.plusFour, 12, 4)
+        self.tab2.layout.addWidget(self.tab2.plusFive, 12, 5)
+        self.tab2.layout.addWidget(self.tab2.output, 13, 5, 1, 2)
 
         self.tab2.setLayout(self.tab2.layout)
 

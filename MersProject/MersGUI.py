@@ -21,6 +21,7 @@ class App(QMainWindow):
         self.title = 'Peptide Splicer'
         self.left = 500
         self.fastaTest = False
+        self.outputPath = ""
         self.statusbar = self.statusBar()
 
 
@@ -61,7 +62,11 @@ class MyTableWidget(QWidget):
         self.pushButton1 = QPushButton("Select File")
         self.pushButton1.clicked.connect(self.showDialog)
 
+        self.pushButton2 = QPushButton("Select Save Location")
+        self.pushButton2.clicked.connect(self.outputPath)
+
         self.tab1.layout.addWidget(self.pushButton1)
+        self.tab1.layout.addWidget(self.pushButton2)
 
         self.tab1.setLayout(self.tab1.layout)
 
@@ -147,6 +152,16 @@ class MyTableWidget(QWidget):
             print(fname[0])
             QMessageBox.about(self, "Message", 'Please select a Fasta file!')
 
+    def outputPath(self, parent):
+
+        self.outputPath = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+
+        if self.outputPath == '':
+            QMessageBox.about(self, "Message", 'Invalid Path')
+        else:
+            #convert to tool tip later
+            QMessageBox.about(self, "Message", 'Valid Path Selected')
+
     def confirmationFunction(self, parent):
 
         mined = int(self.tab2.minimumCombo.currentText())
@@ -169,7 +184,7 @@ class MyTableWidget(QWidget):
 
 
             if reply == QMessageBox.Yes:
-                self.output(self,mined, maxed, overlapFlag,combineFlag, modList, maxDistance)
+                self.output(self,mined, maxed, overlapFlag,combineFlag, modList, maxDistance,self.outputPath)
 
 
 
@@ -177,8 +192,9 @@ class MyTableWidget(QWidget):
 
 
 
-    def output(self, parent, mined, maxed, overlapFlag, combineFlag, modList, maxDistance):
+    def output(self, parent, mined, maxed, overlapFlag, combineFlag, modList, maxDistance,outputPath):
         start = time.time()
+
         self.parent().statusbar.showMessage('Processing Data')
         #self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
         #self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
@@ -187,7 +203,7 @@ class MyTableWidget(QWidget):
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
 
-        self.fasta.generateOutput(mined, maxed, overlapFlag, combineFlag, modList, maxDistance)
+        self.fasta.generateOutput(mined, maxed, overlapFlag, combineFlag, modList, maxDistance,outputPath)
         end = time.time()
         self.parent().statusbar.hide()
         print(end - start)

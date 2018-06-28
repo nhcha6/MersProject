@@ -14,13 +14,12 @@ class Fasta:
     '''
     Function that literally combines everything to generate output
     '''
-    def generateOutput(self, mined, maxed, overlapFlag, combineFlag, modList, maxDistance):
-
+    def generateOutput(self, mined, maxed, overlapFlag, combineFlag, modList, maxDistance, outputPath):
         if (combineFlag):
 
             finalPeptide = combinePeptides(self.seqDict)
             massDict = genMassDict(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance)
-            writeToCsv(massDict, 'w', 'Combined')
+            writeToCsv(massDict, 'w', 'Combined',outputPath)
 
             # combined = {'combined': combined}
             #with open('output.txt', 'wb') as file:
@@ -32,11 +31,11 @@ class Fasta:
                 massDict = genMassDict(value, mined, maxed, overlapFlag, modList, maxDistance)
 
                 if (counter == 0):
-                    writeToCsv(massDict, 'w', key)
+                    writeToCsv(massDict, 'w', key, outputPath)
                     counter+=1
 
                 else:
-                    writeToCsv(massDict, 'a', key)
+                    writeToCsv(massDict, 'a', key, outputPath)
 
 
 def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance):
@@ -49,9 +48,9 @@ def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance):
     return massDict
 
 
-def writeToCsv(massDict, writeFlag, header):
+def writeToCsv(massDict, writeFlag, header, outputPath):
 
-    with open('dict.csv', writeFlag, newline='') as csv_file:
+    with open(str(outputPath)+'dict.csv', writeFlag, newline='') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
         writer.writerow([header, ' ', ' '])
         writer.writerow(['Peptide', 'Mass', 'Positions'])

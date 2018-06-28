@@ -63,7 +63,9 @@ def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance):
 def genMassLinear(peptide, mined, maxed, linearFlag, modList):
 
     combined, combinedRef = splitDictPeptide(peptide, mined, maxed, linearFlag)
+    combined, combinedRef = removeDupsQuick(combined, combinedRef)
     massDict = combMass(combined, combinedRef)
+
     massDict = applyMods(massDict, modList)
 
     print(massDict)
@@ -399,7 +401,8 @@ def removeDupsQuick(seq, seqRef):
         if not (seq[i] in seen or seen_add(seq[i])):
             initial.append(seq[i])
             initialRef.append(seqRef[i])
-
+    print(initial)
+    print(initialRef)
 
 
     return initial, initialRef

@@ -14,7 +14,7 @@ class Fasta:
     '''
     Function that literally combines everything to generate output
     '''
-    def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag , modList, maxDistance, outputPath):
+    def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList, maxDistance, outputPath):
         if (transFlag):
 
             finalPeptide = combinePeptides(self.seqDict)
@@ -38,9 +38,18 @@ class Fasta:
                 else:
                     writeToCsv(massDict, 'a', key, outputPath,'cis')
 
-        #if (linearFlag):
+        if (linearFlag):
             #linear dictionary function which converts splits and splits ref to the dictionary output desired
+            counter = 0
+            for key, value in self.seqDict.items():
+                massDict = genMassLinear(value, mined, maxed, linearFlag, modList)
 
+                if (counter == 0):
+                    writeToCsv(massDict, 'w', key, outputPath, 'linear')
+                    counter += 1
+
+                else:
+                    writeToCsv(massDict, 'a', key, outputPath, 'linear')
 
 def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance):
 
@@ -49,6 +58,15 @@ def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance):
     massDict = applyMods(massDict, modList)
 
     print(len(massDict))
+    return massDict
+
+def genMassLinear(peptide, mined, maxed, linearFlag, modList):
+
+    combined, combinedRef = splitDictPeptide(peptide, mined, maxed, linearFlag)
+    massDict = combMass(combined, combinedRef)
+    massDict = applyMods(massDict, modList)
+
+    print(massDict)
     return massDict
 
 
@@ -65,12 +83,12 @@ def writeToCsv(massDict, writeFlag, header, outputPath, linkType):
 # taking FASTA dictionary and passing through our splits and combine functions
 #sequenceDictionary = addSequenceList("Example.fasta")
 
-def outputCreate(peptide, mined, maxed, overlapFlag, maxDistance=None):
+def outputCreate(peptide, mined, maxed, overlapFlag, maxDistance=None, linearFlag = False):
 
     # Splits eg: ['A', 'AB', 'AD', 'B', 'BD']
     # SplitRef eg: [[0], [0,1], [0,2], [1], [1,2]]
     # Produces splits and splitRef arrays which are passed through combined
-    splits, splitRef = splitDictPeptide(peptide, maxed)
+    splits, splitRef = splitDictPeptide(peptide, mined, maxed, linearFlag)
 
     # combined eg: ['ABC', 'BCA', 'ACD', 'DCA']
     # combinedRef eg: [[0,1,2], [1,0,2], [0,2,3], [3,2,0]]
@@ -212,7 +230,7 @@ Inputs: peptide string, max length of split peptide.
 Outputs: all possible splits that could be formed that are smaller in length than the maxed input 
 """
 
-def splitDictPeptide(peptide, maxed):
+def splitDictPeptide(peptide, mined, maxed, linearFlag):
     length = len(peptide)
     # splits will hold all possible splits that can occur
     splits = []
@@ -236,13 +254,22 @@ def splitDictPeptide(peptide, maxed):
         # requirement is satisfied
         for j in range(i + 1, length):
             toAdd += peptide[j]
-            if (maxSize(toAdd, maxed)):
-                splits.append(toAdd)
-                ref.append(j)
-                temp = list(ref)
+            if linearFlag:
+                if maxSize(toAdd, maxed) and minSize(toAdd, mined):
+                    splits.append(toAdd)
+                    ref.append(j)
+                    temp = list(ref)
 
-                splitRef.append(temp)
-                temp = []
+                    splitRef.append(temp)
+                    temp = []
+            else:
+                if (maxSize(toAdd, maxed)):
+                    splits.append(toAdd)
+                    ref.append(j)
+                    temp = list(ref)
+
+                    splitRef.append(temp)
+                    temp = []
 
         ref = []
 

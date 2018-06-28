@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTa
 from PyQt5.QtCore import pyqtSlot
 from Mers import *
 
+# pyinstaller MersGUI --> this command from the relevant file location creates executable file
 #Move to mers
 modificationList = ['4-hydroxynonenal (HNE)', 'Acetylation (K)', 'Beta-methylthiolation', 'Carbamidomethylation',
                  'Carboxylation (E)','Carboxymethyl','Citrullination', 'Deamidation (NQ)','Dimethylation(KR)',

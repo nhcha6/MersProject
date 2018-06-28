@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTabWidget, QVBoxLayout, \
-                            QFileDialog, QGridLayout, QLabel, QComboBox, QCheckBox, QMessageBox
+                            QFileDialog, QGridLayout, QLabel, QComboBox, QCheckBox, QMessageBox, QDesktopWidget
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import pyqtSlot
 from Mers import *
@@ -25,19 +25,19 @@ class App(QMainWindow):
         self.outputPath = ""
         self.statusbar = self.statusBar()
 
+        self.center()
 
-
-        self.top = 300
-        self.width = 300
-        self.height = 300
-        self.setWindowTitle(self.title)
-        self.setGeometry(self.left, self.top, self.width, self.height)
 
         self.table_widget = MyTableWidget(self)
         self.setCentralWidget(self.table_widget)
 
         self.show()
 
+    def center(self):
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
 
 class MyTableWidget(QWidget):
 
@@ -250,6 +250,9 @@ class MyTableWidget(QWidget):
         print("\n")
         for currentQTableWidgetItem in self.tableWidget.selectedItems():
             print(currentQTableWidgetItem.row(), currentQTableWidgetItem.column(), currentQTableWidgetItem.text())
+
+
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

@@ -177,8 +177,12 @@ class MyTableWidget(QWidget):
         linearFlag = self.tab2.linear.isChecked()
         cisFlag = self.tab2.cis.isChecked()
         maxDistance = self.tab2.maxDistCombo.currentText()
+        # self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
+        self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
+        self.outputPath = 'C:/Users/Arpit/Desktop/UROP'
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(), self.tab2.mod3Combo.currentText()]
         if self.fasta == None or self.outputPath == "":
+
             QMessageBox.about(self, "Message", 'Please check that a valid Fasta file and output file location have been selected')
         else:
             reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' +
@@ -201,8 +205,8 @@ class MyTableWidget(QWidget):
         start = time.time()
 
         self.parent().statusbar.showMessage('Processing Data')
-        #self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
-        #self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
+
+
 
 
         if maxDistance != 'None':

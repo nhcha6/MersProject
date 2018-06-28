@@ -187,11 +187,6 @@ class MyTableWidget(QWidget):
                 self.output(self,mined, maxed, overlapFlag,combineFlag, modList, maxDistance,self.outputPath)
 
 
-
-
-
-
-
     def output(self, parent, mined, maxed, overlapFlag, combineFlag, modList, maxDistance,outputPath):
         start = time.time()
 

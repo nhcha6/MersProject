@@ -49,8 +49,9 @@ def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance):
 
 
 def writeToCsv(massDict, writeFlag, header, outputPath):
-
-    with open(str(outputPath)+'dict.csv', writeFlag, newline='') as csv_file:
+    finalPath = str(outputPath)+'/dict.csv'
+    with open(finalPath, writeFlag, newline='') as csv_file:
+        print(finalPath)
         writer = csv.writer(csv_file, delimiter=',')
         writer.writerow([header, ' ', ' '])
         writer.writerow(['Peptide', 'Mass', 'Positions'])

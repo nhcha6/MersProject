@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTabWidget, QVBoxLayout, \
-                            QFileDialog, QGridLayout, QLabel, QComboBox, QCheckBox
+                            QFileDialog, QGridLayout, QLabel, QComboBox, QCheckBox, QMessageBox
 from PyQt5.QtCore import pyqtSlot
 from Mers import *
 
@@ -98,7 +98,7 @@ class MyTableWidget(QWidget):
         self.tab2.cistrans = QCheckBox('Combine All ', self)
 
         self.tab2.output = QPushButton('Generate Output!', self)
-        self.tab2.output.clicked.connect(self.output)
+        self.tab2.output.clicked.connect(self.confirmationFunction)
 
 
 
@@ -129,12 +129,31 @@ class MyTableWidget(QWidget):
     def showDialog(self, parent):
 
         fname = QFileDialog.getOpenFileName(self, 'Open File', '/home')
-        self.fasta = Fasta(addSequenceList(fname[0]))
-        print(fname[0])
+        fastaTest = fname[0][-5:]
+        if fastaTest == 'fasta':
+            self.fasta = Fasta(addSequenceList(fname[0]))
+            print(fname[0])
+            QMessageBox.about(self, "Message", 'fasta file successfully imported!')
+        else:
+            QMessageBox.about(self, "Message", 'Please Select a fasta file!')
+
+
+    def confirmationFunction(self, parent):
+        reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input',
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            self.output(self)
+
+
+
+
+
+
 
     def output(self, parent):
         start = time.time()
-        self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
+        #self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
         #self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
 
         mined = int(self.tab2.minimumCombo.currentText())

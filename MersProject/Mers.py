@@ -343,7 +343,7 @@ def maxDistCheck(ref1, ref2, maxDistance):
 
 # ensures length of split is smaller than or equal to max
 def maxSize(split, maxed):
-    if (len(split) >= maxed):
+    if (len(split) > maxed):
         return False
     return True
 

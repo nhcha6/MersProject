@@ -85,7 +85,7 @@ class MyTableWidget(QWidget):
         self.tab2.maxDistCombo = QComboBox(self)
 
         self.tab2.maxDistCombo.addItem('None')
-        for i in range(0, 26):
+        for i in range(2, 26):
             self.tab2.minimumCombo.addItem(str(i))
             self.tab2.maximumCombo.addItem(str(i))
             self.tab2.maxDistCombo.addItem(str(i))

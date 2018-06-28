@@ -1,6 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTabWidget, QVBoxLayout, \
                             QFileDialog, QGridLayout, QLabel, QComboBox, QCheckBox, QMessageBox
+from PyQt5.QtCore import Qt
 from PyQt5.QtCore import pyqtSlot
 from Mers import *
 
@@ -83,11 +84,12 @@ class MyTableWidget(QWidget):
         self.tab2.maxDistance = QLabel('Maximum Distance : ')
         self.tab2.maxDistCombo = QComboBox(self)
 
+        self.tab2.maxDistCombo.addItem('None')
         for i in range(0, 26):
             self.tab2.minimumCombo.addItem(str(i))
             self.tab2.maximumCombo.addItem(str(i))
             self.tab2.maxDistCombo.addItem(str(i))
-        self.tab2.maxDistCombo.addItem('None')
+
 
         # Modifications drop downs and labels
         self.tab2.mod1 = QLabel('Modification 1 : ')
@@ -107,8 +109,10 @@ class MyTableWidget(QWidget):
 
         self.tab2.overlap = QCheckBox('Overlap Off', self)
         self.tab2.trans = QCheckBox('Trans', self)
+        self.tab2.trans.stateChanged.connect(self.disableMaxDist)
         self.tab2.cis = QCheckBox('Cis', self)
         self.tab2.linear = QCheckBox('Linear', self)
+
 
         self.tab2.output = QPushButton('Generate Output!', self)
         self.tab2.output.clicked.connect(self.confirmationFunction)
@@ -174,10 +178,13 @@ class MyTableWidget(QWidget):
         maxed = int(self.tab2.maximumCombo.currentText())
         overlapFlag = self.tab2.overlap.isChecked()
         transFlag = self.tab2.trans.isChecked()
-        linearFlag = self.tab2.linear.isChecked()
+
         cisFlag = self.tab2.cis.isChecked()
         maxDistance = self.tab2.maxDistCombo.currentText()
-        # self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
+        linearFlag = self.tab2.linear.isChecked()
+
+        #self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
+        #self.outputPath = '/Users/nicolaschapman/Desktop/Mers Output'
         self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
         self.outputPath = 'C:/Users/Arpit/Desktop/UROP'
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(), self.tab2.mod3Combo.currentText()]
@@ -199,6 +206,16 @@ class MyTableWidget(QWidget):
 
             if reply == QMessageBox.Yes:
                 self.output(self,mined, maxed, overlapFlag,transFlag, cisFlag, linearFlag, modList, maxDistance,self.outputPath)
+
+    def disableMaxDist(self, state):
+
+
+        if state == Qt.Checked:
+            index = self.tab2.maxDistCombo.findText('None')
+            self.tab2.maxDistCombo.setCurrentIndex(index)
+            self.tab2.maxDistCombo.setEnabled(False)
+        else:
+            self.tab2.maxDistCombo.setEnabled(True)
 
 
     def output(self, parent, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList, maxDistance,outputPath):

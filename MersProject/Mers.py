@@ -279,6 +279,7 @@ def splitDictPeptide(peptide, mined, maxed, linearFlag):
     """
 
     length = len(peptide)
+
     # splits will hold all possible splits that can occur
     splits = []
     # splitRef will hold a direct reference to the characters making up each split string: for starting peptide ABC,
@@ -295,7 +296,11 @@ def splitDictPeptide(peptide, mined, maxed, linearFlag):
         ref = list([i])
         temp = list(ref)  # use list because otherwise shared memory overwrites
 
-        if minSize(toAdd, mined):
+        if linearFlag and minSize(toAdd, mined):
+            splits.append(toAdd)
+            splitRef.append(temp)
+
+        elif not linearFlag:
             splits.append(toAdd)
             splitRef.append(temp)
 
@@ -311,7 +316,7 @@ def splitDictPeptide(peptide, mined, maxed, linearFlag):
                     splitRef.append(temp)
 
             else:
-                if maxSize(toAdd, maxed):
+                if maxSize(toAdd, maxed-1):
                     splits.append(toAdd)
                     ref.append(j)
                     temp = list(ref)

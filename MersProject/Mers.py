@@ -82,12 +82,13 @@ class Fasta:
         """
            Function that literally combines everything to generate output
         """
-
+        chargeFlags = [True, True, True, True, True]
         if transFlag:
 
             finalPeptide = combinePeptides(self.seqDict)
-            massDict = genMassDict(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance)
-            writeToCsv(massDict, 'w', 'Combined', outputPath, 'trans')
+            massDict = genMassDict(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags)
+
+            writeToCsv(massDict, 'w', 'Combined', outputPath, 'trans', chargeFlags)
 
             # combined = {'combined': combined}
             # with open('output.txt', 'wb') as file:
@@ -97,60 +98,100 @@ class Fasta:
 
             counter = 0
             for key, value in self.seqDict.items():
-                massDict = genMassDict(value, mined, maxed, overlapFlag, modList, maxDistance)
+                massDict = genMassDict(value, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags)
 
                 if counter == 0:
-                    writeToCsv(massDict, 'w', key, outputPath, 'cis')
+                    writeToCsv(massDict, 'w', key, outputPath, 'cis', chargeFlags)
                     counter += 1
 
                 else:
-                    writeToCsv(massDict, 'a', key, outputPath, 'cis')
+                    writeToCsv(massDict, 'a', key, outputPath, 'cis', chargeFlags)
 
         if linearFlag:
 
             # linear dictionary function which converts splits and splits ref to the dictionary output desired
             counter = 0
             for key, value in self.seqDict.items():
-                massDict = genMassLinear(value, mined, maxed, linearFlag, modList)
+                massDict = genMassLinear(value, mined, maxed, linearFlag, modList, chargeFlags)
 
+                print(massDict)
                 if counter == 0:
-                    writeToCsv(massDict, 'w', key, outputPath, 'linear')
+                    writeToCsv(massDict, 'w', key, outputPath, 'linear', chargeFlags)
                     counter += 1
 
                 else:
-                    writeToCsv(massDict, 'a', key, outputPath, 'linear')
+                    writeToCsv(massDict, 'a', key, outputPath, 'linear', chargeFlags)
 
 
-def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance):
+def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):
 
     combined, combinedRef = outputCreate(peptide, mined, maxed, overlapFlag, maxDistance)
     massDict = combMass(combined, combinedRef)
     massDict = applyMods(massDict, modList)
-
+    chargeIonMass(massDict, chargeFlags)
     return massDict
 
 
-def genMassLinear(peptide, mined, maxed, linearFlag, modList):
+def genMassLinear(peptide, mined, maxed, linearFlag, modList, chargeFlags):
 
     combined, combinedRef = splitDictPeptide(peptide, mined, maxed, linearFlag)
     combined, combinedRef = removeDupsQuick(combined, combinedRef)
     massDict = combMass(combined, combinedRef)
-
     massDict = applyMods(massDict, modList)
-
+    chargeIonMass(massDict, chargeFlags)
     return massDict
 
 
-def writeToCsv(massDict, writeFlag, header, outputPath, linkType):
+def chargeIonMass(massDict, chargeFlags):
 
+    """
+    chargeFlags: [True, False, True, False, True]
+    """
+    chargeAssoc = {}
+    for key, value in massDict.items():
+
+        for z in range(0, len(chargeFlags)):
+
+            if chargeFlags[z]:
+                chargeMass = massCharge(value[0], z+1) # +1 for actual value
+                chargeAssoc[z+1] = chargeMass
+        value.append(chargeAssoc)
+
+
+def massCharge(predictedMass, z):
+    chargeMass = (predictedMass + (z * 1.00794))/z
+    return chargeMass
+
+
+def writeToCsv(massDict, writeFlag, header, outputPath, linkType, chargeFlags):
+    print('AT THE CSV FUNCTION!!!')
     finalPath = str(outputPath) + '/' + linkType + '.csv'
+
+    chargeHeaders = getChargeIndex(chargeFlags)
+
     with open(finalPath, writeFlag, newline='') as csv_file:
         print(finalPath)
+
         writer = csv.writer(csv_file, delimiter=',')
         writer.writerow([header, ' ', ' '])
-        writer.writerow(['Peptide', 'Mass', 'Positions'])
+        headerRow = ['Peptide', 'Mass', 'Positions']
+
+        for chargeIndex in chargeHeaders:
+
+            headerRow.append('+' + str(chargeIndex+1))
+
+        writer.writerow(headerRow)
         for key, value in massDict.items():
-            writer.writerow([key, value[0], value[1]])
+            infoRow = [key, value[0], value[1]]
+            for chargeIndex in chargeHeaders:
+                chargeMass = value[2][chargeIndex+1]
+                infoRow.append(str(chargeMass))
+            writer.writerow(infoRow)
+
+
+def getChargeIndex(chargeFlags):
+    chargeHeaders = [i for i, e in enumerate(chargeFlags) if e]
+    return chargeHeaders
 
 
 def outputCreate(peptide, mined, maxed, overlapFlag, maxDistance=None, linearFlag=False):

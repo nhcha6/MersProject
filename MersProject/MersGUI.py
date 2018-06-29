@@ -107,8 +107,11 @@ class MyTableWidget(QWidget):
         self.tab2.mod2 = QLabel('Modification 2 : ')
         self.tab2.mod3 = QLabel('Modification 3 : ')
         self.tab2.mod1Combo = QComboBox(self)
+        self.tab2.mod1Combo.activated[str].connect(self.mod1Selected)
         self.tab2.mod2Combo = QComboBox(self)
+        self.tab2.mod2Combo.activated[str].connect(self.mod2Selected)
         self.tab2.mod3Combo = QComboBox(self)
+        self.tab2.mod3Combo.activated[str].connect(self.mod3Selected)
 
         # Adding values to modification combo boxes
         self.tab2.mod1Combo.addItem("None")
@@ -174,7 +177,6 @@ class MyTableWidget(QWidget):
 
     # called from the Upload Fasta File button. Opens a window to select a file, and check if the file ends in fasta
     def uploadFasta(self):
-
         fname = QFileDialog.getOpenFileName(self, 'Open File', '/home')
         print(fname)
         self.fastaTest = fname[0][-5:]
@@ -309,7 +311,6 @@ class MyTableWidget(QWidget):
         for i in range(int(text)-1, 26):
             self.tab2.maxDistCombo.addItem(str(i+1))
         if maxDistInt >= int(text):
-            print(maxDistValue)
             indexDist = self.tab2.maxDistCombo.findText(str(maxDistValue))
             self.tab2.maxDistCombo.setCurrentIndex(indexDist)
 
@@ -342,9 +343,86 @@ class MyTableWidget(QWidget):
         for i in range(int(text)-1, 26):
             self.tab2.maxDistCombo.addItem(str(i+1))
         if maxDistInt >= int(text):
-            print(maxDistValue)
             indexDist = self.tab2.maxDistCombo.findText(str(maxDistValue))
             self.tab2.maxDistCombo.setCurrentIndex(indexDist)
+
+    def mod1Selected(self, text):
+        print(self.tab2.sender())
+        mod2Value = self.tab2.mod2Combo.currentText()
+        mod3Value = self.tab2.mod3Combo.currentText()
+
+        self.tab2.mod2Combo.clear()
+        self.tab2.mod3Combo.clear()
+        self.tab2.mod2Combo.addItem('None')
+        self.tab2.mod3Combo.addItem('None')
+
+        for modification in modificationList:
+            if modification not in (text, mod2Value, mod3Value): #and modification != mod2Value and modification != mod3Value:
+                self.tab2.mod2Combo.addItem(modification)
+                self.tab2.mod3Combo.addItem(modification)
+
+        if mod2Value != text:
+            self.tab2.mod2Combo.addItem(mod2Value)
+            indexMod2 = self.tab2.mod2Combo.findText(mod2Value)
+            self.tab2.mod2Combo.setCurrentIndex(indexMod2)
+
+        if mod3Value != text:
+            self.tab2.mod3Combo.addItem(mod3Value)
+            indexMod3 = self.tab2.mod3Combo.findText(mod3Value)
+            self.tab2.mod3Combo.setCurrentIndex(indexMod3)
+
+
+    def mod2Selected(self, text):
+        mod1Value = self.tab2.mod1Combo.currentText()
+        mod3Value = self.tab2.mod3Combo.currentText()
+
+        self.tab2.mod1Combo.clear()
+        self.tab2.mod3Combo.clear()
+        self.tab2.mod1Combo.addItem('None')
+        self.tab2.mod3Combo.addItem('None')
+
+        for modification in modificationList:
+            if modification not in (text, mod1Value, mod3Value):
+                if modification != text:
+                    self.tab2.mod1Combo.addItem(modification)
+                    self.tab2.mod3Combo.addItem(modification)
+
+        if mod3Value != text:
+            self.tab2.mod3Combo.addItem(mod3Value)
+            indexMod3 = self.tab2.mod3Combo.findText(mod3Value)
+            self.tab2.mod3Combo.setCurrentIndex(indexMod3)
+
+        if mod1Value != text:
+            self.tab2.mod1Combo.addItem(mod1Value)
+            indexMod1 = self.tab2.mod1Combo.findText(mod1Value)
+            self.tab2.mod1Combo.setCurrentIndex(indexMod1)
+
+    def mod3Selected(self, text):
+        mod1Value = self.tab2.mod1Combo.currentText()
+        mod2Value = self.tab2.mod2Combo.currentText()
+
+        self.tab2.mod1Combo.clear()
+        self.tab2.mod2Combo.clear()
+        self.tab2.mod1Combo.addItem('None')
+        self.tab2.mod2Combo.addItem('None')
+
+        for modification in modificationList:
+            if modification not in (text, mod2Value, mod1Value):
+                if modification != text:
+                    self.tab2.mod1Combo.addItem(modification)
+                    self.tab2.mod2Combo.addItem(modification)
+
+        if mod2Value != text:
+            self.tab2.mod2Combo.addItem(mod2Value)
+            indexMod2 = self.tab2.mod2Combo.findText(mod2Value)
+            self.tab2.mod2Combo.setCurrentIndex(indexMod2)
+
+        if mod1Value != text:
+            self.tab2.mod1Combo.addItem(mod1Value)
+            indexMod1 = self.tab2.mod1Combo.findText(mod1Value)
+            self.tab2.mod1Combo.setCurrentIndex(indexMod1)
+
+
 
     @pyqtSlot()
     def on_click(self):

@@ -82,10 +82,10 @@ class MyTableWidget(QWidget):
         self.tab2.layout.setSpacing(10)
 
         # Minimum/maximum Combo boxes and connector functions
-        self.tab2.minimum = QLabel('Minimum Value : ')
+        self.tab2.minimum = QLabel('Minimum Peptide Length : ')
         self.tab2.minimumCombo = QComboBox(self)
         self.tab2.minimumCombo.activated[str].connect(self.minChanged)
-        self.tab2.maximum = QLabel('Maximum Value : ')
+        self.tab2.maximum = QLabel('Maximum Peptide Length : ')
         self.tab2.maximumCombo = QComboBox(self)
         self.tab2.maximumCombo.activated[str].connect(self.maxChanged)
 
@@ -144,9 +144,9 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.mod2, 5, 3)
         self.tab2.layout.addWidget(self.tab2.mod3, 6, 3)
         self.tab2.layout.addWidget(self.tab2.overlap, 7, 3)
-        self.tab2.layout.addWidget(self.tab2.trans, 8, 3)
+        self.tab2.layout.addWidget(self.tab2.linear, 8, 3)
         self.tab2.layout.addWidget(self.tab2.cis, 9, 3)
-        self.tab2.layout.addWidget(self.tab2.linear, 10, 3)
+        self.tab2.layout.addWidget(self.tab2.trans, 10, 3)
         self.tab2.layout.addWidget(self.tab2.chargeLabel, 11, 3)
 
         # all dynamic elements added to the grid layout of tab 2

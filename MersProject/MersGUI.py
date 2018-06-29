@@ -6,6 +6,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import pyqtSlot
 from Mers import *
 
+# final branching test
 
 # pyinstaller MersGUI --> this command from the relevant file location creates executable file
 

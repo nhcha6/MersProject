@@ -16,8 +16,9 @@ modificationList = ['4-hydroxynonenal (HNE)', 'Acetylation (K)', 'Beta-methylthi
                     'Phosphorylation (STY)', 'Propionamide', 'Pyridoxal phosphate', 'S-pyridylethylation',
                     'Sulfation', 'Sulphone', 'Ubiquitin', 'Ubiquitination']
 
-# App serves as the parent class for the imbedded MyTableWidget
+
 class App(QMainWindow):
+    # App serves as the parent class for the embedded MyTableWidget
 
     # Initialisation of main window class
     def __init__(self):
@@ -148,7 +149,6 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.linear, 10, 3)
         self.tab2.layout.addWidget(self.tab2.chargeLabel, 11, 3)
 
-
         # all dynamic elements added to the grid layout of tab 2
         self.tab2.layout.addWidget(self.tab2.minimumCombo, 1, 4, 1, 3)
         self.tab2.layout.addWidget(self.tab2.maximumCombo, 2, 4, 1, 3)
@@ -194,15 +194,16 @@ class MyTableWidget(QWidget):
         if self.outputPath == '':
             print('')
         else:
-            #convert to tool tip later
+            # convert to tool tip later
             QMessageBox.about(self, "Message", 'Valid Path Selected')
 
-    """ 
-    called on click of generate output button on tab2. Checks to ensure all input values are relevant and outputs 
-    message box summarising the inputs of the user. When yes is clicked on the message box, the output function is
-    called which begins generating results
-    """
     def confirmationFunction(self):
+
+        """
+        called on click of generate output button on tab2. Checks to ensure all input values are relevant and outputs
+        message box summarising the inputs of the user. When yes is clicked on the message box, the output function is
+        called which begins generating results
+        """
 
         mined = int(self.tab2.minimumCombo.currentText())
         maxed = int(self.tab2.maximumCombo.currentText())
@@ -221,14 +222,17 @@ class MyTableWidget(QWidget):
 
         chargeFlags = [plusOneFlag, plusTwoFlag, plusThreeFlag, plusFourFlag, plusFiveFlag]
 
-        #self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
-        #self.outputPath = '/Users/nicolaschapman/Desktop/Mers Output'
+        # self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
+        # self.outputPath = '/Users/nicolaschapman/Desktop/Mers Output'
         self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
         self.outputPath = 'C:/Users/Arpit/Desktop/UROP'
-        modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(), self.tab2.mod3Combo.currentText()]
-        if self.fasta == None or self.outputPath == "":
+        modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(),
+                   self.tab2.mod3Combo.currentText()]
 
-            QMessageBox.about(self, "Message", 'Please check that a valid Fasta file and output file location have been selected')
+        if self.fasta is None or self.outputPath == "":
+
+            QMessageBox.about(self, "Message", 'Please check that a valid Fasta file and output '
+                                               'file location have been selected')
         else:
             reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' +
                                          'Minimum Length: ' + str(mined) + '\n' +
@@ -243,12 +247,11 @@ class MyTableWidget(QWidget):
 
             if reply == QMessageBox.Yes:
                 print(chargeFlags)
-                self.output(self, mined, maxed, overlapFlag,transFlag, cisFlag, linearFlag, modList,
+                self.output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
                             maxDistance, self.outputPath, chargeFlags)
 
     # called when trans is selected, it disables the use of the max distance function
     def disableMaxDist(self, state):
-
 
         if state == Qt.Checked:
             index = self.tab2.maxDistCombo.findText('None')
@@ -278,30 +281,30 @@ class MyTableWidget(QWidget):
     # ensure a realistic input
     def minChanged(self, text):
 
-        #current Max Value
+        # current Max Value
         maxValue = int(self.tab2.maximumCombo.currentText())
 
-        #Current Max Distance - convert 'None' to 0 so it can be used as a comparator later.
+        # Current Max Distance - convert 'None' to 0 so it can be used as a comparator later.
         maxDistValue = self.tab2.maxDistCombo.currentText()
         if maxDistValue == 'None':
             maxDistInt = 0
         else:
             maxDistInt = int(maxDistValue)
 
-        #Clear combo box values, add 'None' option back to maxDistCombo
+        # Clear combo box values, add 'None' option back to maxDistCombo
         self.tab2.maximumCombo.clear()
         self.tab2.maxDistCombo.clear()
         self.tab2.maxDistCombo.addItem('None')
 
-        #Creates new values in combo box which are greater than the min
-        for i in range(int(text)-1,26):
+        # Creates new values in combo box which are greater than the min
+        for i in range(int(text)-1, 26):
             self.tab2.maximumCombo.addItem(str(i+1))
-        #Restores current value if it is greater than the min
+        # Restores current value if it is greater than the min
         if maxValue >= int(text):
             indexMax = self.tab2.maximumCombo.findText(str(maxValue))
             self.tab2.maximumCombo.setCurrentIndex(indexMax)
 
-        for i in range(int(text)-1,26):
+        for i in range(int(text)-1, 26):
             self.tab2.maxDistCombo.addItem(str(i+1))
         if maxDistInt >= int(text):
             print(maxDistValue)
@@ -311,44 +314,41 @@ class MyTableWidget(QWidget):
     # essentially the same as minChanges except it is called by a maxDistance change
     def maxChanged(self, text):
 
-        #current Min Value
+        # current Min Value
         minValue = int(self.tab2.minimumCombo.currentText())
 
-        #Current Max Distance - convert 'None' to 0 so it can be used as a comparator later.
+        # Current Max Distance - convert 'None' to 0 so it can be used as a comparator later.
         maxDistValue = self.tab2.maxDistCombo.currentText()
         if maxDistValue == 'None':
             maxDistInt = 0
         else:
             maxDistInt = int(maxDistValue)
 
-        #Clear combo box values, add 'None' option back to maxDistCombo
+        # Clear combo box values, add 'None' option back to maxDistCombo
         self.tab2.minimumCombo.clear()
         self.tab2.maxDistCombo.clear()
         self.tab2.maxDistCombo.addItem('None')
 
-        #Creates new values in combo box which are less than than the max
-        for i in range(2,int(text)+1):
+        # Creates new values in combo box which are less than than the max
+        for i in range(2, int(text)+1):
             self.tab2.minimumCombo.addItem(str(i))
-        #Restores current value if it is less than the max
+        # Restores current value if it is less than the max
         if minValue <= int(text):
             indexMin = self.tab2.minimumCombo.findText(str(minValue))
             self.tab2.minimumCombo.setCurrentIndex(indexMin)
 
-        for i in range(int(text)-1,26):
+        for i in range(int(text)-1, 26):
             self.tab2.maxDistCombo.addItem(str(i+1))
         if maxDistInt >= int(text):
             print(maxDistValue)
             indexDist = self.tab2.maxDistCombo.findText(str(maxDistValue))
             self.tab2.maxDistCombo.setCurrentIndex(indexDist)
 
-
     @pyqtSlot()
     def on_click(self):
         print("\n")
         for currentQTableWidgetItem in self.tableWidget.selectedItems():
             print(currentQTableWidgetItem.row(), currentQTableWidgetItem.column(), currentQTableWidgetItem.text())
-
-
 
 
 if __name__ == '__main__':

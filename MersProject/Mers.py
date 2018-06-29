@@ -296,6 +296,7 @@ def splitDictPeptide(peptide, mined, maxed, linearFlag):
         ref = list([i])
         temp = list(ref)  # use list because otherwise shared memory overwrites
 
+        # linear flag to ensure min is correct for cis and trans
         if linearFlag and minSize(toAdd, mined):
             splits.append(toAdd)
             splitRef.append(temp)

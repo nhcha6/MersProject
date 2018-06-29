@@ -216,6 +216,8 @@ class MyTableWidget(QWidget):
         maxDistance = self.tab2.maxDistCombo.currentText()
         linearFlag = self.tab2.linear.isChecked()
 
+        outputFlag = cisFlag or linearFlag or transFlag
+
         plusOneFlag = self.tab2.plusOne.isChecked()
         plusTwoFlag = self.tab2.plusTwo.isChecked()
         plusThreeFlag = self.tab2.plusThree.isChecked()
@@ -224,10 +226,10 @@ class MyTableWidget(QWidget):
 
         chargeFlags = [plusOneFlag, plusTwoFlag, plusThreeFlag, plusFourFlag, plusFiveFlag]
 
-        # self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
-        # self.outputPath = '/Users/nicolaschapman/Desktop/Mers Output'
-        self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
-        self.outputPath = 'C:/Users/Arpit/Desktop/UROP'
+        self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
+        self.outputPath = '/Users/nicolaschapman/Desktop/Mers Output'
+        # self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
+        # self.outputPath = 'C:/Users/Arpit/Desktop/UROP'
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(),
                    self.tab2.mod3Combo.currentText()]
 
@@ -235,6 +237,8 @@ class MyTableWidget(QWidget):
 
             QMessageBox.about(self, "Message", 'Please check that a valid Fasta file and output '
                                                'file location have been selected')
+        elif not outputFlag:
+            QMessageBox.about(self, "Message", 'Please select at least one output type; either trans, cis or linear')
         else:
             reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' +
                                          'Minimum Length: ' + str(mined) + '\n' +
@@ -354,7 +358,10 @@ class MyTableWidget(QWidget):
             self.tab2.maxDistCombo.setCurrentIndex(indexDist)
 
     def mod1Selected(self, text):
-        print(self.tab2.sender())
+        source = self.tab2.sender()
+        print(source)
+        print(self.tab2.mod1Combo)
+        #print(self.tab2.sender())
         mod2Value = self.tab2.mod2Combo.currentText()
         mod3Value = self.tab2.mod3Combo.currentText()
 
@@ -428,7 +435,6 @@ class MyTableWidget(QWidget):
             self.tab2.mod1Combo.addItem(mod1Value)
             indexMod1 = self.tab2.mod1Combo.findText(mod1Value)
             self.tab2.mod1Combo.setCurrentIndex(indexMod1)
-
 
 
     @pyqtSlot()

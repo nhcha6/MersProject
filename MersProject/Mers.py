@@ -77,12 +77,12 @@ class Fasta:
         print(seqDict)
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
-                       maxDistance, outputPath):
+                       maxDistance, outputPath, chargeFlags):
 
         """
            Function that literally combines everything to generate output
         """
-        chargeFlags = [True, True, True, True, True]
+        print(chargeFlags)
         if transFlag:
 
             finalPeptide = combinePeptides(self.seqDict)
@@ -147,9 +147,9 @@ def chargeIonMass(massDict, chargeFlags):
     """
     chargeFlags: [True, False, True, False, True]
     """
-    chargeAssoc = {}
-    for key, value in massDict.items():
 
+    for key, value in massDict.items():
+        chargeAssoc = {}
         for z in range(0, len(chargeFlags)):
 
             if chargeFlags[z]:

@@ -213,10 +213,18 @@ class MyTableWidget(QWidget):
         maxDistance = self.tab2.maxDistCombo.currentText()
         linearFlag = self.tab2.linear.isChecked()
 
-        self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
-        self.outputPath = '/Users/nicolaschapman/Desktop/Mers Output'
-        #self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
-        #self.outputPath = 'C:/Users/Arpit/Desktop/UROP'
+        plusOneFlag = self.tab2.plusOne.isChecked()
+        plusTwoFlag = self.tab2.plusTwo.isChecked()
+        plusThreeFlag = self.tab2.plusThree.isChecked()
+        plusFourFlag = self.tab2.plusFour.isChecked()
+        plusFiveFlag = self.tab2.plusFive.isChecked()
+
+        chargeFlags = [plusOneFlag, plusTwoFlag, plusThreeFlag, plusFourFlag, plusFiveFlag]
+
+        #self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
+        #self.outputPath = '/Users/nicolaschapman/Desktop/Mers Output'
+        self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
+        self.outputPath = 'C:/Users/Arpit/Desktop/UROP'
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(), self.tab2.mod3Combo.currentText()]
         if self.fasta == None or self.outputPath == "":
 
@@ -233,9 +241,10 @@ class MyTableWidget(QWidget):
                                          'Maximum Distance: ' + str(maxDistance) + '\n',
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
-
             if reply == QMessageBox.Yes:
-                self.output(self,mined, maxed, overlapFlag,transFlag, cisFlag, linearFlag, modList, maxDistance,self.outputPath)
+                print(chargeFlags)
+                self.output(self, mined, maxed, overlapFlag,transFlag, cisFlag, linearFlag, modList,
+                            maxDistance, self.outputPath, chargeFlags)
 
     # called when trans is selected, it disables the use of the max distance function
     def disableMaxDist(self, state):
@@ -250,7 +259,8 @@ class MyTableWidget(QWidget):
 
     # called by confirmation function, it runs the generateOutput function from Mers.py while outputing small
     # bits of information to the user via a statusbar in the GUI
-    def output(self, parent, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList, maxDistance,outputPath):
+    def output(self, parent, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
+               maxDistance, outputPath, chargeFlags):
         start = time.time()
 
         self.parent().statusbar.showMessage('Processing Data')
@@ -258,7 +268,8 @@ class MyTableWidget(QWidget):
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
 
-        self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList, maxDistance,outputPath)
+        self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
+                                  maxDistance, outputPath, chargeFlags)
         end = time.time()
         self.parent().statusbar.hide()
         print(end - start)

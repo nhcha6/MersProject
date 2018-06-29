@@ -78,8 +78,10 @@ class MyTableWidget(QWidget):
         # Minimum/maximum values
         self.tab2.minimum = QLabel('Minimum Value : ')
         self.tab2.minimumCombo = QComboBox(self)
+        self.tab2.minimumCombo.activated[str].connect(self.minChanged)
         self.tab2.maximum = QLabel('Maximum Value : ')
         self.tab2.maximumCombo = QComboBox(self)
+        self.tab2.maximumCombo.activated[str].connect(self.maxChanged)
 
         self.tab2.maxDistance = QLabel('Maximum Distance : ')
         self.tab2.maxDistCombo = QComboBox(self)
@@ -194,10 +196,10 @@ class MyTableWidget(QWidget):
         maxDistance = self.tab2.maxDistCombo.currentText()
         linearFlag = self.tab2.linear.isChecked()
 
-        #self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
-        #self.outputPath = '/Users/nicolaschapman/Desktop/Mers Output'
-        self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
-        self.outputPath = 'C:/Users/Arpit/Desktop/UROP'
+        self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
+        self.outputPath = '/Users/nicolaschapman/Desktop/Mers Output'
+        #self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
+        #self.outputPath = 'C:/Users/Arpit/Desktop/UROP'
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(), self.tab2.mod3Combo.currentText()]
         if self.fasta == None or self.outputPath == "":
 
@@ -244,6 +246,71 @@ class MyTableWidget(QWidget):
         end = time.time()
         self.parent().statusbar.hide()
         print(end - start)
+
+    def minChanged(self, text):
+
+        #current Max Value
+        maxValue = int(self.tab2.maximumCombo.currentText())
+
+        #Current Max Distance - convert 'None' to 0 so it can be used as a comparator later.
+        maxDistValue = self.tab2.maxDistCombo.currentText()
+        if maxDistValue == 'None':
+            maxDistInt = 0
+        else:
+            maxDistInt = int(maxDistValue)
+
+        #Clear combo box values, add 'None' option back to maxDistCombo
+        self.tab2.maximumCombo.clear()
+        self.tab2.maxDistCombo.clear()
+        self.tab2.maxDistCombo.addItem('None')
+
+        #Creates new values in combo box which are greater than the min
+        for i in range(int(text)-1,26):
+            self.tab2.maximumCombo.addItem(str(i+1))
+        #Restores current value if it is greater than the min
+        if maxValue >= int(text):
+            indexMax = self.tab2.maximumCombo.findText(str(maxValue))
+            self.tab2.maximumCombo.setCurrentIndex(indexMax)
+
+        for i in range(int(text)-1,26):
+            self.tab2.maxDistCombo.addItem(str(i+1))
+        if maxDistInt >= int(text):
+            print(maxDistValue)
+            indexDist = self.tab2.maxDistCombo.findText(str(maxDistValue))
+            self.tab2.maxDistCombo.setCurrentIndex(indexDist)
+
+    def maxChanged(self, text):
+
+        #current Min Value
+        minValue = int(self.tab2.minimumCombo.currentText())
+
+        #Current Max Distance - convert 'None' to 0 so it can be used as a comparator later.
+        maxDistValue = self.tab2.maxDistCombo.currentText()
+        if maxDistValue == 'None':
+            maxDistInt = 0
+        else:
+            maxDistInt = int(maxDistValue)
+
+        #Clear combo box values, add 'None' option back to maxDistCombo
+        self.tab2.minimumCombo.clear()
+        self.tab2.maxDistCombo.clear()
+        self.tab2.maxDistCombo.addItem('None')
+
+        #Creates new values in combo box which are less than than the max
+        for i in range(2,int(text)+1):
+            self.tab2.minimumCombo.addItem(str(i))
+        #Restores current value if it is less than the max
+        if minValue <= int(text):
+            indexMin = self.tab2.minimumCombo.findText(str(minValue))
+            self.tab2.minimumCombo.setCurrentIndex(indexMin)
+
+        for i in range(int(text)-1,26):
+            self.tab2.maxDistCombo.addItem(str(i+1))
+        if maxDistInt >= int(text):
+            print(maxDistValue)
+            indexDist = self.tab2.maxDistCombo.findText(str(maxDistValue))
+            self.tab2.maxDistCombo.setCurrentIndex(indexDist)
+
 
     @pyqtSlot()
     def on_click(self):

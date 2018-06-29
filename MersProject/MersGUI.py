@@ -6,17 +6,20 @@ from PyQt5.QtCore import pyqtSlot
 from Mers import *
 
 # pyinstaller MersGUI --> this command from the relevant file location creates executable file
-#Move to mers
-modificationList = ['4-hydroxynonenal (HNE)', 'Acetylation (K)', 'Beta-methylthiolation', 'Carbamidomethylation',
-                 'Carboxylation (E)','Carboxymethyl','Citrullination', 'Deamidation (NQ)','Dimethylation(KR)',
-                 'Dioxidation (M)', 'FAD', 'Farnesylation', 'Geranyl-geranyl', 'Guanidination', 'HexNAcylation (N)',
-                 'Hexose (NSY)','Lipoyl','Methylation(KR)','Methylation(others)','Oxidation (HW)','Oxidation (M)',
-                 'Palmitoylation','Phosphopantetheine','Phosphorylation (HCDR)', 'Phosphorylation (STY)',
-                 'Propionamide','Pyridoxal phosphate','S-pyridylethylation','Sulfation','Sulphone','Ubiquitin',
-                 'Ubiquitination']
 
+# Move to mers
+modificationList = ['4-hydroxynonenal (HNE)', 'Acetylation (K)', 'Beta-methylthiolation', 'Carbamidomethylation',
+                    'Carboxylation (E)', 'Carboxymethyl', 'Citrullination', 'Deamidation (NQ)', 'Dimethylation(KR)',
+                    'Dioxidation (M)', 'FAD', 'Farnesylation', 'Geranyl-geranyl', 'Guanidination', 'HexNAcylation (N)',
+                    'Hexose (NSY)', 'Lipoyl', 'Methylation(KR)', 'Methylation(others)', 'Oxidation (HW)',
+                    'Oxidation (M)', 'Palmitoylation', 'Phosphopantetheine', 'Phosphorylation (HCDR)',
+                    'Phosphorylation (STY)', 'Propionamide', 'Pyridoxal phosphate', 'S-pyridylethylation',
+                    'Sulfation', 'Sulphone', 'Ubiquitin', 'Ubiquitination']
+
+# App serves as the parent class for the imbedded MyTableWidget
 class App(QMainWindow):
 
+    # Initialisation of main window class
     def __init__(self):
         super().__init__()
         self.title = 'Peptide Splicer'
@@ -27,41 +30,43 @@ class App(QMainWindow):
 
         self.center()
 
-
         self.table_widget = MyTableWidget(self)
         self.setCentralWidget(self.table_widget)
 
         self.show()
 
+    # center function is called to centre the main window on the screen
     def center(self):
         qr = self.frameGeometry()
         cp = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
+
+# MyTableWidget class is the child of the App class. It holds the tabs where most of the GUI functionality occurs
 class MyTableWidget(QWidget):
 
+    # Initialisation of table child
     def __init__(self, parent):
         super(QWidget, self).__init__(parent)
         self.layout = QVBoxLayout(self)
         self.fasta = None
 
-        # Initialize tab screen
+        # Initialisation of two tabs
         self.tabs = QTabWidget()
         self.tab1 = QWidget()
         self.tab2 = QWidget()
-
         self.tabs.resize(300, 200)
 
-        # Add tabs
-        self.tabs.addTab(self.tab1, "Tab 1")
-        self.tabs.addTab(self.tab2, "Tab 2")
+        # Add tabs to table class (self)
+        self.tabs.addTab(self.tab1, "Select File and Path")
+        self.tabs.addTab(self.tab2, "Input Parameters")
 
-        # Create first tab
+        # Creation of tab layout and widgets within tab
         self.tab1.layout = QVBoxLayout(self)
 
         self.pushButton1 = QPushButton("Select File")
-        self.pushButton1.clicked.connect(self.showDialog)
+        self.pushButton1.clicked.connect(self.uploadFasta)
 
         self.pushButton2 = QPushButton("Select Save Location")
         self.pushButton2.clicked.connect(self.outputPath)
@@ -71,11 +76,11 @@ class MyTableWidget(QWidget):
 
         self.tab1.setLayout(self.tab1.layout)
 
-        # Create second tab
+        # Create second tab layout and widgets within each tab
         self.tab2.layout = QGridLayout(self)
         self.tab2.layout.setSpacing(10)
 
-        # Minimum/maximum values
+        # Minimum/maximum Combo boxes and connector functions
         self.tab2.minimum = QLabel('Minimum Value : ')
         self.tab2.minimumCombo = QComboBox(self)
         self.tab2.minimumCombo.activated[str].connect(self.minChanged)
@@ -83,17 +88,18 @@ class MyTableWidget(QWidget):
         self.tab2.maximumCombo = QComboBox(self)
         self.tab2.maximumCombo.activated[str].connect(self.maxChanged)
 
+        # Max distance combo box
         self.tab2.maxDistance = QLabel('Maximum Distance : ')
         self.tab2.maxDistCombo = QComboBox(self)
 
+        # Adding values to the max/min/maxDist combos
         self.tab2.maxDistCombo.addItem('None')
         for i in range(2, 26):
             self.tab2.minimumCombo.addItem(str(i))
             self.tab2.maximumCombo.addItem(str(i))
             self.tab2.maxDistCombo.addItem(str(i))
 
-
-        # Modifications drop downs and labels
+        # Modifications combo boxes and labels
         self.tab2.mod1 = QLabel('Modification 1 : ')
         self.tab2.mod2 = QLabel('Modification 2 : ')
         self.tab2.mod3 = QLabel('Modification 3 : ')
@@ -101,6 +107,7 @@ class MyTableWidget(QWidget):
         self.tab2.mod2Combo = QComboBox(self)
         self.tab2.mod3Combo = QComboBox(self)
 
+        # Adding values to modification combo boxes
         self.tab2.mod1Combo.addItem("None")
         self.tab2.mod2Combo.addItem("None")
         self.tab2.mod3Combo.addItem("None")
@@ -109,16 +116,18 @@ class MyTableWidget(QWidget):
             self.tab2.mod2Combo.addItem(modification)
             self.tab2.mod3Combo.addItem(modification)
 
+        # initialise overlap, trans, cis and linear check boxes
         self.tab2.overlap = QCheckBox('Overlap Off', self)
         self.tab2.trans = QCheckBox('Trans', self)
-        self.tab2.trans.stateChanged.connect(self.disableMaxDist)
+        self.tab2.trans.stateChanged.connect(self.disableMaxDist) # connect trans check box to relevant function
         self.tab2.cis = QCheckBox('Cis', self)
         self.tab2.linear = QCheckBox('Linear', self)
 
-
+        # create generate output push button
         self.tab2.output = QPushButton('Generate Output!', self)
         self.tab2.output.clicked.connect(self.confirmationFunction)
 
+        # Add charge state check boxes
         self.tab2.chargeLabel = QLabel('Charge states (z): ')
         self.tab2.plusOne = QCheckBox('+1', self)
         self.tab2.plusTwo = QCheckBox('+2', self)
@@ -126,7 +135,7 @@ class MyTableWidget(QWidget):
         self.tab2.plusFour = QCheckBox('+4', self)
         self.tab2.plusFive = QCheckBox('+5', self)
 
-        # All the labels added
+        # All the labels added to grid layout of tab2
         self.tab2.layout.addWidget(self.tab2.minimum, 1, 3)
         self.tab2.layout.addWidget(self.tab2.maximum, 2, 3)
         self.tab2.layout.addWidget(self.tab2.maxDistance, 3, 3)
@@ -140,13 +149,13 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.chargeLabel, 11, 3)
 
 
-
+        # all dynamic elements added to the grid layout of tab 2
         self.tab2.layout.addWidget(self.tab2.minimumCombo, 1, 4, 1, 3)
-        self.tab2.layout.addWidget(self.tab2.maximumCombo, 2, 4,1,3)
-        self.tab2.layout.addWidget(self.tab2.maxDistCombo, 3, 4,1,3)
-        self.tab2.layout.addWidget(self.tab2.mod1Combo, 4, 4,1,3)
-        self.tab2.layout.addWidget(self.tab2.mod2Combo, 5, 4,1,3)
-        self.tab2.layout.addWidget(self.tab2.mod3Combo, 6, 4,1,3)
+        self.tab2.layout.addWidget(self.tab2.maximumCombo, 2, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.maxDistCombo, 3, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.mod1Combo, 4, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.mod2Combo, 5, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.mod3Combo, 6, 4, 1, 3)
         self.tab2.layout.addWidget(self.tab2.plusOne, 11, 4)
         self.tab2.layout.addWidget(self.tab2.plusTwo, 11, 5)
         self.tab2.layout.addWidget(self.tab2.plusThree, 11, 6)
@@ -154,13 +163,15 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.plusFive, 12, 5)
         self.tab2.layout.addWidget(self.tab2.output, 13, 5, 1, 2)
 
+        # set layout
         self.tab2.setLayout(self.tab2.layout)
 
         # Add tabs to widget
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
 
-    def showDialog(self, parent):
+    # called from the Upload Fasta File button. Opens a window to select a file, and check if the file ends in fasta
+    def uploadFasta(self):
 
         fname = QFileDialog.getOpenFileName(self, 'Open File', '/home')
         print(fname)
@@ -175,7 +186,8 @@ class MyTableWidget(QWidget):
             print(fname[0])
             QMessageBox.about(self, "Message", 'Please select a Fasta file!')
 
-    def outputPath(self, parent):
+    # called from the Select Output Path button. Opens a window to select a file location to save the output to.
+    def outputPath(self):
 
         self.outputPath = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
 
@@ -185,7 +197,12 @@ class MyTableWidget(QWidget):
             #convert to tool tip later
             QMessageBox.about(self, "Message", 'Valid Path Selected')
 
-    def confirmationFunction(self, parent):
+    """ 
+    called on click of generate output button on tab2. Checks to ensure all input values are relevant and outputs 
+    message box summarising the inputs of the user. When yes is clicked on the message box, the output function is
+    called which begins generating results
+    """
+    def confirmationFunction(self):
 
         mined = int(self.tab2.minimumCombo.currentText())
         maxed = int(self.tab2.maximumCombo.currentText())
@@ -220,6 +237,7 @@ class MyTableWidget(QWidget):
             if reply == QMessageBox.Yes:
                 self.output(self,mined, maxed, overlapFlag,transFlag, cisFlag, linearFlag, modList, maxDistance,self.outputPath)
 
+    # called when trans is selected, it disables the use of the max distance function
     def disableMaxDist(self, state):
 
 
@@ -230,14 +248,12 @@ class MyTableWidget(QWidget):
         else:
             self.tab2.maxDistCombo.setEnabled(True)
 
-
+    # called by confirmation function, it runs the generateOutput function from Mers.py while outputing small
+    # bits of information to the user via a statusbar in the GUI
     def output(self, parent, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList, maxDistance,outputPath):
         start = time.time()
 
         self.parent().statusbar.showMessage('Processing Data')
-
-
-
 
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
@@ -247,6 +263,8 @@ class MyTableWidget(QWidget):
         self.parent().statusbar.hide()
         print(end - start)
 
+    # called when minimumCombo value changes. It alters the values available in max and maxDistance combos to
+    # ensure a realistic input
     def minChanged(self, text):
 
         #current Max Value
@@ -279,6 +297,7 @@ class MyTableWidget(QWidget):
             indexDist = self.tab2.maxDistCombo.findText(str(maxDistValue))
             self.tab2.maxDistCombo.setCurrentIndex(indexDist)
 
+    # essentially the same as minChanges except it is called by a maxDistance change
     def maxChanged(self, text):
 
         #current Min Value

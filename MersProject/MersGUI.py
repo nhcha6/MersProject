@@ -1,4 +1,5 @@
 import sys
+import subprocess
 from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTabWidget, QVBoxLayout, \
                             QFileDialog, QGridLayout, QLabel, QComboBox, QCheckBox, QMessageBox, QDesktopWidget
 from PyQt5.QtCore import Qt
@@ -189,6 +190,7 @@ class MyTableWidget(QWidget):
 
         if self.outputPath == '':
             return False
+        print(self.outputPath)
         return True
         # else:
             # convert to tool tip later
@@ -275,6 +277,14 @@ class MyTableWidget(QWidget):
         end = time.time()
         self.parent().statusbar.hide()
         print(end - start)
+        tryString = r'explorer "C:\User\Arpit"'
+
+        print(tryString)
+        replacedOutpath = outputPath.replace("/", '\\')
+        print(replacedOutpath)
+        openString = r'explorer "' + replacedOutpath + '"'
+        print(openString)
+        subprocess.Popen(openString)
 
     # called when minimumCombo value changes. It alters the values available in max and maxDistance combos to
     # ensure a realistic input

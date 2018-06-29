@@ -368,12 +368,12 @@ class MyTableWidget(QWidget):
                 self.tab2.mod2Combo.addItem(modification)
                 self.tab2.mod3Combo.addItem(modification)
 
-        if mod2Value != text:
+        if mod2Value not in (text, 'None'):
             self.tab2.mod2Combo.addItem(mod2Value)
             indexMod2 = self.tab2.mod2Combo.findText(mod2Value)
             self.tab2.mod2Combo.setCurrentIndex(indexMod2)
 
-        if mod3Value != text:
+        if mod3Value not in (text, 'None'):
             self.tab2.mod3Combo.addItem(mod3Value)
             indexMod3 = self.tab2.mod3Combo.findText(mod3Value)
             self.tab2.mod3Combo.setCurrentIndex(indexMod3)
@@ -394,12 +394,12 @@ class MyTableWidget(QWidget):
                     self.tab2.mod1Combo.addItem(modification)
                     self.tab2.mod3Combo.addItem(modification)
 
-        if mod3Value != text:
+        if mod3Value not in (text, 'None'):
             self.tab2.mod3Combo.addItem(mod3Value)
             indexMod3 = self.tab2.mod3Combo.findText(mod3Value)
             self.tab2.mod3Combo.setCurrentIndex(indexMod3)
 
-        if mod1Value != text:
+        if mod1Value not in (text, 'None'):
             self.tab2.mod1Combo.addItem(mod1Value)
             indexMod1 = self.tab2.mod1Combo.findText(mod1Value)
             self.tab2.mod1Combo.setCurrentIndex(indexMod1)
@@ -419,12 +419,12 @@ class MyTableWidget(QWidget):
                     self.tab2.mod1Combo.addItem(modification)
                     self.tab2.mod2Combo.addItem(modification)
 
-        if mod2Value != text:
+        if mod2Value not in (text, 'None'):
             self.tab2.mod2Combo.addItem(mod2Value)
             indexMod2 = self.tab2.mod2Combo.findText(mod2Value)
             self.tab2.mod2Combo.setCurrentIndex(indexMod2)
 
-        if mod1Value != text:
+        if mod1Value not in (text, 'None'):
             self.tab2.mod1Combo.addItem(mod1Value)
             indexMod1 = self.tab2.mod1Combo.findText(mod1Value)
             self.tab2.mod1Combo.setCurrentIndex(indexMod1)

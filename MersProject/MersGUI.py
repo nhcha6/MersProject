@@ -5,8 +5,6 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import pyqtSlot
 from Mers import *
 
-# final branching test
-
 # pyinstaller MersGUI --> this command from the relevant file location creates executable file
 
 # Move to mers
@@ -71,11 +69,7 @@ class MyTableWidget(QWidget):
         self.pushButton1 = QPushButton("Select File")
         self.pushButton1.clicked.connect(self.uploadFasta)
 
-        self.pushButton2 = QPushButton("Select Save Location")
-        self.pushButton2.clicked.connect(self.outputPath)
-
         self.tab1.layout.addWidget(self.pushButton1)
-        self.tab1.layout.addWidget(self.pushButton2)
 
         self.tab1.setLayout(self.tab1.layout)
 
@@ -189,15 +183,17 @@ class MyTableWidget(QWidget):
             QMessageBox.about(self, "Message", 'Please select a Fasta file!')
 
     # called from the Select Output Path button. Opens a window to select a file location to save the output to.
-    def outputPath(self):
+    def getOutputPath(self):
 
         self.outputPath = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
 
         if self.outputPath == '':
-            print('')
-        else:
+            return False
+        return True
+        # else:
             # convert to tool tip later
-            QMessageBox.about(self, "Message", 'Valid Path Selected')
+            # QMessageBox.about(self, "Message", 'Valid Path Selected')
+
 
     def confirmationFunction(self):
 
@@ -248,9 +244,10 @@ class MyTableWidget(QWidget):
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
             if reply == QMessageBox.Yes:
-                print(chargeFlags)
-                self.output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
-                            maxDistance, self.outputPath, chargeFlags)
+                if self.getOutputPath():
+
+                    self.output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
+                                maxDistance, self.outputPath, chargeFlags)
 
     # called when trans is selected, it disables the use of the max distance function
     def disableMaxDist(self, state):

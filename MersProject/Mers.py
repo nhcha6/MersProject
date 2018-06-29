@@ -5,6 +5,8 @@ import time
 # MASS OF H20 is added for mass calculations
 H20_MASS = 18.010565
 
+# Nic's branch
+
 # All possible modifications
 modTable = {
 

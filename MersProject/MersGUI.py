@@ -1,3 +1,4 @@
+### Need to fix no parameter
 import sys
 import subprocess
 from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTabWidget, QVBoxLayout, \
@@ -226,14 +227,14 @@ class MyTableWidget(QWidget):
 
         chargeFlags = [plusOneFlag, plusTwoFlag, plusThreeFlag, plusFourFlag, plusFiveFlag]
 
-        self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
-        self.outputPath = '/Users/nicolaschapman/Desktop/Mers Output'
+        #self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
+        #self.outputPath = '/Users/nicolaschapman/Desktop/Mers Output'
         # self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
         # self.outputPath = 'C:/Users/Arpit/Desktop/UROP'
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(),
                    self.tab2.mod3Combo.currentText()]
 
-        if self.fasta is None or self.outputPath == "":
+        if self.fasta is None:
 
             QMessageBox.about(self, "Message", 'Please check that a valid Fasta file and output '
                                                'file location have been selected')
@@ -252,6 +253,7 @@ class MyTableWidget(QWidget):
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
             if reply == QMessageBox.Yes:
+                print('reply is yes')
                 if self.getOutputPath():
 
                     self.output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,

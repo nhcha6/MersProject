@@ -1,81 +1,61 @@
 from Bio import SeqIO
 import csv
+from MonoAminoAndMods import *
+import threading
 import time
 
-# MASS OF H20 is added for mass calculations
-H20_MASS = 18.010565
+TRANS = "Trans"
+LINEAR = "Linear"
+CIS = "Cis"
+
+class FileThread(threading.Thread):
 
 
-# All possible modifications
-modTable = {
+    def __init__(self, spliceType, seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath,
+                 chargeFlags):
+        threading.Thread.__init__(self)
+        self.spliceType = spliceType
+        self.seqDict = seqDict
+        self.mined = mined
+        self.maxed = maxed
+        self.overlapFlag = overlapFlag
+        self.modList = modList
+        self.maxDistance = maxDistance
+        self.outputPath = outputPath
+        self.chargeFlags = chargeFlags
+        self._is_running = True
 
-    '4-hydroxynonenal (HNE)': ['C', 'H', 'K', 156.11504],
-    'Acetylation (K)': ['K', 42.010567],
-    'Beta-methylthiolation': ['C', 45.98772],
-    'Carbamidomethylation': ['C', 57.021465],
-    'Carboxylation (E)': ['E', 43.98983],
-    'Carboxymethyl': ['C', 58.005478],
-    'Citrullination': ['R', 0.984016],
-    'Deamidation (NQ)': ['N', 'Q', 0.984016],
-    'Dimethylation(KR)': ['K', 'R', 28.0313],
-    'Dioxidation (M)': ['M', 31.989828],
-    'FAD': ['C', 'H', 'Y', 783.1415],
-    'Farnesylation': ['C', 204.1878],
-    'Geranyl-geranyl': ['C', 272.2504],
-    'Guanidination': ['K', 42.021797],
-    'HexNAcylation (N)': ['N', 203.07938],
-    'Hexose (NSY)': ['N', 'S', 'Y', 162.0528],
-    'Lipoyl': ['K', 188.03296],
-    'Methylation(KR)': ['K', 'R', 14.01565],
-    'Methylation(others)': ['T', 'S', 'C', 'H', 'D', 'E', 14.01565],
-    'Oxidation (HW)': ['H', 'W', 15.994915],
-    'Oxidation (M)': ['M', 15.994915],
-    'Palmitoylation': ['C', 'S', 'T', 'K', 238.22966],
-    'Phosphopantetheine': ['S', 340.0858],
-    'Phosphorylation (HCDR)': ['H', 'C', 'D', 'R', 79.96633],
-    'Phosphorylation (STY)': ['S', 'T', 'Y', 79.96633],
-    'Propionamide': ['C', 71.03712],
-    'Pyridoxal phosphate': ['K', 229.014],
-    'S-pyridylethylation': ['C', 105.057846],
-    'Sulfation': ['Y', 'S', 'T', 79.95682],
-    'Sulphone': ['M', 31.989828],
-    'Ubiquitin': ['T', 'S', 'C', 'K', 114.04293],
-    'Ubiquitination': ['K', 383.2281],
+    def run(self):
+        print("Starting thread for: " + self.spliceType)
 
+        while self._is_running:
 
-}
+            if self.spliceType == TRANS:
 
-# Mono-isotopic mass
-monoAminoMass = {
-    'A': 71.03711,
-    'R': 156.10111,
-    'N': 114.0493,
-    'D': 115.02694,
-    'C': 103.00919,
-    'E': 129.04259,
-    'Q': 128.05858,
-    'G': 57.02146,
-    'H': 137.05891,
-    'I': 113.08406,
-    'L': 113.08406,
-    'K': 128.09496,
-    'M': 131.04049,
-    'F': 147.06841,
-    'P': 97.05276,
-    'S': 87.03203,
-    'T': 101.04768,
-    'W': 186.07931,
-    'Y': 163.06333,
-    'V': 99.06841,
+                finalPeptide = combinePeptides(self.seqDict)
+                transOutput(finalPeptide, self.mined, self.maxed, self.overlapFlag, self.modList, self.maxDistance,
+                            self.outputPath, self.chargeFlags)
+                self.stop()
 
-}
+            elif self.spliceType == CIS:
+
+                cisOutput(self.seqDict, self.mined, self.maxed, self.overlapFlag, self.modList, self.maxDistance,
+                          self.outputPath, self.chargeFlags)
+                self.stop()
+
+            elif self.spliceType == LINEAR:
+                linearOutput(self.seqDict, self.mined, self.maxed, self.modList, self.outputPath, self.chargeFlags)
+                self.stop()
+                
+    def stop(self):
+        self._is_running = False
+        print('Closed Thread!')
 
 
 class Fasta:
 
     def __init__(self, seqDict):
         self.seqDict = seqDict
-        print(seqDict)
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
                        maxDistance, outputPath, chargeFlags):
@@ -83,46 +63,61 @@ class Fasta:
         """
            Function that literally combines everything to generate output
         """
-        print(chargeFlags)
+
         if transFlag:
+            transThread = FileThread(TRANS, self.seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath,
+                                     chargeFlags)
+            transThread.start()
+            #finalPeptide = combinePeptides(self.seqDict)
+            #transOutput(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags)
 
-            finalPeptide = combinePeptides(self.seqDict)
-            massDict = genMassDict(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags)
-
-            writeToCsv(massDict, 'w', 'Combined', outputPath, 'trans', chargeFlags)
 
             # combined = {'combined': combined}
             # with open('output.txt', 'wb') as file:
             # file.write(json.dumps(combined))  # use `json.loads` to do the reverse
 
         if cisFlag:
-
-            counter = 0
-            for key, value in self.seqDict.items():
-                massDict = genMassDict(value, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags)
-
-                if counter == 0:
-                    writeToCsv(massDict, 'w', key, outputPath, 'cis', chargeFlags)
-                    counter += 1
-
-                else:
-                    writeToCsv(massDict, 'a', key, outputPath, 'cis', chargeFlags)
+            cisThread = FileThread(CIS, self.seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath,
+                                   chargeFlags)
+            cisThread.start()
 
         if linearFlag:
 
-            # linear dictionary function which converts splits and splits ref to the dictionary output desired
-            counter = 0
-            for key, value in self.seqDict.items():
-                massDict = genMassLinear(value, mined, maxed, linearFlag, modList, chargeFlags)
+            linearThread = FileThread(LINEAR, self.seqDict, mined, maxed, overlapFlag, modList, maxDistance,
+                                      outputPath, chargeFlags)
+            linearThread.start()
 
-                print(massDict)
-                if counter == 0:
-                    writeToCsv(massDict, 'w', key, outputPath, 'linear', chargeFlags)
-                    counter += 1
 
-                else:
-                    writeToCsv(massDict, 'a', key, outputPath, 'linear', chargeFlags)
 
+def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
+    massDict = genMassDict(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags)
+    writeToCsv(massDict, 'w', 'Combined', outputPath, 'trans', chargeFlags)
+
+
+def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
+    counter = 0
+    for key, value in seqDict.items():
+        massDict = genMassDict(value, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags)
+
+        if counter == 0:
+            writeToCsv(massDict, 'w', key, outputPath, 'cis', chargeFlags)
+            counter += 1
+
+        else:
+            writeToCsv(massDict, 'a', key, outputPath, 'cis', chargeFlags)
+
+def linearOutput(seqDict, mined, maxed, modList, outputPath, chargeFlags):
+    # linear dictionary function which converts splits and splits ref to the dictionary output desired
+    counter = 0
+    for key, value in seqDict.items():
+        massDict = genMassLinear(value, mined, maxed, modList, chargeFlags)
+
+        if counter == 0:
+            writeToCsv(massDict, 'w', key, outputPath, 'linear', chargeFlags)
+            counter += 1
+
+        else:
+            writeToCsv(massDict, 'a', key, outputPath, 'linear', chargeFlags)
 
 def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):
 
@@ -133,8 +128,8 @@ def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance, charge
     return massDict
 
 
-def genMassLinear(peptide, mined, maxed, linearFlag, modList, chargeFlags):
-
+def genMassLinear(peptide, mined, maxed, modList, chargeFlags):
+    linearFlag = True
     combined, combinedRef = splitDictPeptide(peptide, mined, maxed, linearFlag)
     combined, combinedRef = removeDupsQuick(combined, combinedRef)
     massDict = combMass(combined, combinedRef)
@@ -165,13 +160,13 @@ def massCharge(predictedMass, z):
 
 
 def writeToCsv(massDict, writeFlag, header, outputPath, linkType, chargeFlags):
-    print('AT THE CSV FUNCTION!!!')
+
     finalPath = str(outputPath) + '/' + linkType + '.csv'
 
     chargeHeaders = getChargeIndex(chargeFlags)
 
     with open(finalPath, writeFlag, newline='') as csv_file:
-        print(finalPath)
+
 
         writer = csv.writer(csv_file, delimiter=',')
         writer.writerow([header, ' ', ' '])

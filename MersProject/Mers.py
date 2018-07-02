@@ -44,11 +44,13 @@ class FileThread(threading.Thread):
                 self.stop()
 
             elif self.spliceType == LINEAR:
-                print(3)
-
+                linearOutput(self.seqDict, self.mined, self.maxed, self.modList, self.outputPath, self.chargeFlags)
+                self.stop()
+                
     def stop(self):
         self._is_running = False
         print('Closed Thread!')
+
 
 class Fasta:
 
@@ -81,24 +83,15 @@ class Fasta:
 
         if linearFlag:
 
-            # linear dictionary function which converts splits and splits ref to the dictionary output desired
-            counter = 0
-            for key, value in self.seqDict.items():
-                massDict = genMassLinear(value, mined, maxed, linearFlag, modList, chargeFlags)
+            linearThread = FileThread(LINEAR, self.seqDict, mined, maxed, overlapFlag, modList, maxDistance,
+                                      outputPath, chargeFlags)
+            linearThread.start()
 
-
-                if counter == 0:
-                    writeToCsv(massDict, 'w', key, outputPath, 'linear', chargeFlags)
-                    counter += 1
-
-                else:
-                    writeToCsv(massDict, 'a', key, outputPath, 'linear', chargeFlags)
 
 
 def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
     massDict = genMassDict(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags)
     writeToCsv(massDict, 'w', 'Combined', outputPath, 'trans', chargeFlags)
-    return True
 
 
 def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
@@ -113,6 +106,19 @@ def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPa
         else:
             writeToCsv(massDict, 'a', key, outputPath, 'cis', chargeFlags)
 
+def linearOutput(seqDict, mined, maxed, modList, outputPath, chargeFlags):
+    # linear dictionary function which converts splits and splits ref to the dictionary output desired
+    counter = 0
+    for key, value in seqDict.items():
+        massDict = genMassLinear(value, mined, maxed, modList, chargeFlags)
+
+        if counter == 0:
+            writeToCsv(massDict, 'w', key, outputPath, 'linear', chargeFlags)
+            counter += 1
+
+        else:
+            writeToCsv(massDict, 'a', key, outputPath, 'linear', chargeFlags)
+
 def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):
 
     combined, combinedRef = outputCreate(peptide, mined, maxed, overlapFlag, maxDistance)
@@ -122,8 +128,8 @@ def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance, charge
     return massDict
 
 
-def genMassLinear(peptide, mined, maxed, linearFlag, modList, chargeFlags):
-
+def genMassLinear(peptide, mined, maxed, modList, chargeFlags):
+    linearFlag = True
     combined, combinedRef = splitDictPeptide(peptide, mined, maxed, linearFlag)
     combined, combinedRef = removeDupsQuick(combined, combinedRef)
     massDict = combMass(combined, combinedRef)

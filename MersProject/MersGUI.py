@@ -82,10 +82,10 @@ class MyTableWidget(QWidget):
         # Minimum/maximum Combo boxes and connector functions
         self.tab2.minimum = QLabel('Minimum Peptide Length : ')
         self.tab2.minimumCombo = QComboBox(self)
-        self.tab2.minimumCombo.activated[str].connect(self.minChanged)
+        self.tab2.minimumCombo.activated[str].connect(self.minMaxChanged)
         self.tab2.maximum = QLabel('Maximum Peptide Length : ')
         self.tab2.maximumCombo = QComboBox(self)
-        self.tab2.maximumCombo.activated[str].connect(self.maxChanged)
+        self.tab2.maximumCombo.activated[str].connect(self.minMaxChanged)
 
         # Max distance combo box
         self.tab2.maxDistance = QLabel('Maximum Distance : ')
@@ -103,11 +103,11 @@ class MyTableWidget(QWidget):
         self.tab2.mod2 = QLabel('Modification 2 : ')
         self.tab2.mod3 = QLabel('Modification 3 : ')
         self.tab2.mod1Combo = QComboBox(self)
-        self.tab2.mod1Combo.activated[str].connect(self.mod1Selected)
+        self.tab2.mod1Combo.activated[str].connect(self.modSelected)
         self.tab2.mod2Combo = QComboBox(self)
-        self.tab2.mod2Combo.activated[str].connect(self.mod2Selected)
+        self.tab2.mod2Combo.activated[str].connect(self.modSelected)
         self.tab2.mod3Combo = QComboBox(self)
-        self.tab2.mod3Combo.activated[str].connect(self.mod3Selected)
+        self.tab2.mod3Combo.activated[str].connect(self.modSelected)
 
         # Adding values to modification combo boxes
         self.tab2.mod1Combo.addItem("None")
@@ -227,8 +227,8 @@ class MyTableWidget(QWidget):
 
         chargeFlags = [plusOneFlag, plusTwoFlag, plusThreeFlag, plusFourFlag, plusFiveFlag]
 
-        #self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
-        #self.outputPath = '/Users/nicolaschapman/Desktop/Mers Output'
+        self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
+        # self.outputPath = '/Users/nicolaschapman/Desktop/Mers Output'
         # self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
         # self.outputPath = 'C:/Users/Arpit/Desktop/UROP'
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(),
@@ -285,21 +285,30 @@ class MyTableWidget(QWidget):
         end = time.time()
         self.parent().statusbar.hide()
         print(end - start)
-        tryString = r'explorer "C:\User\Arpit"'
 
-        print(tryString)
-        replacedOutpath = outputPath.replace("/", '\\')
-        print(replacedOutpath)
-        openString = r'explorer "' + replacedOutpath + '"'
-        print(openString)
-        subprocess.Popen(openString)
+        #tryString = r'explorer "C:\User\Arpit"'
+
+        #print(tryString)
+        ##replacedOutpath = outputPath.replace("/", '\\')
+        #print(replacedOutpath)
+        #openString = r'explorer "' + replacedOutpath + '"'
+        #print(openString)
+        #subprocess.Popen(openString)
 
     # called when minimumCombo value changes. It alters the values available in max and maxDistance combos to
     # ensure a realistic input
-    def minChanged(self, text):
+    def minMaxChanged(self, text):
+
+        sender = self.tab2.sender()
+        minChanged = sender == self.tab2.minimumCombo
+
+        if minChanged:
+            comboChange = self.tab2.maximumCombo
+        else:
+            comboChange = self.tab2.minimumCombo
 
         # current Max Value
-        maxValue = int(self.tab2.maximumCombo.currentText())
+        value = int(comboChange.currentText())
 
         # Current Max Distance - convert 'None' to 0 so it can be used as a comparator later.
         maxDistValue = self.tab2.maxDistCombo.currentText()
@@ -309,17 +318,27 @@ class MyTableWidget(QWidget):
             maxDistInt = int(maxDistValue)
 
         # Clear combo box values, add 'None' option back to maxDistCombo
-        self.tab2.maximumCombo.clear()
+        comboChange.clear()
         self.tab2.maxDistCombo.clear()
         self.tab2.maxDistCombo.addItem('None')
 
         # Creates new values in combo box which are greater than the min
-        for i in range(int(text)-1, 26):
-            self.tab2.maximumCombo.addItem(str(i+1))
-        # Restores current value if it is greater than the min
-        if maxValue >= int(text):
-            indexMax = self.tab2.maximumCombo.findText(str(maxValue))
-            self.tab2.maximumCombo.setCurrentIndex(indexMax)
+        if minChanged:
+            for i in range(int(text)-1, 26):
+                comboChange.addItem(str(i+1))
+            # Restores current value if it is greater than the min
+            if value >= int(text):
+                indexMax = comboChange.findText(str(value))
+                comboChange.setCurrentIndex(indexMax)
+
+        else: #maxChanged
+            # Creates new values in combo box which are less than than the max
+            for i in range(2, int(text) + 1):
+                comboChange.addItem(str(i))
+            # Restores current value if it is less than the max
+            if value <= int(text):
+                indexMin = comboChange.findText(str(value))
+                comboChange.setCurrentIndex(indexMin)
 
         for i in range(int(text)-1, 26):
             self.tab2.maxDistCombo.addItem(str(i+1))
@@ -327,116 +346,43 @@ class MyTableWidget(QWidget):
             indexDist = self.tab2.maxDistCombo.findText(str(maxDistValue))
             self.tab2.maxDistCombo.setCurrentIndex(indexDist)
 
-    # essentially the same as minChanges except it is called by a maxDistance change
-    def maxChanged(self, text):
 
-        # current Min Value
-        minValue = int(self.tab2.minimumCombo.currentText())
+    def modSelected(self, text):
+        modCombos = [self.tab2.mod1Combo, self.tab2.mod2Combo, self.tab2.mod3Combo]
+        modSender = []
+        modChange = []
 
-        # Current Max Distance - convert 'None' to 0 so it can be used as a comparator later.
-        maxDistValue = self.tab2.maxDistCombo.currentText()
-        if maxDistValue == 'None':
-            maxDistInt = 0
-        else:
-            maxDistInt = int(maxDistValue)
+        for combo in modCombos:
+            modSender.append(combo == self.tab2.sender())
 
-        # Clear combo box values, add 'None' option back to maxDistCombo
-        self.tab2.minimumCombo.clear()
-        self.tab2.maxDistCombo.clear()
-        self.tab2.maxDistCombo.addItem('None')
+        for i in range (0,len(modSender)):
+            if not modSender[i]:
+                modChange.append(modCombos[i])
 
-        # Creates new values in combo box which are less than than the max
-        for i in range(2, int(text)+1):
-            self.tab2.minimumCombo.addItem(str(i))
-        # Restores current value if it is less than the max
-        if minValue <= int(text):
-            indexMin = self.tab2.minimumCombo.findText(str(minValue))
-            self.tab2.minimumCombo.setCurrentIndex(indexMin)
+        modValue1 = modChange[0].currentText()
+        modValue2 = modChange[1].currentText()
 
-        for i in range(int(text)-1, 26):
-            self.tab2.maxDistCombo.addItem(str(i+1))
-        if maxDistInt >= int(text):
-            indexDist = self.tab2.maxDistCombo.findText(str(maxDistValue))
-            self.tab2.maxDistCombo.setCurrentIndex(indexDist)
 
-    def mod1Selected(self, text):
-        source = self.tab2.sender()
-        print(source)
-        print(self.tab2.mod1Combo)
-        #print(self.tab2.sender())
-        mod2Value = self.tab2.mod2Combo.currentText()
-        mod3Value = self.tab2.mod3Combo.currentText()
-
-        self.tab2.mod2Combo.clear()
-        self.tab2.mod3Combo.clear()
-        self.tab2.mod2Combo.addItem('None')
-        self.tab2.mod3Combo.addItem('None')
+        modChange[0].clear()
+        modChange[1].clear()
+        modChange[0].addItem('None')
+        modChange[1].addItem('None')
 
         for modification in modificationList:
-            if modification not in (text, mod2Value, mod3Value): #and modification != mod2Value and modification != mod3Value:
-                self.tab2.mod2Combo.addItem(modification)
-                self.tab2.mod3Combo.addItem(modification)
+            if modification not in (text, modValue1, modValue2): #and modification != modValue1 and modification != modValue2:
+                modChange[0].addItem(modification)
+                modChange[1].addItem(modification)
 
-        if mod2Value not in (text, 'None'):
-            self.tab2.mod2Combo.addItem(mod2Value)
-            indexMod2 = self.tab2.mod2Combo.findText(mod2Value)
-            self.tab2.mod2Combo.setCurrentIndex(indexMod2)
+        if modValue1 not in (text, 'None'):
+            modChange[0].addItem(modValue1)
+            indexMod1 = modChange[0].findText(modValue1)
+            modChange[0].setCurrentIndex(indexMod1)
 
-        if mod3Value not in (text, 'None'):
-            self.tab2.mod3Combo.addItem(mod3Value)
-            indexMod3 = self.tab2.mod3Combo.findText(mod3Value)
-            self.tab2.mod3Combo.setCurrentIndex(indexMod3)
+        if modValue2 not in (text, 'None'):
+            modChange[1].addItem(modValue2)
+            indexMod2 = modChange[1].findText(modValue2)
+            modChange[1].setCurrentIndex(indexMod2)
 
-
-    def mod2Selected(self, text):
-        mod1Value = self.tab2.mod1Combo.currentText()
-        mod3Value = self.tab2.mod3Combo.currentText()
-
-        self.tab2.mod1Combo.clear()
-        self.tab2.mod3Combo.clear()
-        self.tab2.mod1Combo.addItem('None')
-        self.tab2.mod3Combo.addItem('None')
-
-        for modification in modificationList:
-            if modification not in (text, mod1Value, mod3Value):
-                if modification != text:
-                    self.tab2.mod1Combo.addItem(modification)
-                    self.tab2.mod3Combo.addItem(modification)
-
-        if mod3Value not in (text, 'None'):
-            self.tab2.mod3Combo.addItem(mod3Value)
-            indexMod3 = self.tab2.mod3Combo.findText(mod3Value)
-            self.tab2.mod3Combo.setCurrentIndex(indexMod3)
-
-        if mod1Value not in (text, 'None'):
-            self.tab2.mod1Combo.addItem(mod1Value)
-            indexMod1 = self.tab2.mod1Combo.findText(mod1Value)
-            self.tab2.mod1Combo.setCurrentIndex(indexMod1)
-
-    def mod3Selected(self, text):
-        mod1Value = self.tab2.mod1Combo.currentText()
-        mod2Value = self.tab2.mod2Combo.currentText()
-
-        self.tab2.mod1Combo.clear()
-        self.tab2.mod2Combo.clear()
-        self.tab2.mod1Combo.addItem('None')
-        self.tab2.mod2Combo.addItem('None')
-
-        for modification in modificationList:
-            if modification not in (text, mod2Value, mod1Value):
-                if modification != text:
-                    self.tab2.mod1Combo.addItem(modification)
-                    self.tab2.mod2Combo.addItem(modification)
-
-        if mod2Value not in (text, 'None'):
-            self.tab2.mod2Combo.addItem(mod2Value)
-            indexMod2 = self.tab2.mod2Combo.findText(mod2Value)
-            self.tab2.mod2Combo.setCurrentIndex(indexMod2)
-
-        if mod1Value not in (text, 'None'):
-            self.tab2.mod1Combo.addItem(mod1Value)
-            indexMod1 = self.tab2.mod1Combo.findText(mod1Value)
-            self.tab2.mod1Combo.setCurrentIndex(indexMod1)
 
 
     @pyqtSlot()

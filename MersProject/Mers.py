@@ -8,8 +8,47 @@ TRANS = "Trans"
 LINEAR = "Linear"
 CIS = "Cis"
 
-class FileThread(threading.Thread):
+class PrintThread(threading.Thread):
 
+    def __init__(self, massDict):
+        threading.Thread.__init__(self)
+        self.massDict = massDict
+
+
+
+
+
+class ProteinThread(threading.Thread):
+
+    def __init__(self, key, value, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags, counter):
+        threading.Thread.__init__(self)
+        self.key = key
+        self.value = value
+        self.mined = mined
+        self.maxed = maxed
+        self.overlapFlag = overlapFlag
+        self.modList = modList
+        self.maxDistance = maxDistance
+        self.outputPath = outputPath
+        self.chargeFlags = chargeFlags
+        self.counter = counter
+        self._is_running = True
+
+    def run(self):
+        print("Starting thread for: " + self.value)
+
+        while self._is_running:
+            massDict = genMassDict(self.value, self.mined, self.maxed, self.overlapFlag, self.modList,
+                                   self.maxDistance, self.chargeFlags)
+            self.stop()
+
+
+    def stop(self):
+        self._is_running = False
+        print('Stopped thread for: ' + self.value)
+
+
+class FileThread(threading.Thread):
 
     def __init__(self, spliceType, seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath,
                  chargeFlags):
@@ -97,14 +136,10 @@ def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, o
 def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
     counter = 0
     for key, value in seqDict.items():
-        massDict = genMassDict(value, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags)
+        cisProtienThread = ProteinThread(key, value, mined, maxed, overlapFlag, modList, maxDistance, outputPath,
+                                         chargeFlags, counter)
+        cisProtienThread.start()
 
-        if counter == 0:
-            writeToCsv(massDict, 'w', key, outputPath, 'cis', chargeFlags)
-            counter += 1
-
-        else:
-            writeToCsv(massDict, 'a', key, outputPath, 'cis', chargeFlags)
 
 def linearOutput(seqDict, mined, maxed, modList, outputPath, chargeFlags):
     # linear dictionary function which converts splits and splits ref to the dictionary output desired

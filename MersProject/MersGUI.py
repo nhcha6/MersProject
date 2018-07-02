@@ -226,7 +226,7 @@ class MyTableWidget(QWidget):
 
         chargeFlags = [plusOneFlag, plusTwoFlag, plusThreeFlag, plusFourFlag, plusFiveFlag]
 
-        self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
+        # self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/Example.fasta'))
         # self.outputPath = '/Users/nicolaschapman/Desktop/Mers Output'
         # self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
         # self.outputPath = 'C:/Users/Arpit/Desktop/UROP'
@@ -287,9 +287,9 @@ class MyTableWidget(QWidget):
 
 
         #print(tryString)
-        replacedOutpath = outputPath.replace("/", '\\')
+        #replacedOutpath = outputPath.replace("/", '\\')
         #print(replacedOutpath)
-        openString = r'explorer "' + replacedOutpath + '"'
+        #openString = r'explorer "' + replacedOutpath + '"'
         #print(openString)
         # subprocess.Popen(openString)
 

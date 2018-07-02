@@ -1,10 +1,11 @@
 genericPeptide = 'ABCDEFG'
-genericSplits = ['A', 'AB', 'ABC', 'ABCD', 'ABCDE', 'ABCDEF',
+
+min1max12Splits = ['A', 'AB', 'ABC', 'ABCD', 'ABCDE', 'ABCDEF',
                  'ABCDEFG', 'B', 'BC', 'BCD', 'BCDE',
                  'BCDEF', 'BCDEFG', 'C', 'CD', 'CDE', 'CDEF',
                  'CDEFG', 'D', 'DE', 'DEF', 'DEFG', 'E', 'EF',
                  'EFG', 'F', 'FG', 'G']
-genericRef = [[0], [0, 1], [0, 1, 2], [0, 1, 2, 3], [0, 1, 2, 3, 4],
+min1max12Ref = [[0], [0, 1], [0, 1, 2], [0, 1, 2, 3], [0, 1, 2, 3, 4],
               [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5, 6], [1], [1, 2], [1, 2, 3], [1, 2, 3, 4],
               [1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 6], [2], [2, 3], [2, 3, 4],
               [2, 3, 4, 5], [2, 3, 4, 5, 6], [3], [3, 4],
@@ -26,31 +27,27 @@ min3max5Ref = [[0], [0, 1], [0, 1, 2], [0, 1, 2, 3],
 import unittest
 from Mers import *
 
-splitPeptideTest = []
-splitTest = []
-splitRefTests = []
-
-splitPeptideTest.append(genericPeptide)
-splitTest.append(genericSplits)
-splitRefTests.append(genericRef)
-
+splitPeptideTest = [genericPeptide]
+minedTest = [1, 3]
+maxedTest = [12, 5]
+splitTests = [[min1max12Splits, min3max5Splits]]
+splitRefTests = [[min1max12Ref, min3max5Ref]]
 
 # class for testing splits output with a false negative flag
 class splitsKnownValues(unittest.TestCase):
 
-
-
      def testSplitsGenericCase(self):
-         
-        result, ref = splitDictPeptide(self.genericPeptide, 1, 12, False)
-        self.assertEqual(self.genericSplits, result)
-        self.assertEqual(self.genericRef, ref)
+         for i in range(0, len(splitPeptideTest)):
+             for j in range(0, len(minedTest)):
+                 result, ref = splitDictPeptide(splitPeptideTest[i], minedTest[j], maxedTest[j], False)
+                 print(splitTests[i][j])
+                 self.assertEqual(splitTests[i][j], result)
+                 self.assertEqual(splitRefTests[i][j], ref)
 
-     def testSplitsMinMax(self):
-         result, ref = splitDictPeptide(self.genericPeptide, 3, 5, False)
-         self.assertEqual(self.min3max5Splits, result)
-         self.assertEqual(self.min3max5Ref, ref)
 
+
+
+"""
 # class for testing splits output with a true linear flag
 class splitsKnownValuesTrue(unittest.TestCase):
 
@@ -84,6 +81,6 @@ class splitsKnownValuesTrue(unittest.TestCase):
          self.assertEqual(self.min3max5RefTrue, ref)
 
 
-
+"""
 if __name__ == "__main__":
     unittest.main()

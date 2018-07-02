@@ -8,15 +8,7 @@ TRANS = "Trans"
 LINEAR = "Linear"
 CIS = "Cis"
 
-class PrintThread(threading.Thread):
-
-    def __init__(self, massDict):
-        threading.Thread.__init__(self)
-        self.massDict = massDict
-
-
-
-
+proteinThreadLock = threading.Lock()
 
 class ProteinThread(threading.Thread):
 
@@ -40,6 +32,15 @@ class ProteinThread(threading.Thread):
         while self._is_running:
             massDict = genMassDict(self.value, self.mined, self.maxed, self.overlapFlag, self.modList,
                                    self.maxDistance, self.chargeFlags)
+            proteinThreadLock.acquire()
+
+            if self.counter == 0:
+                print('Writing to csv for: ' + self.value)
+                writeToCsv(massDict, 'w', self.key, self.outputPath, 'cis', self.chargeFlags)
+            else:
+                print('Appending to csv for: ' + self.value)
+                writeToCsv(massDict, 'a', self.key, self.outputPath, 'cis', self.chargeFlags)
+            proteinThreadLock.release()
             self.stop()
 
 
@@ -135,10 +136,13 @@ def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, o
 
 def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
     counter = 0
+    cisThreadList = []
     for key, value in seqDict.items():
         cisProtienThread = ProteinThread(key, value, mined, maxed, overlapFlag, modList, maxDistance, outputPath,
                                          chargeFlags, counter)
+
         cisProtienThread.start()
+        counter += 1
 
 
 def linearOutput(seqDict, mined, maxed, modList, outputPath, chargeFlags):

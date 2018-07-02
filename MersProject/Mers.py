@@ -34,12 +34,8 @@ class ProteinThread(threading.Thread):
                                    self.maxDistance, self.chargeFlags)
             proteinThreadLock.acquire()
 
-            if self.counter == 0:
-                print('Writing to csv for: ' + self.value)
-                writeToCsv(massDict, 'w', self.key, self.outputPath, 'cis', self.chargeFlags)
-            else:
-                print('Appending to csv for: ' + self.value)
-                writeToCsv(massDict, 'a', self.key, self.outputPath, 'cis', self.chargeFlags)
+            print('Appending to csv for: ' + self.value)
+            writeToCsv(massDict, 'a', self.key, self.outputPath, 'cis', self.chargeFlags)
             proteinThreadLock.release()
             self.stop()
 
@@ -136,6 +132,8 @@ def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, o
 
 def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
     counter = 0
+    finalPath = str(outputPath) + '/cis.csv'
+    open(finalPath, 'w', newline='')
     cisThreadList = []
     for key, value in seqDict.items():
         cisProtienThread = ProteinThread(key, value, mined, maxed, overlapFlag, modList, maxDistance, outputPath,

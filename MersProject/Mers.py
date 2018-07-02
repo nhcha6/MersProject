@@ -5,6 +5,36 @@ import threading
 import time
 
 
+class FileThread(threading.Thread):
+    TRANS = "Trans"
+    LINEAR = "Linear"
+    CIS = "Cis"
+
+    def __init__(self, spliceType, seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath,
+                 chargeFlags):
+        threading.Thread.__init__(self)
+        self.spliceType = spliceType
+        self.seqDict = seqDict
+        self.mined = mined
+        self.maxed = maxed
+        self.overlapFlag = overlapFlag
+        self.modList = modList
+        self.maxDistance = maxDistance
+        self.outputPath = outputPath
+        self.chargeFlags = chargeFlags
+        self._is_running = True
+
+    def run(self):
+        print("Starting thread for: " + self.spliceType)
+
+
+        if self.spliceType == self.TRANS:
+            finalPeptide = combinePeptides(self.seqDict)
+            transOutput(finalPeptide, self.mined, self.maxed, self.overlapFlag, self.modList, self.maxDistance,
+                        self.outputPath, self.chargeFlags)
+
+    def stop(self):
+        self._is_running = False
 class Fasta:
 
     def __init__(self, seqDict):
@@ -19,11 +49,12 @@ class Fasta:
         """
         print(chargeFlags)
         if transFlag:
+            transThread = FileThread("Trans", self.seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath,
+                                     chargeFlags)
+            transThread.start()
+            #finalPeptide = combinePeptides(self.seqDict)
+            #transOutput(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags)
 
-            finalPeptide = combinePeptides(self.seqDict)
-            massDict = genMassDict(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags)
-
-            writeToCsv(massDict, 'w', 'Combined', outputPath, 'trans', chargeFlags)
 
             # combined = {'combined': combined}
             # with open('output.txt', 'wb') as file:
@@ -57,6 +88,11 @@ class Fasta:
                 else:
                     writeToCsv(massDict, 'a', key, outputPath, 'linear', chargeFlags)
 
+
+def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
+    massDict = genMassDict(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags)
+    writeToCsv(massDict, 'w', 'Combined', outputPath, 'trans', chargeFlags)
+    return True
 
 def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):
 

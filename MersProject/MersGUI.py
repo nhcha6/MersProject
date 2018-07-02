@@ -174,16 +174,15 @@ class MyTableWidget(QWidget):
     # called from the Upload Fasta File button. Opens a window to select a file, and check if the file ends in fasta
     def uploadFasta(self):
         fname = QFileDialog.getOpenFileName(self, 'Open File', '/home')
-        print(fname)
+
         self.fastaTest = fname[0][-5:]
         if self.fastaTest == 'fasta':
             self.fasta = Fasta(addSequenceList(fname[0]))
-            print(fname[0])
+
             QMessageBox.about(self, "Message", 'Fasta file successfully imported!')
         elif fname[0] == '':
             print('')
         else:
-            print(fname[0])
             QMessageBox.about(self, "Message", 'Please select a Fasta file!')
 
     # called from the Select Output Path button. Opens a window to select a file location to save the output to.
@@ -287,12 +286,12 @@ class MyTableWidget(QWidget):
         print(end - start)
         tryString = r'explorer "C:\User\Arpit"'
 
-        print(tryString)
+        #print(tryString)
         replacedOutpath = outputPath.replace("/", '\\')
-        print(replacedOutpath)
+        #print(replacedOutpath)
         openString = r'explorer "' + replacedOutpath + '"'
-        print(openString)
-        subprocess.Popen(openString)
+        #print(openString)
+        # subprocess.Popen(openString)
 
     # called when minimumCombo value changes. It alters the values available in max and maxDistance combos to
     # ensure a realistic input
@@ -361,8 +360,8 @@ class MyTableWidget(QWidget):
 
     def mod1Selected(self, text):
         source = self.tab2.sender()
-        print(source)
-        print(self.tab2.mod1Combo)
+        #print(source)
+        #print(self.tab2.mod1Combo)
         #print(self.tab2.sender())
         mod2Value = self.tab2.mod2Combo.currentText()
         mod3Value = self.tab2.mod3Combo.currentText()

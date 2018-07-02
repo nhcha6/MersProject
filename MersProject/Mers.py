@@ -4,11 +4,12 @@ from MonoAminoAndMods import *
 import threading
 import time
 
+TRANS = "Trans"
+LINEAR = "Linear"
+CIS = "Cis"
 
 class FileThread(threading.Thread):
-    TRANS = "Trans"
-    LINEAR = "Linear"
-    CIS = "Cis"
+
 
     def __init__(self, spliceType, seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath,
                  chargeFlags):
@@ -27,19 +28,32 @@ class FileThread(threading.Thread):
     def run(self):
         print("Starting thread for: " + self.spliceType)
 
+        while self._is_running:
 
-        if self.spliceType == self.TRANS:
-            finalPeptide = combinePeptides(self.seqDict)
-            transOutput(finalPeptide, self.mined, self.maxed, self.overlapFlag, self.modList, self.maxDistance,
-                        self.outputPath, self.chargeFlags)
+            if self.spliceType == TRANS:
+
+                finalPeptide = combinePeptides(self.seqDict)
+                transOutput(finalPeptide, self.mined, self.maxed, self.overlapFlag, self.modList, self.maxDistance,
+                            self.outputPath, self.chargeFlags)
+                self.stop()
+
+            elif self.spliceType == CIS:
+
+                cisOutput(self.seqDict, self.mined, self.maxed, self.overlapFlag, self.modList, self.maxDistance,
+                          self.outputPath, self.chargeFlags)
+                self.stop()
+
+            elif self.spliceType == LINEAR:
+                print(3)
 
     def stop(self):
         self._is_running = False
+        print('Closed Thread!')
+
 class Fasta:
 
     def __init__(self, seqDict):
         self.seqDict = seqDict
-        print(seqDict)
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
                        maxDistance, outputPath, chargeFlags):
@@ -47,9 +61,9 @@ class Fasta:
         """
            Function that literally combines everything to generate output
         """
-        print(chargeFlags)
+
         if transFlag:
-            transThread = FileThread("Trans", self.seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath,
+            transThread = FileThread(TRANS, self.seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath,
                                      chargeFlags)
             transThread.start()
             #finalPeptide = combinePeptides(self.seqDict)
@@ -61,17 +75,9 @@ class Fasta:
             # file.write(json.dumps(combined))  # use `json.loads` to do the reverse
 
         if cisFlag:
-
-            counter = 0
-            for key, value in self.seqDict.items():
-                massDict = genMassDict(value, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags)
-
-                if counter == 0:
-                    writeToCsv(massDict, 'w', key, outputPath, 'cis', chargeFlags)
-                    counter += 1
-
-                else:
-                    writeToCsv(massDict, 'a', key, outputPath, 'cis', chargeFlags)
+            cisThread = FileThread(CIS, self.seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath,
+                                   chargeFlags)
+            cisThread.start()
 
         if linearFlag:
 
@@ -80,7 +86,7 @@ class Fasta:
             for key, value in self.seqDict.items():
                 massDict = genMassLinear(value, mined, maxed, linearFlag, modList, chargeFlags)
 
-                print(massDict)
+
                 if counter == 0:
                     writeToCsv(massDict, 'w', key, outputPath, 'linear', chargeFlags)
                     counter += 1
@@ -93,6 +99,19 @@ def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, o
     massDict = genMassDict(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags)
     writeToCsv(massDict, 'w', 'Combined', outputPath, 'trans', chargeFlags)
     return True
+
+
+def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
+    counter = 0
+    for key, value in seqDict.items():
+        massDict = genMassDict(value, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags)
+
+        if counter == 0:
+            writeToCsv(massDict, 'w', key, outputPath, 'cis', chargeFlags)
+            counter += 1
+
+        else:
+            writeToCsv(massDict, 'a', key, outputPath, 'cis', chargeFlags)
 
 def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):
 
@@ -135,13 +154,13 @@ def massCharge(predictedMass, z):
 
 
 def writeToCsv(massDict, writeFlag, header, outputPath, linkType, chargeFlags):
-    print('AT THE CSV FUNCTION!!!')
+
     finalPath = str(outputPath) + '/' + linkType + '.csv'
 
     chargeHeaders = getChargeIndex(chargeFlags)
 
     with open(finalPath, writeFlag, newline='') as csv_file:
-        print(finalPath)
+
 
         writer = csv.writer(csv_file, delimiter=',')
         writer.writerow([header, ' ', ' '])

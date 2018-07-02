@@ -12,8 +12,10 @@ proteinThreadLock = threading.Lock()
 
 class ProteinThread(threading.Thread):
 
-    def __init__(self, key, value, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags, counter):
+    def __init__(self, spliceType, key, value, mined, maxed, modList, outputPath, chargeFlags,
+                 overlapFlag = True, maxDistance = 'None'):
         threading.Thread.__init__(self)
+        self.spliceType = spliceType
         self.key = key
         self.value = value
         self.mined = mined
@@ -23,19 +25,21 @@ class ProteinThread(threading.Thread):
         self.maxDistance = maxDistance
         self.outputPath = outputPath
         self.chargeFlags = chargeFlags
-        self.counter = counter
         self._is_running = True
 
     def run(self):
         print("Starting thread for: " + self.value)
 
         while self._is_running:
-            massDict = genMassDict(self.value, self.mined, self.maxed, self.overlapFlag, self.modList,
+            if self.spliceType == 'Cis':
+                massDict = genMassDict(self.value, self.mined, self.maxed, self.overlapFlag, self.modList,
                                    self.maxDistance, self.chargeFlags)
-            proteinThreadLock.acquire()
+            else:
+                massDict = genMassLinear(self.value, self.mined, self.maxed, self.modList, self.chargeFlags)
 
+            proteinThreadLock.acquire()
             print('Appending to csv for: ' + self.value)
-            writeToCsv(massDict, 'a', self.key, self.outputPath, 'cis', self.chargeFlags)
+            writeToCsv(massDict, 'a', self.key, self.outputPath, self.spliceType, self.chargeFlags)
             proteinThreadLock.release()
             self.stop()
 
@@ -43,6 +47,7 @@ class ProteinThread(threading.Thread):
     def stop(self):
         self._is_running = False
         print('Stopped thread for: ' + self.value)
+
 
 
 class FileThread(threading.Thread):
@@ -60,6 +65,7 @@ class FileThread(threading.Thread):
         self.outputPath = outputPath
         self.chargeFlags = chargeFlags
         self._is_running = True
+
 
     def run(self):
         print("Starting thread for: " + self.spliceType)
@@ -131,30 +137,29 @@ def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, o
 
 
 def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
-    counter = 0
-    finalPath = str(outputPath) + '/cis.csv'
+
+    finalPath = str(outputPath) + '/Cis.csv'
     open(finalPath, 'w', newline='')
     cisThreadList = []
     for key, value in seqDict.items():
-        cisProtienThread = ProteinThread(key, value, mined, maxed, overlapFlag, modList, maxDistance, outputPath,
-                                         chargeFlags, counter)
+        cisProtienThread = ProteinThread(CIS, key, value, mined, maxed, modList, outputPath,
+                                         chargeFlags, overlapFlag, maxDistance)
 
         cisProtienThread.start()
-        counter += 1
+
 
 
 def linearOutput(seqDict, mined, maxed, modList, outputPath, chargeFlags):
     # linear dictionary function which converts splits and splits ref to the dictionary output desired
-    counter = 0
+    finalPath = str(outputPath) + '/Linear.csv'
+    open(finalPath, 'w', newline='')
+    linearThreadList = []
     for key, value in seqDict.items():
-        massDict = genMassLinear(value, mined, maxed, modList, chargeFlags)
+        #massDict = genMassLinear(value, mined, maxed, modList, chargeFlags)
+        linearProtienThread = ProteinThread(spliceType = LINEAR, key = key, value = value, mined = mined, maxed = maxed,
+                                            modList = modList, outputPath = outputPath, chargeFlags = chargeFlags)
 
-        if counter == 0:
-            writeToCsv(massDict, 'w', key, outputPath, 'linear', chargeFlags)
-            counter += 1
-
-        else:
-            writeToCsv(massDict, 'a', key, outputPath, 'linear', chargeFlags)
+        linearProtienThread.start()
 
 def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):
 

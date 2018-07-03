@@ -28,14 +28,14 @@ class CombinationThread(threading.Thread):
 
     def run(self):
 
-        print("Starting thread")
+        #print("Starting thread")
 
         while self._is_running:
 
-            splitComb, splitCombRef = combinePeptideTrans(self.iteration, self.splits, self.splitRef, self.mined, self.maxed, self.overlapFlag, self.maxDistance)
-            self.combModless += splitComb
-            self.combModlessRef += splitCombRef
-            self.stop()
+            splitComb, splitCombRef = combinePeptideTrans(self.splits, self.splitRef, self.mined, self.maxed,
+                                                          self.overlapFlag, self.maxDistance)
+            print(splitComb, splitCombRef)
+            return splitComb, splitCombRef
 
 
     def stop(self):
@@ -466,11 +466,14 @@ def createTransThread(splits, splitsRef, mined, maxed, overlapFlag, maxDistance)
     combModless = []
     combModlessRef = []
     # iterate through all of the splits creating a thread for each split
+    print(splits)
+    print("Split len is " + str(len(splits)))
     for i in range(0, len(splits)-1):
+        print("Thread num is " + str(i))
         combinationThread = CombinationThread(i, splits, splitsRef, mined, maxed, overlapFlag, maxDistance, combModless, combModlessRef)
         combinationThread.start()
 
-def combinePeptideTrans(i, splits, splitRef, mined, maxed, overlapFlag, maxDistance):
+def combinePeptideTrans(splits, splitRef, mined, maxed, overlapFlag, maxDistance):
 
     splitComb = []
     splitCombRef = []
@@ -480,19 +483,19 @@ def combinePeptideTrans(i, splits, splitRef, mined, maxed, overlapFlag, maxDista
     # addForwardRef = []
     toAddReverse = ""
     # addReverseRef = []
-    for j in range(i + 1, len(splits)):
+    for j in range(0, 2):
         # create forward combination of i and j
-        toAddForward += splits[i]
+        toAddForward += splits[0]
         toAddForward += splits[j]
-        addForwardRef = splitRef[i] + splitRef[j]
+        addForwardRef = splitRef[0] + splitRef[j]
         toAddReverse += splits[j]
-        toAddReverse += splits[i]
-        addReverseRef = splitRef[j] + splitRef[i]
+        toAddReverse += splits[0]
+        addReverseRef = splitRef[j] + splitRef[0]
 
         # max, min and max distance checks combined into one function for clarity for clarity
-        if combineCheck(toAddForward, mined, maxed, splitRef[i], splitRef[j], maxDistance):
+        if combineCheck(toAddForward, mined, maxed, splitRef[0], splitRef[j], maxDistance):
             if overlapFlag:
-                if overlapComp(splitRef[i], splitRef[j]):
+                if overlapComp(splitRef[0], splitRef[j]):
                     splitComb.append(toAddForward)
                     splitComb.append(toAddReverse)
                     splitCombRef.append(addForwardRef)

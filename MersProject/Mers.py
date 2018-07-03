@@ -35,7 +35,6 @@ class CombinationThread(threading.Thread):
             splitComb, splitCombRef = combinePeptideTrans(self.iteration, self.splits, self.splitRef, self.mined, self.maxed, self.overlapFlag, self.maxDistance)
 
             self.combModless += splitComb
-            print('hi')
             self.combModlessRef += splitCombRef
             #print(self.combModless)
             self.stop()
@@ -488,10 +487,11 @@ def createTransThread(splits, splitsRef, mined, maxed, overlapFlag, maxDistance)
     length = len(splits)
     # iterate through all of the splits creating a thread for each split
     print('out')
-    for i in range(0, length-1):
+    for i in range(0, length):
         print('in')
         combinationThread = CombinationThread(i, splits, splitsRef, mined, maxed, overlapFlag, maxDistance, combModless, combModlessRef)
         combinationThread.start()
+    return combModless, combModlessRef
 
 def combinePeptideTrans(i, splits, splitRef, mined, maxed, overlapFlag, maxDistance):
 
@@ -667,7 +667,8 @@ def nth_replace(string, old, new, n=1, option='only nth'):
     nth_split = [left_join.join(groups[:n]), right_join.join(groups[n:])]
     return new.join(nth_split)
 
-createTransThread(["AA", "B", "CC", "DDD", "E"], [[1,2], [3], [4,5], [6,7,8], [9]], 3, 4, False, 'None')
+a, b = createTransThread(["AA", "B", "CC", "DDD", "E"], [[1,2], [3], [4,5], [6,7,8], [9]], 3, 4, False, 'None')
+print(a)
 
 """
 def initiateIteration(length):

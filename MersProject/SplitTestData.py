@@ -12,6 +12,22 @@ min1max12Ref = [[0], [0, 1], [0, 1, 2], [0, 1, 2, 3], [0, 1, 2, 3, 4],
               [3, 4, 5], [3, 4, 5, 6], [4],
               [4, 5], [4, 5, 6], [5], [5, 6], [6]]
 
+min2max2Splits = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
+min2max2Ref = [[0], [1], [2], [3], [4], [5], [6]]
+
+min2max3Splits = ['A', 'AB', 'B', 'BC', 'C', 'CD',
+                  'D', 'DE', 'E', 'EF', 'F', 'FG', 'G']
+min2max3Ref = [[0], [0, 1], [1], [1, 2], [2], [2, 3],
+               [3], [3, 4], [4], [4, 5], [5], [5, 6], [6]]
+
+min2max4Splits =  ['A', 'AB', 'ABC', 'B', 'BC', 'BCD', 'C',
+                   'CD', 'CDE', 'D', 'DE', 'DEF', 'E', 'EF',
+                   'EFG', 'F', 'FG', 'G']
+min2Max4Ref = [[0], [0, 1], [0, 1, 2], [1], [1, 2], [1, 2, 3],
+               [2], [2, 3], [2, 3, 4], [3], [3, 4],
+               [3, 4, 5], [4], [4, 5], [4, 5, 6],
+               [5], [5, 6], [6]]
+
 min3max5Splits = ['A', 'AB', 'ABC', 'ABCD', 'B', 'BC', 'BCD', 'BCDE',
                   'C', 'CD', 'CDE', 'CDEF',
                   'D', 'DE', 'DEF', 'DEFG', 'E', 'EF',
@@ -22,6 +38,3 @@ min3max5Ref = [[0], [0, 1], [0, 1, 2], [0, 1, 2, 3],
                [2, 3, 4, 5], [3], [3, 4],
                [3, 4, 5], [3, 4, 5, 6], [4],
                [4, 5], [4, 5, 6], [5], [5, 6], [6]]
-
-testMin1Max12 = {genericPeptide: [min1max12Splits, min1max12Ref]}
-testMin3Max5 = {genericPeptide: [min3max5Splits, min3max5Ref]}

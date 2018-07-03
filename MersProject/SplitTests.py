@@ -4,6 +4,15 @@ from Mers import *
 from SplitTestData import *
 
 
+testMin1Max12 = {genericPeptide: [min1max12Splits, min1max12Ref]}
+
+testMin2Max2 = {genericPeptide: [min2max2Splits, min2max2Ref]}
+testMin2Max3 = {genericPeptide: [min2max3Splits, min2max3Ref]}
+testMin2Max4 = {genericPeptide: [min2max4Splits, min2Max4Ref]}
+
+testMin3Max5 = {genericPeptide: [min3max5Splits, min3max5Ref]}
+
+
 # class for testing splits output with a false negative flag
 class splitsKnownValuesFalse(unittest.TestCase):
 
@@ -13,13 +22,25 @@ class splitsKnownValuesFalse(unittest.TestCase):
             self.assertEqual(value[0], result)
             self.assertEqual(value[1], ref)
 
-
     def testSplitsMin2Max2(self):
+        for key, value in testMin2Max2.items():
+            result, ref = splitDictPeptide(key, 2, 2, False)
+            self.assertEqual(value[0], result)
+            self.assertEqual(value[1], ref)
 
     def testSplitsMin2Max3(self):
+        for key, value in testMin2Max3.items():
+            result, ref = splitDictPeptide(key, 2, 3, False)
+            self.assertEqual(value[0], result)
+            self.assertEqual(value[1], ref)
 
     def testSplitsMin2Max4(self):
+        for key, value in testMin2Max4.items():
+            result, ref = splitDictPeptide(key, 2, 4, False)
+            self.assertEqual(value[0], result)
+            self.assertEqual(value[1], ref)
 
+    '''
     def testSplitsMin2Max5(self):
 
     def testSplitsMin2Max6(self):
@@ -122,7 +143,7 @@ class splitsKnownValuesFalse(unittest.TestCase):
 
     def testSplitsMin12Max12(self):
 
-
+    '''
 """
 # class for testing splits output with a true linear flag
 class splitsKnownValuesTrue(unittest.TestCase):

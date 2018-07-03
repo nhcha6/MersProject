@@ -35,7 +35,7 @@ class CombinationThread(threading.Thread):
             splitComb, splitCombRef = combinePeptideTrans(self.iteration, self.splits, self.splitRef, self.mined, self.maxed, self.overlapFlag, self.maxDistance)
 
             self.combModless += splitComb
-
+            print('hi')
             self.combModlessRef += splitCombRef
             #print(self.combModless)
             self.stop()

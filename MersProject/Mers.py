@@ -10,6 +10,7 @@ CIS = "Cis"
 
 proteinThreadLock = threading.Lock()
 
+
 class ProteinThread(threading.Thread):
 
     def __init__(self, spliceType, key, value, mined, maxed, modList, outputPath, chargeFlags,
@@ -50,7 +51,6 @@ class ProteinThread(threading.Thread):
     def stop(self):
         self._is_running = False
         print('Stopped thread for: ' + self.value)
-
 
 
 class FileThread(threading.Thread):
@@ -134,7 +134,6 @@ class Fasta:
             linearThread.start()
 
 
-
 def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
     massDict = genMassDict(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags)
     writeToCsv(massDict, 'w', 'Combined', outputPath, 'trans', chargeFlags)
@@ -179,6 +178,22 @@ def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance, charge
     massDict = applyMods(massDict, modList)
     chargeIonMass(massDict, chargeFlags)
     return massDict
+
+def outputCreate(peptide, mined, maxed, overlapFlag, maxDistance=None, linearFlag=False):
+
+    # Splits eg: ['A', 'AB', 'AD', 'B', 'BD']
+    # SplitRef eg: [[0], [0,1], [0,2], [1], [1,2]]
+    # Produces splits and splitRef arrays which are passed through combined
+    splits, splitRef = splitDictPeptide(peptide, mined, maxed, linearFlag)
+
+    # combined eg: ['ABC', 'BCA', 'ACD', 'DCA']
+    # combinedRef eg: [[0,1,2], [1,0,2], [0,2,3], [3,2,0]]
+    # pass splits through combined overlap peptide and then delete all duplicates
+    combined, combinedRef = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
+    combined, combinedRef = removeDupsQuick(combined, combinedRef)
+
+    return combined, combinedRef
+
 
 
 def genMassLinear(peptide, mined, maxed, modList, chargeFlags):
@@ -242,21 +257,6 @@ def getChargeIndex(chargeFlags):
     chargeHeaders = [i for i, e in enumerate(chargeFlags) if e]
     return chargeHeaders
 
-
-def outputCreate(peptide, mined, maxed, overlapFlag, maxDistance=None, linearFlag=False):
-
-    # Splits eg: ['A', 'AB', 'AD', 'B', 'BD']
-    # SplitRef eg: [[0], [0,1], [0,2], [1], [1,2]]
-    # Produces splits and splitRef arrays which are passed through combined
-    splits, splitRef = splitDictPeptide(peptide, mined, maxed, linearFlag)
-
-    # combined eg: ['ABC', 'BCA', 'ACD', 'DCA']
-    # combinedRef eg: [[0,1,2], [1,0,2], [0,2,3], [3,2,0]]
-    # pass splits through combined overlap peptide and then delete all duplicates
-    combined, combinedRef = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
-    combined, combinedRef = removeDupsQuick(combined, combinedRef)
-
-    return combined, combinedRef
 
 
 def applyMods(combineModlessDict, modList):

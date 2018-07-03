@@ -1,50 +1,126 @@
-genericPeptide = 'ABCDEFG'
-
-min1max12Splits = ['A', 'AB', 'ABC', 'ABCD', 'ABCDE', 'ABCDEF',
-                 'ABCDEFG', 'B', 'BC', 'BCD', 'BCDE',
-                 'BCDEF', 'BCDEFG', 'C', 'CD', 'CDE', 'CDEF',
-                 'CDEFG', 'D', 'DE', 'DEF', 'DEFG', 'E', 'EF',
-                 'EFG', 'F', 'FG', 'G']
-min1max12Ref = [[0], [0, 1], [0, 1, 2], [0, 1, 2, 3], [0, 1, 2, 3, 4],
-              [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5, 6], [1], [1, 2], [1, 2, 3], [1, 2, 3, 4],
-              [1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 6], [2], [2, 3], [2, 3, 4],
-              [2, 3, 4, 5], [2, 3, 4, 5, 6], [3], [3, 4],
-              [3, 4, 5], [3, 4, 5, 6], [4],
-              [4, 5], [4, 5, 6], [5], [5, 6], [6]]
-
-min3max5Splits = ['A', 'AB', 'ABC', 'ABCD', 'B', 'BC', 'BCD', 'BCDE',
-                  'C', 'CD', 'CDE', 'CDEF',
-                  'D', 'DE', 'DEF', 'DEFG', 'E', 'EF',
-                  'EFG', 'F', 'FG', 'G']
-min3max5Ref = [[0], [0, 1], [0, 1, 2], [0, 1, 2, 3],
-               [1], [1, 2], [1, 2, 3], [1, 2, 3, 4],
-               [2], [2, 3], [2, 3, 4],
-               [2, 3, 4, 5], [3], [3, 4],
-               [3, 4, 5], [3, 4, 5, 6], [4],
-               [4, 5], [4, 5, 6], [5], [5, 6], [6]]
-
 # Unit Testing Files
 import unittest
 from Mers import *
+from SplitTestData import *
 
-splitPeptideTest = [genericPeptide]
-minedTest = [1, 3]
-maxedTest = [12, 5]
-splitTests = [[min1max12Splits, min3max5Splits]]
-splitRefTests = [[min1max12Ref, min3max5Ref]]
 
 # class for testing splits output with a false negative flag
-class splitsKnownValues(unittest.TestCase):
+class splitsKnownValuesFalse(unittest.TestCase):
 
-     def testSplitsGenericCase(self):
-         for i in range(0, len(splitPeptideTest)):
-             for j in range(0, len(minedTest)):
-                 result, ref = splitDictPeptide(splitPeptideTest[i], minedTest[j], maxedTest[j], False)
-                 print(splitTests[i][j])
-                 self.assertEqual(splitTests[i][j], result)
-                 self.assertEqual(splitRefTests[i][j], ref)
+    def testSplitsMin1Max12(self):
+        for key, value in testMin1Max12.items():
+            result, ref = splitDictPeptide(key, 1, 12, False)
+            self.assertEqual(value[0], result)
+            self.assertEqual(value[1], ref)
 
 
+    def testSplitsMin2Max2(self):
+
+    def testSplitsMin2Max3(self):
+
+    def testSplitsMin2Max4(self):
+
+    def testSplitsMin2Max5(self):
+
+    def testSplitsMin2Max6(self):
+
+    def testSplitsMin2Max7(self):
+
+    def testSplitsMin2Max8(self):
+
+    def testSplitsMin2Max9(self):
+
+    def testSplitsMin2Max12(self):
+    
+    def testSplitsMin3Max4(self):
+
+    def testSplitsMin3Max5(self):
+        for key, value in testMin3Max5.items():
+            result, ref = splitDictPeptide(key, 3, 5, False)
+            self.assertEqual(value[0], result)
+            self.assertEqual(value[1], ref)
+    
+    def testSplitsMin3Max6(self):
+    
+    def testSplitsMin3Max7(self):
+    
+    def testSplitsMin3Max8(self):
+    
+    def testSplitsMin3Max9(self):
+    
+    def testSplitsMin3Max12(self):
+    
+    def testSplitsMin4Max5(self):
+    
+    def testSplitsMin4Max6(self):
+
+    def testSplitsMin4Max7(self):
+
+    def testSplitsMin4Max8(self):
+
+    def testSplitsMin4Max9(self):
+
+    def testSplitsMin4Max10(self):
+
+    def testSplitsMin4Max11(self):
+
+    def testSplitsMin4Max12(self):
+
+    def testSplitsMin5Max6(self):
+
+    def testSplitsMin5Max7(self):
+
+    def testSplitsMin5Max8(self):
+
+    def testSplitsMin5Max9(self):
+
+    def testSplitsMin5Max10(self):
+
+    def testSplitsMin5Max11(self):
+
+    def testSplitsMin5Max12(self):
+
+    def testSplitsMin6Max7(self):
+
+    def testSplitsMin6Max8(self):
+
+    def testSplitsMin6Max9(self):
+
+    def testSplitsMin6Max10(self):
+
+    def testSplitsMin6Max11(self):
+
+    def testSplitsMin6Max12(self):
+
+    def testSplitsMin7Max8(self):
+
+    def testSplitsMin7Max9(self):
+
+    def testSplitsMin7Max10(self):
+
+    def testSplitsMin7Max11(self):
+
+    def testSplitsMin7Max12(self):
+
+    def testSplitsMin8Max9(self):
+
+    def testSplitsMin8Max10(self):
+
+    def testSplitsMin8Max11(self):
+
+    def testSplitsMin8Max12(self):
+
+    def testSplitsMin9Max10(self):
+
+    def testSplitsMin9Max12(self):
+
+    def testSplitsMin10Max11(self):
+
+    def testSplitsMin10Max12(self):
+
+    def testSplitsMin11Max12(self):
+
+    def testSplitsMin12Max12(self):
 
 
 """

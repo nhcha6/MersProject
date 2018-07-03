@@ -37,10 +37,10 @@ class ProteinThread(threading.Thread):
             else:
                 massDict = genMassLinear(self.value, self.mined, self.maxed, self.modList, self.chargeFlags)
 
-            proteinThreadLock.acquire()
+            """proteinThreadLock.acquire()
             print('Appending to csv for: ' + self.value)
             writeToCsv(massDict, 'a', self.key, self.outputPath, self.spliceType, self.chargeFlags)
-            proteinThreadLock.release()
+            proteinThreadLock.release()"""
             self.stop()
 
 
@@ -84,14 +84,15 @@ class FileThread(threading.Thread):
                 cisOutput(self.seqDict, self.mined, self.maxed, self.overlapFlag, self.modList, self.maxDistance,
                           self.outputPath, self.chargeFlags)
                 self.stop()
+                print('cis thread complete')
 
             elif self.spliceType == LINEAR:
                 linearOutput(self.seqDict, self.mined, self.maxed, self.modList, self.outputPath, self.chargeFlags)
                 self.stop()
+                print('linear thread complete')
                 
     def stop(self):
         self._is_running = False
-        print('Closed Thread!')
 
 
 class Fasta:
@@ -142,10 +143,13 @@ def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPa
     open(finalPath, 'w', newline='')
     cisThreadList = []
     for key, value in seqDict.items():
-        cisProtienThread = ProteinThread(CIS, key, value, mined, maxed, modList, outputPath,
+        cisProteinThread = ProteinThread(CIS, key, value, mined, maxed, modList, outputPath,
                                          chargeFlags, overlapFlag, maxDistance)
+        cisThreadList.append(cisProteinThread)
+        cisProteinThread.start()
 
-        cisProtienThread.start()
+    for thread in cisThreadList:
+        thread.join()
 
 
 
@@ -156,10 +160,14 @@ def linearOutput(seqDict, mined, maxed, modList, outputPath, chargeFlags):
     linearThreadList = []
     for key, value in seqDict.items():
         #massDict = genMassLinear(value, mined, maxed, modList, chargeFlags)
-        linearProtienThread = ProteinThread(spliceType = LINEAR, key = key, value = value, mined = mined, maxed = maxed,
+        linearProteinThread = ProteinThread(spliceType = LINEAR, key = key, value = value, mined = mined, maxed = maxed,
                                             modList = modList, outputPath = outputPath, chargeFlags = chargeFlags)
+        linearThreadList.append(linearProteinThread)
+        linearProteinThread.start()
 
-        linearProtienThread.start()
+    for thread in linearThreadList:
+        thread.join()
+
 
 def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):
 

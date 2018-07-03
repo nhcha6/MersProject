@@ -41,6 +41,7 @@ class ProteinThread(threading.Thread):
             print('Appending to csv for: ' + self.value)
             writeToCsv(massDict, 'a', self.key, self.outputPath, self.spliceType, self.chargeFlags)
             proteinThreadLock.release()
+
             self.stop()
 
 

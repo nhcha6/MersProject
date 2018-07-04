@@ -168,13 +168,16 @@ class Fasta:
             # combined = {'combined': combined}
             # with open('output.txt', 'wb') as file:
             # file.write(json.dumps(combined))  # use `json.loads` to do the reverse
-
+        allProcess = []
         if cisFlag:
-            cisThread = FileThread(CIS, self.seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath,
-                                   chargeFlags)
-            allThreadList.append(cisThread)
-            cisThread.start()
+            cisProcess = multiprocessing.Process(target=cisOutput, args=(self.seqDict, mined, maxed, overlapFlag,
+                                                                        modList, maxDistance,
+                                                                        outputPath, chargeFlags))
+            allProcess.append(cisProcess)
+            cisProcess.start()
 
+        for process in allProcess:
+            process.join()
         if linearFlag:
 
             linearProcess = multiprocessing.Process(target = linearOutput, args = (self.seqDict, mined, maxed,
@@ -184,6 +187,29 @@ class Fasta:
         for thread in allThreadList:
             thread.join()
 
+
+def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
+
+    finalPath = str(outputPath) + '/Cis.csv'
+    open(finalPath, 'w', newline='')
+    manager = multiprocessing.Manager()
+
+    cisProcessList = []
+    finalMassDict = manager.dict()
+    for key, value in seqDict.items():
+        # massDict = genMassLinear(value, mined, maxed, modList, chargeFlags)
+        cisProteinProcess = multiprocessing.Process(target=genMassDict, args=(key, value, mined, maxed, overlapFlag,
+                                                                              modList, maxDistance,chargeFlags,
+                                                                              finalMassDict))
+        cisProcessList.append(cisProteinProcess)
+        cisProteinProcess.start()
+
+    for process in cisProcessList:
+        process.join()
+
+    for key, value in finalMassDict.items():
+        writeToCsv(value, 'a', key, outputPath, 'Cis', chargeFlags)
+    print("CIS IS COMPLETE")
 
 def linearOutput(seqDict, mined, maxed, modList, outputPath, chargeFlags):
     # linear dictionary function which converts splits and splits ref to the dictionary output desired
@@ -216,32 +242,15 @@ def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, o
     writeToCsv(massDict, 'w', 'Combined', outputPath, 'trans', chargeFlags)
 
 
-def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
 
-    finalPath = str(outputPath) + '/Cis.csv'
-    open(finalPath, 'w', newline='')
-    cisThreadList = []
-    for key, value in seqDict.items():
-        cisProteinThread = ProteinThread(CIS, key, value, mined, maxed, modList, outputPath,
-                                         chargeFlags, overlapFlag, maxDistance)
-        cisThreadList.append(cisProteinThread)
-        cisProteinThread.start()
-
-    for thread in cisThreadList:
-        thread.join()
-
-
-
-
-
-
-def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):
+def genMassDict(protId, peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags, finalMassDict):
 
     combined, combinedRef = outputCreate(peptide, mined, maxed, overlapFlag, maxDistance)
     massDict = combMass(combined, combinedRef)
     massDict = applyMods(massDict, modList)
     chargeIonMass(massDict, chargeFlags)
-    return massDict
+    finalMassDict[protId] = massDict
+
 
 def genMassTrans(peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):
     print('gen mass trans')

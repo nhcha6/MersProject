@@ -8,7 +8,7 @@ TRANS = "Trans"
 LINEAR = "Linear"
 CIS = "Cis"
 
-step
+stepValue = 3
 
 proteinThreadLock = threading.Lock()
 
@@ -33,10 +33,10 @@ class CombinationThread(threading.Thread):
         print("started combination thread")
 
         while self._is_running:
-            if self.iteration + 3 >= len(self.splits):
+            if self.iteration + stepValue >= len(self.splits):
                 iterateStep = len(self.splits)
             else:
-                iterateStep = self.iteration + 3
+                iterateStep = self.iteration + stepValue
             for j in range (self.iteration, iterateStep):
                 splitComb, splitCombRef = combinePeptideTrans(j, self.splits, self.splitRef, self.mined, self.maxed, self.overlapFlag, self.maxDistance)
 
@@ -48,7 +48,7 @@ class CombinationThread(threading.Thread):
 
     def stop(self):
         self._is_running = False
-        print('len CombMass: ' + str(len(self.combModless)))
+        print('finished combination thread')
 
 
 
@@ -493,11 +493,18 @@ def createTransThread(splits, splitsRef, mined, maxed, overlapFlag, maxDistance)
     combModlessRef = []
     length = len(splits)
     # iterate through all of the splits creating a thread for each split
-    for i in range(0, length, 3):
+    combThreads = []
+    startComb = time.time()
+    for i in range(0, length, stepValue):
         combinationThread = CombinationThread(i, splits, splitsRef, mined, maxed, overlapFlag, maxDistance, combModless, combModlessRef)
+        combThreads.append(combinationThread)
         combinationThread.start()
-        print(i)
+    for thread in combThreads:
+        thread.join()
+    endComb = time.time()
+    print('combination time: ' + str(endComb - startComb))
     return combModless, combModlessRef
+
 
 def combinePeptideTrans(i, splits, splitRef, mined, maxed, overlapFlag, maxDistance):
 

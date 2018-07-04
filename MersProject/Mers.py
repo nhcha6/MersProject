@@ -82,6 +82,7 @@ class ProteinThread(threading.Thread):
             else:
                 massDict = genMassLinear(self.value, self.mined, self.maxed, self.modList, self.chargeFlags)
 
+
             proteinThreadLock.acquire()
             print('Appending to csv for: ' + self.value)
             writeToCsv(massDict, 'a', self.key, self.outputPath, self.spliceType, self.chargeFlags)

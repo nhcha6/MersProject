@@ -12,6 +12,32 @@ from Mers import *
 
 class WorkerSignals(QObject):
     finished = pyqtSignal()
+    updateProgBar = pyqtSignal(int)
+
+class ProgressGenerator(QRunnable):
+
+    def __init__(self, *args, **kwargs):
+        super(ProgressGenerator, self).__init__()
+        # Store constructor arguments (re-used for processing)
+        self.args = args
+        self.kwargs = kwargs
+        self.signals = WorkerSignals()
+
+    @pyqtSlot()
+    def run(self):
+        while True:
+            self.signals.loadingSig.emit(0)
+            time.sleep(0.5)
+            self.signals.loadingSig.emit(25)
+            time.sleep(0.5)
+            self.signals.loadingSig.emit(50)
+            time.sleep(0.5)
+            self.signals.loadingSig.emit(75)
+            time.sleep(0.5)
+            self.signals.loadingSig.emit(100)
+            time.sleep(0.5)
+
+        #self.signals.finished.emit()
 
 class OutputGenerator(QRunnable):
 
@@ -280,18 +306,8 @@ class MyTableWidget(QWidget):
         self.progressBarFlag = False
         QMessageBox.about(self, "Message", 'Output Complete')
 
-    def loading(self):
-        while self.progressBarFlag:
-            self.tab2.progressBar.setValue(0)
-            time.sleep(0.5)
-            self.tab2.progressBar.setValue(25)
-            time.sleep(0.5)
-            self.tab2.progressBar.setValue(50)
-            time.sleep(0.5)
-            self.tab2.progressBar.setValue(75)
-            time.sleep(0.5)
-            self.tab2.progressBar.setValue(100)
-            time.sleep(0.5)
+    def updateProgressBar(self,int):
+        self.tab2.progressBar.setValue(int)
 
     def deleteProgressBar(self):
         # Delete progress label and progress bar
@@ -317,9 +333,11 @@ class MyTableWidget(QWidget):
         outputGen.signals.finished.connect(self.finished)
         self.threadpool.start(outputGen)
 
-        progressBarUpdate = OutputGenerator(self.loading)
+        progressBarUpdate = ProgressGenerator()
+        progressBarUpdate.signals.updateProgBar.connect(self.updateProgressBar)
         progressBarUpdate.signals.finished.connect(self.deleteProgressBar)
         self.threadpool.start(progressBarUpdate)
+
 
 
     # called when trans is selected, it disables the use of the max distance function

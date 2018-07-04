@@ -2,13 +2,13 @@
 import sys
 import subprocess
 from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTabWidget, QVBoxLayout, \
-                            QFileDialog, QGridLayout, QLabel, QComboBox, QCheckBox, QMessageBox, QDesktopWidget
+                            QFileDialog, QGridLayout, QLabel, QComboBox, QCheckBox, QMessageBox, QDesktopWidget, \
+                            QProgressBar
 from PyQt5.QtCore import *
 from PyQt5.QtCore import pyqtSlot
 from Mers import *
 
 # pyinstaller MersGUI --> this command from the relevant file location creates executable file
-
 
 class WorkerSignals(QObject):
     finished = pyqtSignal()
@@ -65,6 +65,7 @@ class MyTableWidget(QWidget):
         super(QWidget, self).__init__(parent)
         self.layout = QVBoxLayout(self)
         self.fasta = None
+        self.progressBarFlag = True
         #Init threading
         self.threadpool = QThreadPool()
 
@@ -240,7 +241,7 @@ class MyTableWidget(QWidget):
 
         chargeFlags = [plusOneFlag, plusTwoFlag, plusThreeFlag, plusFourFlag, plusFiveFlag]
 
-        # self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/example.fasta'))
+        self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/example.fasta'))
         # self.outputPath = '/Users/nicolaschapman/Desktop/Mers Output'
         # self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
         # self.outputPath = 'C:/Users/Arpit/Desktop/UROP'
@@ -273,17 +274,54 @@ class MyTableWidget(QWidget):
                       self.outputPath, chargeFlags)
                     #self.output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
                      #           maxDistance, self.outputPath, chargeFlags)
+
     def finished(self):
         print("ITS DONE")
+        self.progressBarFlag = False
+        QMessageBox.about(self, "Message", 'Output Complete')
+
+    def loading(self):
+        while self.progressBarFlag:
+            self.tab2.progressBar.setValue(0)
+            time.sleep(0.5)
+            self.tab2.progressBar.setValue(25)
+            time.sleep(0.5)
+            self.tab2.progressBar.setValue(50)
+            time.sleep(0.5)
+            self.tab2.progressBar.setValue(75)
+            time.sleep(0.5)
+            self.tab2.progressBar.setValue(100)
+            time.sleep(0.5)
+
+    def deleteProgressBar(self):
+        # Delete progress label and progress bar
+        self.tab2.layout.removeWidget(self.tab2.progressLabel)
+        self.tab2.progressLabel.deleteLater()
+        self.tab2.progressLabel = None
+        self.tab2.layout.removeWidget(self.tab2.progressBar)
+        self.tab2.progressBar.deleteLater()
+        self.tab2.progressBar = None
+        print('left loop')
 
     def outputPreStep(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList, maxDistance,
                       outputPath, chargeFlags):
-        #utputGen = OutputGenerator(self.printMin, mined, maxed)
+
+        self.tab2.progressLabel = QLabel('Collating Combinations. Please Wait: ')
+        self.tab2.layout.addWidget(self.tab2.progressLabel, 14, 3, 1, 2)
+        self.tab2.progressBar = QProgressBar(self)
+        self.tab2.layout.addWidget(self.tab2.progressBar, 15, 3, 1, 4)
+
         outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
                                maxDistance, outputPath, chargeFlags)
 
         outputGen.signals.finished.connect(self.finished)
         self.threadpool.start(outputGen)
+
+        progressBarUpdate = OutputGenerator(self.loading)
+        progressBarUpdate.signals.finished.connect(self.deleteProgressBar)
+        self.threadpool.start(progressBarUpdate)
+
+
     # called when trans is selected, it disables the use of the max distance function
     def disableMaxDist(self, state):
 

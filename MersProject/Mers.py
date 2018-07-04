@@ -28,21 +28,25 @@ class CombinationThread(threading.Thread):
 
     def run(self):
 
-        #print("Starting thread")
+        print("started combination thread")
 
         while self._is_running:
+            if self.iteration + 3 >= len(self.splits):
+                iterateStep = len(self.splits)
+            else:
+                iterateStep = self.iteration + 3
+            for j in range (self.iteration, iterateStep):
+                splitComb, splitCombRef = combinePeptideTrans(self.iteration, self.splits, self.splitRef, self.mined, self.maxed, self.overlapFlag, self.maxDistance)
 
-            splitComb, splitCombRef = combinePeptideTrans(self.iteration, self.splits, self.splitRef, self.mined, self.maxed, self.overlapFlag, self.maxDistance)
-
-            self.combModless += splitComb
-            self.combModlessRef += splitCombRef
-            #print(self.combModless)
+                self.combModless += splitComb
+                self.combModlessRef += splitCombRef
+                #print(self.combModless)
             self.stop()
 
 
     def stop(self):
         self._is_running = False
-        #print(len(self.combModless))
+        print('len CombMass: ' + str(len(self.combModless)))
 
 
 
@@ -117,6 +121,7 @@ class FileThread(threading.Thread):
                 transOutput(finalPeptide, self.mined, self.maxed, self.overlapFlag, self.modList, self.maxDistance,
                             self.outputPath, self.chargeFlags)
                 self.stop()
+                print('trans thread complete')
 
             elif self.spliceType == CIS:
 
@@ -486,11 +491,10 @@ def createTransThread(splits, splitsRef, mined, maxed, overlapFlag, maxDistance)
     combModlessRef = []
     length = len(splits)
     # iterate through all of the splits creating a thread for each split
-    print('out')
-    for i in range(0, length):
-        print('in')
+    for i in range(0, length, 3):
         combinationThread = CombinationThread(i, splits, splitsRef, mined, maxed, overlapFlag, maxDistance, combModless, combModlessRef)
         combinationThread.start()
+        print(i)
     return combModless, combModlessRef
 
 def combinePeptideTrans(i, splits, splitRef, mined, maxed, overlapFlag, maxDistance):
@@ -669,7 +673,6 @@ def nth_replace(string, old, new, n=1, option='only nth'):
 
 a, b = createTransThread(["AA", "B", "CC", "DDD", "E"], [[1,2], [3], [4,5], [6,7,8], [9]], 3, 4, False, 'None')
 print(a)
-
 """
 def initiateIteration(length):
     iterationArray = []

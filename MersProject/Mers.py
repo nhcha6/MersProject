@@ -11,6 +11,43 @@ CIS = "Cis"
 proteinThreadLock = threading.Lock()
 
 
+class CombinationThread(threading.Thread):
+
+    def __init__(self, iteration, splits, splitRef, mined, maxed, overlapFlag, maxDistance, combModless, combModlessRef):
+        threading.Thread.__init__(self)
+        self.iteration = iteration
+        self.splits = splits
+        self.splitRef = splitRef
+        self.mined = mined
+        self.maxed = maxed
+        self.overlapFlag = overlapFlag
+        self.maxDistance = maxDistance
+        self.combModless = combModless
+        self.combModlessRef = combModlessRef
+        self._is_running = True
+
+
+    def run(self):
+
+        #print("Starting thread")
+
+        while self._is_running:
+
+            splitComb, splitCombRef = combinePeptideTrans(self.iteration, self.splits, self.splitRef, self.mined, self.maxed, self.overlapFlag, self.maxDistance)
+
+            self.combModless += splitComb
+            self.combModlessRef += splitCombRef
+            #print(self.combModless)
+            self.stop()
+
+
+    def stop(self):
+        self._is_running = False
+        #print(len(self.combModless))
+
+
+
+
 class ProteinThread(threading.Thread):
 
     def __init__(self, spliceType, key, value, mined, maxed, modList, outputPath, chargeFlags,
@@ -135,7 +172,7 @@ class Fasta:
 
 
 def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
-    massDict = genMassDict(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags)
+    massDict = genMassTrans(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags)
     writeToCsv(massDict, 'w', 'Combined', outputPath, 'trans', chargeFlags)
 
 
@@ -179,21 +216,13 @@ def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance, charge
     chargeIonMass(massDict, chargeFlags)
     return massDict
 
-def outputCreate(peptide, mined, maxed, overlapFlag, maxDistance=None, linearFlag=False):
+def genMassTrans(peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):
 
-    # Splits eg: ['A', 'AB', 'AD', 'B', 'BD']
-    # SplitRef eg: [[0], [0,1], [0,2], [1], [1,2]]
-    # Produces splits and splitRef arrays which are passed through combined
-    splits, splitRef = splitDictPeptide(peptide, mined, maxed, linearFlag)
-
-    # combined eg: ['ABC', 'BCA', 'ACD', 'DCA']
-    # combinedRef eg: [[0,1,2], [1,0,2], [0,2,3], [3,2,0]]
-    # pass splits through combined overlap peptide and then delete all duplicates
-    combined, combinedRef = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
-    combined, combinedRef = removeDupsQuick(combined, combinedRef)
-
-    return combined, combinedRef
-
+    combined, combinedRef = outputCreateTrans(peptide, mined, maxed, overlapFlag, maxDistance)
+    massDict = combMass(combined, combinedRef)
+    massDict = applyMods(massDict, modList)
+    chargeIonMass(massDict, chargeFlags)
+    return massDict
 
 
 def genMassLinear(peptide, mined, maxed, modList, chargeFlags):
@@ -256,6 +285,37 @@ def writeToCsv(massDict, writeFlag, header, outputPath, linkType, chargeFlags):
 def getChargeIndex(chargeFlags):
     chargeHeaders = [i for i, e in enumerate(chargeFlags) if e]
     return chargeHeaders
+
+def outputCreateTrans(peptide, mined, maxed, overlapFlag, maxDistance = None, linearFlag = False):
+    splits, splitRef = splitDictPeptide(peptide, mined, maxed, linearFlag)
+
+    # combined eg: ['ABC', 'BCA', 'ACD', 'DCA']
+    # combinedRef eg: [[0,1,2], [1,0,2], [0,2,3], [3,2,0]]
+    # pass splits through combined overlap peptide and then delete all duplicates
+
+    combined, combinedRef = createTransThread(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
+
+    combined, combinedRef = removeDupsQuick(combined, combinedRef)
+
+    return combined, combinedRef
+
+
+def outputCreate(peptide, mined, maxed, overlapFlag, maxDistance=None, linearFlag=False):
+
+    # Splits eg: ['A', 'AB', 'AD', 'B', 'BD']
+    # SplitRef eg: [[0], [0,1], [0,2], [1], [1,2]]
+    # Produces splits and splitRef arrays which are passed through combined
+    splits, splitRef = splitDictPeptide(peptide, mined, maxed, linearFlag)
+
+    # combined eg: ['ABC', 'BCA', 'ACD', 'DCA']
+    # combinedRef eg: [[0,1,2], [1,0,2], [0,2,3], [3,2,0]]
+    # pass splits through combined overlap peptide and then delete all duplicates
+
+    combined, combinedRef = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
+
+    combined, combinedRef = removeDupsQuick(combined, combinedRef)
+
+    return combined, combinedRef
 
 
 
@@ -423,6 +483,56 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
             # addReverseRef = []
     return combModless, combModlessRef
 
+def createTransThread(splits, splitsRef, mined, maxed, overlapFlag, maxDistance):
+    combModless = []
+    combModlessRef = []
+    length = len(splits)
+    # iterate through all of the splits creating a thread for each split
+    print('out')
+    for i in range(0, length):
+        print('in')
+        combinationThread = CombinationThread(i, splits, splitsRef, mined, maxed, overlapFlag, maxDistance, combModless, combModlessRef)
+        combinationThread.start()
+    return combModless, combModlessRef
+
+def combinePeptideTrans(i, splits, splitRef, mined, maxed, overlapFlag, maxDistance):
+
+    splitComb = []
+    splitCombRef = []
+
+    # toAdd variables hold temporary combinations for insertion in final matrix if it meets criteria
+    toAddForward = ""
+    # addForwardRef = []
+    toAddReverse = ""
+    # addReverseRef = []
+    for j in range(i + 1, len(splits)):
+        # create forward combination of i and j
+        toAddForward += splits[i]
+        toAddForward += splits[j]
+        addForwardRef = splitRef[i] + splitRef[j]
+        toAddReverse += splits[j]
+        toAddReverse += splits[i]
+        addReverseRef = splitRef[j] + splitRef[i]
+
+        # max, min and max distance checks combined into one function for clarity for clarity
+        if combineCheck(toAddForward, mined, maxed, splitRef[i], splitRef[j], maxDistance):
+            if overlapFlag:
+                if overlapComp(splitRef[i], splitRef[j]):
+                    splitComb.append(toAddForward)
+                    splitComb.append(toAddReverse)
+                    splitCombRef.append(addForwardRef)
+                    splitCombRef.append(addReverseRef)
+            else:
+                splitComb.append(toAddForward)
+                splitComb.append(toAddReverse)
+                splitCombRef.append(addForwardRef)
+                splitCombRef.append(addReverseRef)
+
+        toAddForward = ""
+        toAddReverse = ""
+        # addForwardRef = []
+        # addReverseRef = []
+    return splitComb, splitCombRef
 
 def maxDistCheck(ref1, ref2, maxDistance):
     if maxDistance == 'None':
@@ -558,3 +668,17 @@ def nth_replace(string, old, new, n=1, option='only nth'):
     groups = string.split(old)
     nth_split = [left_join.join(groups[:n]), right_join.join(groups[n:])]
     return new.join(nth_split)
+
+a, b = createTransThread(["AA", "B", "CC", "DDD", "E"], [[1,2], [3], [4,5], [6,7,8], [9]], 3, 4, False, 'None')
+print(a)
+
+"""
+def initiateIteration(length):
+    iterationArray = []
+    for i in range(0,length):
+        combinationThread = CombinationThread(i, iterationArray)
+        combinationThread.start()
+    print(iterationArray)
+
+initiateIteration(5)
+"""

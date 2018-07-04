@@ -9,6 +9,10 @@ from Mers import *
 
 # pyinstaller MersGUI --> this command from the relevant file location creates executable file
 
+
+class WorkerSignals(QObject):
+    finished = pyqtSignal()
+
 class OutputGenerator(QRunnable):
 
     def __init__(self, fn, *args, **kwargs):
@@ -17,11 +21,14 @@ class OutputGenerator(QRunnable):
         self.fn = fn
         self.args = args
         self.kwargs = kwargs
+        self.signals = WorkerSignals()
+
     @pyqtSlot()
     def run(self):
         print(*self.args)
         print(**self.kwargs)
         self.fn(*self.args)
+        self.signals.finished.emit()
 
 class App(QMainWindow):
     # App serves as the parent class for the embedded MyTableWidget
@@ -266,15 +273,16 @@ class MyTableWidget(QWidget):
                       self.outputPath, chargeFlags)
                     #self.output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
                      #           maxDistance, self.outputPath, chargeFlags)
-    def printMin(self, mined, maxed):
-        print(mined)
-        print(maxed)
+    def finished(self):
+        print("ITS DONE")
+
     def outputPreStep(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList, maxDistance,
                       outputPath, chargeFlags):
         #utputGen = OutputGenerator(self.printMin, mined, maxed)
         outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
                                maxDistance, outputPath, chargeFlags)
 
+        outputGen.signals.finished.connect(self.finished)
         self.threadpool.start(outputGen)
     # called when trans is selected, it disables the use of the max distance function
     def disableMaxDist(self, state):

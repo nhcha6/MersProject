@@ -13,6 +13,7 @@ stepValue = 1
 proteinThreadLock = threading.Lock()
 
 
+
 class CombinationThread(threading.Thread):
 
     def __init__(self, iteration, splits, splitRef, mined, maxed, overlapFlag, maxDistance, combModless, combModlessRef):
@@ -153,10 +154,11 @@ class Fasta:
         """
            Function that literally combines everything to generate output
         """
-
+        allThreadList = []
         if transFlag:
             transThread = FileThread(TRANS, self.seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath,
                                      chargeFlags)
+            allThreadList.append(transThread)
             transThread.start()
             #finalPeptide = combinePeptides(self.seqDict)
             #transOutput(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags)
@@ -169,14 +171,18 @@ class Fasta:
         if cisFlag:
             cisThread = FileThread(CIS, self.seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath,
                                    chargeFlags)
+            allThreadList.append(cisThread)
             cisThread.start()
 
         if linearFlag:
 
             linearThread = FileThread(LINEAR, self.seqDict, mined, maxed, overlapFlag, modList, maxDistance,
                                       outputPath, chargeFlags)
+            allThreadList.append(linearThread)
             linearThread.start()
 
+        for thread in allThreadList:
+            thread.join()
 
 def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
     print('mass dict')

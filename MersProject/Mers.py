@@ -2,6 +2,7 @@ from Bio import SeqIO
 import csv
 from MonoAminoAndMods import *
 import threading
+import multiprocessing
 import time
 
 TRANS = "Trans"
@@ -176,13 +177,38 @@ class Fasta:
 
         if linearFlag:
 
-            linearThread = FileThread(LINEAR, self.seqDict, mined, maxed, overlapFlag, modList, maxDistance,
-                                      outputPath, chargeFlags)
-            allThreadList.append(linearThread)
-            linearThread.start()
+            linearProcess = multiprocessing.Process(target = linearOutput, args = (self.seqDict, mined, maxed,
+                                                                                   modList, outputPath, chargeFlags))
+            linearProcess.start()
 
         for thread in allThreadList:
             thread.join()
+
+
+def linearOutput(seqDict, mined, maxed, modList, outputPath, chargeFlags):
+    # linear dictionary function which converts splits and splits ref to the dictionary output desired
+    finalPath = str(outputPath) + '/Linear.csv'
+
+
+    open(finalPath, 'w', newline='')
+    manager = multiprocessing.Manager()
+
+    linearProcessList = []
+    finalMassDict = manager.dict()
+    for key, value in seqDict.items():
+
+        #massDict = genMassLinear(value, mined, maxed, modList, chargeFlags)
+        linearProteinProcess = multiprocessing.Process(target=genMassLinear, args=(key, value, mined, maxed,
+                                                                                 modList, chargeFlags, finalMassDict))
+        linearProcessList.append(linearProteinProcess)
+        linearProteinProcess.start()
+
+    for process in linearProcessList:
+        process.join()
+
+    for key, value in finalMassDict.items():
+        writeToCsv(value, 'a', key, outputPath, 'linear', chargeFlags)
+    print('LINEAR IS COMPLETE')
 
 def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
     print('mass dict')
@@ -206,20 +232,7 @@ def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPa
 
 
 
-def linearOutput(seqDict, mined, maxed, modList, outputPath, chargeFlags):
-    # linear dictionary function which converts splits and splits ref to the dictionary output desired
-    finalPath = str(outputPath) + '/Linear.csv'
-    open(finalPath, 'w', newline='')
-    linearThreadList = []
-    for key, value in seqDict.items():
-        #massDict = genMassLinear(value, mined, maxed, modList, chargeFlags)
-        linearProteinThread = ProteinThread(spliceType = LINEAR, key = key, value = value, mined = mined, maxed = maxed,
-                                            modList = modList, outputPath = outputPath, chargeFlags = chargeFlags)
-        linearThreadList.append(linearProteinThread)
-        linearProteinThread.start()
 
-    for thread in linearThreadList:
-        thread.join()
 
 
 def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):
@@ -239,14 +252,14 @@ def genMassTrans(peptide, mined, maxed, overlapFlag, modList, maxDistance, charg
     return massDict
 
 
-def genMassLinear(peptide, mined, maxed, modList, chargeFlags):
+def genMassLinear(protId, peptide, mined, maxed, modList, chargeFlags, finalMassDict):
     linearFlag = True
     combined, combinedRef = splitDictPeptide(peptide, mined, maxed, linearFlag)
     combined, combinedRef = removeDupsQuick(combined, combinedRef)
     massDict = combMass(combined, combinedRef)
     massDict = applyMods(massDict, modList)
     chargeIonMass(massDict, chargeFlags)
-    return massDict
+    finalMassDict[protId] = massDict
 
 
 def chargeIonMass(massDict, chargeFlags):
@@ -695,8 +708,6 @@ def nth_replace(string, old, new, n=1, option='only nth'):
     nth_split = [left_join.join(groups[:n]), right_join.join(groups[n:])]
     return new.join(nth_split)
 
-a, b = createTransThread(["AA", "B", "CC", "DDD", "E"], [[1,2], [3], [4,5], [6,7,8], [9]], 3, 4, False, 'None')
-print(a)
 """
 def initiateIteration(length):
     iterationArray = []

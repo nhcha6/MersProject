@@ -406,7 +406,7 @@ def splitDictPeptide(peptide, mined, maxed, linearFlag):
 
     # embedded for loops build all possible splits
     for i in range(0, length):
-        print(i)
+        
         character = peptide[i]
         toAdd = ""
         # add and append first character and add and append reference number which indexes this character

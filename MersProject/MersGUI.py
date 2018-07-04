@@ -3,13 +3,25 @@ import sys
 import subprocess
 from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTabWidget, QVBoxLayout, \
                             QFileDialog, QGridLayout, QLabel, QComboBox, QCheckBox, QMessageBox, QDesktopWidget
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import *
 from PyQt5.QtCore import pyqtSlot
 from Mers import *
 
 # pyinstaller MersGUI --> this command from the relevant file location creates executable file
 
+class OutputGenerator(QRunnable):
 
+    def __init__(self, fn, *args, **kwargs):
+        super(OutputGenerator, self).__init__()
+        # Store constructor arguments (re-used for processing)
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+    @pyqtSlot()
+    def run(self):
+        print(*self.args)
+        print(**self.kwargs)
+        self.fn(*self.args)
 
 class App(QMainWindow):
     # App serves as the parent class for the embedded MyTableWidget
@@ -46,6 +58,8 @@ class MyTableWidget(QWidget):
         super(QWidget, self).__init__(parent)
         self.layout = QVBoxLayout(self)
         self.fasta = None
+        #Init threading
+        self.threadpool = QThreadPool()
 
         # Initialisation of two tabs
         self.tabs = QTabWidget()
@@ -191,6 +205,7 @@ class MyTableWidget(QWidget):
             # QMessageBox.about(self, "Message", 'Valid Path Selected')
 
 
+
     def confirmationFunction(self):
 
         """
@@ -218,7 +233,7 @@ class MyTableWidget(QWidget):
 
         chargeFlags = [plusOneFlag, plusTwoFlag, plusThreeFlag, plusFourFlag, plusFiveFlag]
 
-        self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/example.fasta'))
+        # self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/example.fasta'))
         # self.outputPath = '/Users/nicolaschapman/Desktop/Mers Output'
         # self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
         # self.outputPath = 'C:/Users/Arpit/Desktop/UROP'
@@ -245,11 +260,22 @@ class MyTableWidget(QWidget):
 
             if reply == QMessageBox.Yes:
                 print('reply is yes')
+
                 if self.getOutputPath():
+                    self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList, maxDistance,
+                      self.outputPath, chargeFlags)
+                    #self.output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
+                     #           maxDistance, self.outputPath, chargeFlags)
+    def printMin(self, mined, maxed):
+        print(mined)
+        print(maxed)
+    def outputPreStep(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList, maxDistance,
+                      outputPath, chargeFlags):
+        #utputGen = OutputGenerator(self.printMin, mined, maxed)
+        outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
+                               maxDistance, outputPath, chargeFlags)
 
-                    self.output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
-                                maxDistance, self.outputPath, chargeFlags)
-
+        self.threadpool.start(outputGen)
     # called when trans is selected, it disables the use of the max distance function
     def disableMaxDist(self, state):
 
@@ -262,11 +288,11 @@ class MyTableWidget(QWidget):
 
     # called by confirmation function, it runs the generateOutput function from Mers.py while outputing small
     # bits of information to the user via a statusbar in the GUI
-    def output(self, parent, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
+    def output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
                maxDistance, outputPath, chargeFlags):
         start = time.time()
 
-        self.parent().statusbar.showMessage('Processing Data')
+        #self.parent().statusbar.showMessage('Processing Data')
 
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
@@ -274,7 +300,7 @@ class MyTableWidget(QWidget):
         self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
                                   maxDistance, outputPath, chargeFlags)
         end = time.time()
-        self.parent().statusbar.hide()
+        #self.parent().statusbar.hide()
         print(end - start)
 
 

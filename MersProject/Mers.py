@@ -8,6 +8,8 @@ TRANS = "Trans"
 LINEAR = "Linear"
 CIS = "Cis"
 
+step
+
 proteinThreadLock = threading.Lock()
 
 class CombinationThread(threading.Thread):
@@ -36,7 +38,7 @@ class CombinationThread(threading.Thread):
             else:
                 iterateStep = self.iteration + 3
             for j in range (self.iteration, iterateStep):
-                splitComb, splitCombRef = combinePeptideTrans(self.iteration, self.splits, self.splitRef, self.mined, self.maxed, self.overlapFlag, self.maxDistance)
+                splitComb, splitCombRef = combinePeptideTrans(j, self.splits, self.splitRef, self.mined, self.maxed, self.overlapFlag, self.maxDistance)
 
                 self.combModless += splitComb
                 self.combModlessRef += splitCombRef

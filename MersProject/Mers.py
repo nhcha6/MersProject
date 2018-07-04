@@ -8,7 +8,7 @@ TRANS = "Trans"
 LINEAR = "Linear"
 CIS = "Cis"
 
-stepValue = 3
+stepValue = 1
 
 proteinThreadLock = threading.Lock()
 
@@ -179,6 +179,7 @@ class Fasta:
 
 
 def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
+    print('mass dict')
     massDict = genMassTrans(finalPeptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags)
     writeToCsv(massDict, 'w', 'Combined', outputPath, 'trans', chargeFlags)
 
@@ -224,7 +225,7 @@ def genMassDict(peptide, mined, maxed, overlapFlag, modList, maxDistance, charge
     return massDict
 
 def genMassTrans(peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):
-
+    print('gen mass trans')
     combined, combinedRef = outputCreateTrans(peptide, mined, maxed, overlapFlag, maxDistance)
     massDict = combMass(combined, combinedRef)
     massDict = applyMods(massDict, modList)
@@ -294,6 +295,7 @@ def getChargeIndex(chargeFlags):
     return chargeHeaders
 
 def outputCreateTrans(peptide, mined, maxed, overlapFlag, maxDistance = None, linearFlag = False):
+    print('output create trans')
     splits, splitRef = splitDictPeptide(peptide, mined, maxed, linearFlag)
 
     # combined eg: ['ABC', 'BCA', 'ACD', 'DCA']
@@ -402,6 +404,7 @@ def splitDictPeptide(peptide, mined, maxed, linearFlag):
 
     # embedded for loops build all possible splits
     for i in range(0, length):
+        print(i)
         character = peptide[i]
         toAdd = ""
         # add and append first character and add and append reference number which indexes this character
@@ -436,6 +439,8 @@ def splitDictPeptide(peptide, mined, maxed, linearFlag):
                     ref.append(j)
                     temp = list(ref)
                     splitRef.append(temp)
+                else:
+                    break
 
     return splits, splitRef
 
@@ -489,12 +494,14 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
     return combModless, combModlessRef
 
 def createTransThread(splits, splitsRef, mined, maxed, overlapFlag, maxDistance):
+    print('create trans thread')
     combModless = []
     combModlessRef = []
     length = len(splits)
     # iterate through all of the splits creating a thread for each split
     combThreads = []
     startComb = time.time()
+    print(len(splits))
     for i in range(0, length, stepValue):
         combinationThread = CombinationThread(i, splits, splitsRef, mined, maxed, overlapFlag, maxDistance, combModless, combModlessRef)
         combThreads.append(combinationThread)

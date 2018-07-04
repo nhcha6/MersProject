@@ -9,14 +9,6 @@ from Mers import *
 
 # pyinstaller MersGUI --> this command from the relevant file location creates executable file
 
-# Move to mers
-modificationList = ['4-hydroxynonenal (HNE)', 'Acetylation (K)', 'Beta-methylthiolation', 'Carbamidomethylation',
-                    'Carboxylation (E)', 'Carboxymethyl', 'Citrullination', 'Deamidation (NQ)', 'Dimethylation(KR)',
-                    'Dioxidation (M)', 'FAD', 'Farnesylation', 'Geranyl-geranyl', 'Guanidination', 'HexNAcylation (N)',
-                    'Hexose (NSY)', 'Lipoyl', 'Methylation(KR)', 'Methylation(others)', 'Oxidation (HW)',
-                    'Oxidation (M)', 'Palmitoylation', 'Phosphopantetheine', 'Phosphorylation (HCDR)',
-                    'Phosphorylation (STY)', 'Propionamide', 'Pyridoxal phosphate', 'S-pyridylethylation',
-                    'Sulfation', 'Sulphone', 'Ubiquitin', 'Ubiquitination']
 
 
 class App(QMainWindow):

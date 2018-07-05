@@ -4,6 +4,7 @@ from MonoAminoAndMods import *
 import threading
 import multiprocessing
 import time
+import sys
 
 TRANS = "Trans"
 LINEAR = "Linear"
@@ -75,8 +76,6 @@ def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPa
 
     for key, value in finalMassDict.items():
         writeToCsv(value, 'a', key, outputPath, 'Cis', chargeFlags)
-    print("CIS IS COMPLETE")
-
 
 def linearOutput(seqDict, mined, maxed, modList, outputPath, chargeFlags):
     # linear dictionary function which converts splits and splits ref to the dictionary output desired
@@ -101,7 +100,7 @@ def linearOutput(seqDict, mined, maxed, modList, outputPath, chargeFlags):
 
     for key, value in finalMassDict.items():
         writeToCsv(value, 'a', key, outputPath, 'linear', chargeFlags)
-    print('LINEAR IS COMPLETE')
+
 
 
 def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, outputPath, chargeFlags, linearFlag=False):
@@ -239,11 +238,15 @@ def outputCreate(peptide, mined, maxed, overlapFlag, maxDistance=None, linearFla
     # Produces splits and splitRef arrays which are passed through combined
     splits, splitRef = splitDictPeptide(peptide, mined, maxed, linearFlag)
 
+    combineLinear, combineLinearRef = splitDictPeptide(peptide, mined, maxed, True)
+
+    combineLinearSet = set(combineLinear)
+
     # combined eg: ['ABC', 'BCA', 'ACD', 'DCA']
     # combinedRef eg: [[0,1,2], [1,0,2], [0,2,3], [3,2,0]]
     # pass splits through combined overlap peptide and then delete all duplicates
 
-    combined, combinedRef = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
+    combined, combinedRef = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance, combineLinearSet)
 
     combined, combinedRef = removeDupsQuick(combined, combinedRef)
 
@@ -369,7 +372,7 @@ def splitDictPeptide(peptide, mined, maxed, linearFlag):
     return splits, splitRef
 
 
-def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance):
+def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance, combineLinearSet = None):
 
     """
     Input: splits: list of splits, splitRef: list of the character indexes for splits, mined/maxed: min and max
@@ -401,15 +404,20 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
             if combineCheck(toAddForward, mined, maxed, splitRef[i], splitRef[j], maxDistance):
                 if overlapFlag:
                     if overlapComp(splitRef[i], splitRef[j]):
-                        combModless.append(toAddForward)
-                        combModless.append(toAddReverse)
-                        combModlessRef.append(addForwardRef)
-                        combModlessRef.append(addReverseRef)
+                        if linearCheck(toAddForward, combineLinearSet):
+                            combModless.append(toAddForward)
+                            combModlessRef.append(addForwardRef)
+                        if linearCheck(toAddReverse, combineLinearSet):
+                            combModless.append(toAddReverse)
+                            combModlessRef.append(addReverseRef)
+
                 else:
-                    combModless.append(toAddForward)
-                    combModless.append(toAddReverse)
-                    combModlessRef.append(addForwardRef)
-                    combModlessRef.append(addReverseRef)
+                    if linearCheck(toAddForward, combineLinearSet):
+                        combModless.append(toAddForward)
+                        combModlessRef.append(addForwardRef)
+                    if linearCheck(toAddReverse, combineLinearSet):
+                        combModless.append(toAddReverse)
+                        combModlessRef.append(addReverseRef)
 
             toAddForward = ""
             toAddReverse = ""
@@ -490,9 +498,14 @@ def minSize(split, mined):
     return True
 
 
-def combineCheck(split, mined, maxed, ref1, ref2, maxDistance='None'):
+def combineCheck(split, mined, maxed, ref1, ref2, maxDistance = 'None'):
     booleanCheck = maxSize(split, maxed) and minSize(split, mined) and maxDistCheck(ref1, ref2, maxDistance)
     return booleanCheck
+
+def linearCheck(toAdd, combinedLinearSet):
+    if toAdd in combinedLinearSet:
+        return False
+    return True
 
 
 def overlapComp(ref1, ref2):

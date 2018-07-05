@@ -57,29 +57,34 @@ class Fasta:
 
 
 def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
-
+    entries = 3
     finalPath = str(outputPath) + '/Cis.csv'
     open(finalPath, 'w', newline='')
     manager = multiprocessing.Manager()
     num_workers = multiprocessing.cpu_count()
     pool = multiprocessing.Pool(num_workers)
     print("CPU Count is: " + str(num_workers))
-    cisProcessList = []
     finalMassDict = manager.dict()
     for key, value in seqDict.items():
         print("Cis process started for: " + value)
+        # results = pool.starmap_async(genMassDict, (key, value, mined, maxed, overlapFlag,
+        #                                     modList, maxDistance,chargeFlags,
+        #                                     finalMassDict))
+
         pool.apply_async(genMassDict, args=(key, value, mined, maxed, overlapFlag,
-                                            modList, maxDistance,chargeFlags,
-                                            finalMassDict))
+                                            modList, maxDistance,chargeFlags
+                                            ))
         # massDict = genMassLinear(value, mined, maxed, modList, chargeFlags)
     pool.close()
     print("No more jobs, thanks!")
+
     pool.join()
-    print("Cis complete!")
+
+    print("All cis !joined")
+    # for key, value in finalMassDict.items():
+    #     writeToCsv(value, 'a', key, outputPath, 'Cis', chargeFlags)
 
 
-    for key, value in finalMassDict.items():
-        writeToCsv(value, 'a', key, outputPath, 'Cis', chargeFlags)
 
 def linearOutput(seqDict, mined, maxed, modList, outputPath, chargeFlags):
     # linear dictionary function which converts splits and splits ref to the dictionary output desired
@@ -160,15 +165,26 @@ def specificTransProcess(subsetSplits, subSplitsRef, mined, maxed, overlapFlag, 
     finalMassDict.update(massDict)
     print("Printed trans process to csv!")
 
-def genMassDict(protId, peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags, finalMassDict):
 
+def genMassDict(protId, peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):
+
+    start = time.time()
     combined, combinedRef = outputCreate(peptide, mined, maxed, overlapFlag, maxDistance)
     massDict = combMass(combined, combinedRef)
     massDict = applyMods(massDict, modList)
-    chargeIonMass(massDict, chargeFlags)
-    massDict = editRefMassDict(massDict)
-    finalMassDict[protId] = massDict
 
+    chargeIonMass(massDict, chargeFlags)
+
+    massDict = editRefMassDict(massDict)
+    
+    ## WRITE TO FILE HERE!!!!
+
+    end = time.time()
+    print(peptide[0:5] + ' took: ' + str(end-start))
+    print("Cis process complete for: " + peptide)
+
+
+    #finalMassDict[protId] = massDict
 
 def genMassLinear(protId, peptide, mined, maxed, modList, chargeFlags, finalMassDict):
     linearFlag = True
@@ -179,7 +195,7 @@ def genMassLinear(protId, peptide, mined, maxed, modList, chargeFlags, finalMass
     chargeIonMass(massDict, chargeFlags)
     massDict = editRefMassDict(massDict)
     finalMassDict[protId] = massDict
-    print("Cis process complete for: " + peptide)
+
 
 
 def chargeIonMass(massDict, chargeFlags):

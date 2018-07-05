@@ -60,19 +60,18 @@ def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPa
     finalPath = str(outputPath) + '/Cis.csv'
     open(finalPath, 'w', newline='')
     manager = multiprocessing.Manager()
-
+    num_workers = multiprocessing.cpu_count()
+    pool = multiprocessing.Pool(num_workers)
+    print("CPU Count is: " + str(num_workers))
     cisProcessList = []
     finalMassDict = manager.dict()
     for key, value in seqDict.items():
+        pool.apply_async(genMassDict, args=(key, value, mined, maxed, overlapFlag,
+                                            modList, maxDistance,chargeFlags,
+                                            finalMassDict))
         # massDict = genMassLinear(value, mined, maxed, modList, chargeFlags)
-        cisProteinProcess = multiprocessing.Process(target=genMassDict, args=(key, value, mined, maxed, overlapFlag,
-                                                                              modList, maxDistance,chargeFlags,
-                                                                              finalMassDict))
-        cisProcessList.append(cisProteinProcess)
-        cisProteinProcess.start()
-
-    for process in cisProcessList:
-        process.join()
+    pool.close()
+    pool.join()
 
     for key, value in finalMassDict.items():
         writeToCsv(value, 'a', key, outputPath, 'Cis', chargeFlags)
@@ -84,20 +83,16 @@ def linearOutput(seqDict, mined, maxed, modList, outputPath, chargeFlags):
 
     open(finalPath, 'w', newline='')
     manager = multiprocessing.Manager()
+    num_workers = multiprocessing.cpu_count()
+    pool = multiprocessing.Pool(num_workers)
 
-    linearProcessList = []
     finalMassDict = manager.dict()
     for key, value in seqDict.items():
+        pool.apply_async(genMassLinear, args=(key, value, mined, maxed,
+                                                    modList, chargeFlags, finalMassDict))
 
-        #massDict = genMassLinear(value, mined, maxed, modList, chargeFlags)
-        linearProteinProcess = multiprocessing.Process(target=genMassLinear, args=(key, value, mined, maxed,
-                                                                                 modList, chargeFlags, finalMassDict))
-        linearProcessList.append(linearProteinProcess)
-        linearProteinProcess.start()
-
-    for process in linearProcessList:
-        process.join()
-
+    pool.close()
+    pool.join()
     for key, value in finalMassDict.items():
         writeToCsv(value, 'a', key, outputPath, 'linear', chargeFlags)
 

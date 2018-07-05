@@ -13,6 +13,7 @@ from Mers import *
 class WorkerSignals(QObject):
     finished = pyqtSignal()
     updateProgBar = pyqtSignal(int)
+    generateProgBar = pyqtSignal()
 
 class ProgressGenerator(QRunnable):
 
@@ -22,22 +23,26 @@ class ProgressGenerator(QRunnable):
         self.args = args
         self.kwargs = kwargs
         self.signals = WorkerSignals()
+        self.flag = True
+
+    def changeFlag(self):
+        self.flag = False
 
     @pyqtSlot()
     def run(self):
-        while True:
-            self.signals.loadingSig.emit(0)
+        while self.flag:
+            self.signals.updateProgBar.emit(0)
             time.sleep(0.5)
-            self.signals.loadingSig.emit(25)
+            self.signals.updateProgBar.emit(25)
             time.sleep(0.5)
-            self.signals.loadingSig.emit(50)
+            self.signals.updateProgBar.emit(50)
             time.sleep(0.5)
-            self.signals.loadingSig.emit(75)
+            self.signals.updateProgBar.emit(75)
             time.sleep(0.5)
-            self.signals.loadingSig.emit(100)
+            self.signals.updateProgBar.emit(100)
             time.sleep(0.5)
+        self.signals.finished.emit()
 
-        #self.signals.finished.emit()
 
 class OutputGenerator(QRunnable):
 
@@ -51,8 +56,8 @@ class OutputGenerator(QRunnable):
 
     @pyqtSlot()
     def run(self):
-        print(*self.args)
-        print(**self.kwargs)
+        #print(*self.args)
+        #print(**self.kwargs)
         self.fn(*self.args)
         self.signals.finished.emit()
 
@@ -91,7 +96,6 @@ class MyTableWidget(QWidget):
         super(QWidget, self).__init__(parent)
         self.layout = QVBoxLayout(self)
         self.fasta = None
-        self.progressBarFlag = True
         #Init threading
         self.threadpool = QThreadPool()
 
@@ -303,7 +307,8 @@ class MyTableWidget(QWidget):
 
     def finished(self):
         print("ITS DONE")
-        self.progressBarFlag = False
+        self.progressBarUpdate.changeFlag()
+        self.deleteProgressBar()
         QMessageBox.about(self, "Message", 'Output Complete')
 
     def updateProgressBar(self,int):
@@ -317,7 +322,6 @@ class MyTableWidget(QWidget):
         self.tab2.layout.removeWidget(self.tab2.progressBar)
         self.tab2.progressBar.deleteLater()
         self.tab2.progressBar = None
-        print('left loop')
 
     def outputPreStep(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList, maxDistance,
                       outputPath, chargeFlags):
@@ -333,10 +337,9 @@ class MyTableWidget(QWidget):
         outputGen.signals.finished.connect(self.finished)
         self.threadpool.start(outputGen)
 
-        progressBarUpdate = ProgressGenerator()
-        progressBarUpdate.signals.updateProgBar.connect(self.updateProgressBar)
-        progressBarUpdate.signals.finished.connect(self.deleteProgressBar)
-        self.threadpool.start(progressBarUpdate)
+        self.progressBarUpdate = ProgressGenerator()
+        self.progressBarUpdate.signals.updateProgBar.connect(self.updateProgressBar)
+        self.threadpool.start(self.progressBarUpdate)
 
 
 

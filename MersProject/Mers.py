@@ -3,6 +3,7 @@ import csv
 from MonoAminoAndMods import *
 import threading
 import time
+import sys
 
 TRANS = "Trans"
 LINEAR = "Linear"
@@ -310,7 +311,7 @@ def outputCreateTrans(peptide, mined, maxed, overlapFlag, maxDistance = None, li
 
     combined, combinedRef = createTransThread(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
 
-    combined, combinedRef = removeDupsQuick(combined, combinedRef)
+    #combined, combinedRef = removeDupsQuick(combined, combinedRef)
 
     return combined, combinedRef
 

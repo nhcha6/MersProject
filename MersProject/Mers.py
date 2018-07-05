@@ -17,6 +17,7 @@ class Fasta:
 
     def __init__(self, seqDict):
         self.seqDict = seqDict
+        self.entries = len(seqDict)
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
                        maxDistance, outputPath, chargeFlags):

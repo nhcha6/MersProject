@@ -68,3 +68,14 @@ def combMass(peptide):
         mass += monoAminoMass[character]
     mass+=H20_MASS
     return mass
+
+# concatenates references, converts each element to a string, and calls function which outputs false if
+# the list is sequential
+def linearCheckForCis(ref1, ref2):
+    concRef = ref1 + ref2
+    concRef = [str(i) for i in concRef]
+    return checkSequential(concRef)
+
+def checkSequential(l):
+    a = [int(i, 16) for i in sorted(set(l))]
+    return not (len(a) == (a[-1] - a[0] + 1))

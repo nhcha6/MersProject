@@ -72,11 +72,9 @@ def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPa
 
     for process in cisProcessList:
         process.join()
-    print(len(finalMassDict))
+
     for key, value in finalMassDict.items():
         writeToCsv(value, 'a', key, outputPath, 'Cis', chargeFlags)
-    print("CIS IS COMPLETE")
-
 
 def linearOutput(seqDict, mined, maxed, modList, outputPath, chargeFlags):
     # linear dictionary function which converts splits and splits ref to the dictionary output desired
@@ -101,7 +99,7 @@ def linearOutput(seqDict, mined, maxed, modList, outputPath, chargeFlags):
 
     for key, value in finalMassDict.items():
         writeToCsv(value, 'a', key, outputPath, 'linear', chargeFlags)
-    print('LINEAR IS COMPLETE')
+
 
 
 def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, outputPath, chargeFlags, maxDistance=None, linearFlag=False):
@@ -398,20 +396,20 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
             if combineCheck(toAddForward, mined, maxed, splitRef[i], splitRef[j], maxDistance):
                 if overlapFlag:
                     if overlapComp(splitRef[i], splitRef[j]):
-                        combModless.append(toAddReverse)
-                        combModlessRef.append(addReverseRef)
                         if linearCheck(toAddForward, combineLinearSet):
                             combModless.append(toAddForward)
                             combModlessRef.append(addForwardRef)
-                        # combModless.append(toAddForward)
-                        # combModlessRef.append(addForwardRef)
-
+                        if linearCheck(toAddReverse, combineLinearSet):
+                            combModless.append(toAddReverse)
+                            combModlessRef.append(addReverseRef)
 
                 else:
-                    combModless.append(toAddForward)
-                    combModless.append(toAddReverse)
-                    combModlessRef.append(addForwardRef)
-                    combModlessRef.append(addReverseRef)
+                    if linearCheck(toAddForward, combineLinearSet):
+                        combModless.append(toAddForward)
+                        combModlessRef.append(addForwardRef)
+                    if linearCheck(toAddReverse, combineLinearSet):
+                        combModless.append(toAddReverse)
+                        combModlessRef.append(addReverseRef)
 
             toAddForward = ""
             toAddReverse = ""
@@ -498,7 +496,6 @@ def combineCheck(split, mined, maxed, ref1, ref2, maxDistance = 'None'):
 
 def linearCheck(toAdd, combinedLinearSet):
     if toAdd in combinedLinearSet:
-        print(toAdd)
         return False
     return True
 

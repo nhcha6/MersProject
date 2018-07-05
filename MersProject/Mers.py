@@ -29,6 +29,7 @@ class Fasta:
             transProcess = multiprocessing.Process(target=transOutput, args=(finalPeptide, mined, maxed, overlapFlag,
                                                                              modList, outputPath,
                                                                               chargeFlags))
+            transProcess.start()
 
             allProcessList.append(transProcess)
             # combined = {'combined': combined}
@@ -103,7 +104,7 @@ def linearOutput(seqDict, mined, maxed, modList, outputPath, chargeFlags):
     print('LINEAR IS COMPLETE')
 
 
-def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, outputPath, chargeFlags, maxDistance=None, linearFlag=False):
+def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, outputPath, chargeFlags, linearFlag=False):
     print('output create trans')
     finalPath = str(outputPath) + '/Trans.csv'
     open(finalPath, 'w', newline='')
@@ -128,30 +129,37 @@ def createTransProcess(splits, splitsRef, mined, maxed, overlapFlag, modList, ou
     combProcesses = []
     startComb = time.time()
     print(len(splits))
-
+    manager = multiprocessing.Manager()
+    finalMassDict = manager.dict()
     for i in range(0, length):
         subsetSplits = splits[i:-1]
         subsetSplitsRef = splitsRef[i:-1]
         combinationProcess = multiprocessing.Process(target=specificTransProcess,
                                                      args=(subsetSplits, subsetSplitsRef, mined, maxed,
-                                                           overlapFlag, modList, outputPath, chargeFlags))
+                                                           overlapFlag, modList, outputPath, chargeFlags, finalMassDict))
         combProcesses.append(combinationProcess)
+        combinationProcess.start()
+
 
 
     for process in combProcesses:
         process.join()
+
+    writeToCsv(finalMassDict, 'a', 'Trans', outputPath, 'Trans', chargeFlags)
     endComb = time.time()
     print('combination time: ' + str(endComb - startComb))
 
 
-
-def specificTransProcess(subsetSplits, subSplitsRef, mined, maxed, overlapFlag, modList, outputPath, chargeFlags):
+def specificTransProcess(subsetSplits, subSplitsRef, mined, maxed, overlapFlag, modList, outputPath, chargeFlags,
+                         finalMassDict):
+    print("Created trans process!!")
     subsetComb, subsetCombRef = combinePeptideTrans(subsetSplits, subSplitsRef, mined, maxed, overlapFlag)
     subsetComb, subsetCombRef = removeDupsQuick(subsetComb, subsetCombRef)
     massDict = combMass(subsetComb, subsetCombRef)
     massDict = applyMods(massDict, modList)
     chargeIonMass(massDict, chargeFlags)
-    writeToCsv(massDict, 'a', 'Trans', outputPath, 'Trans', chargeFlags)
+    finalMassDict.update(massDict)
+    print("Printed trans process to csv!")
 
 def genMassDict(protId, peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags, finalMassDict):
 

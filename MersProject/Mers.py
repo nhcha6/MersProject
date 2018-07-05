@@ -57,7 +57,7 @@ class Fasta:
 
 
 def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
-
+    entries = 3
     finalPath = str(outputPath) + '/Cis.csv'
     open(finalPath, 'w', newline='')
     manager = multiprocessing.Manager()
@@ -77,10 +77,28 @@ def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPa
         # massDict = genMassLinear(value, mined, maxed, modList, chargeFlags)
     pool.close()
     print("No more jobs, thanks!")
+
     pool.join()
-    print("All cis !joined")
-    for key, value in finalMassDict.items():
-        writeToCsv(value, 'a', key, outputPath, 'Cis', chargeFlags)
+
+    # for key, value in finalMassDict.items():
+    #     writeToCsv(value, 'a', key, outputPath, 'Cis', chargeFlags)
+
+def genMassDict(protId, peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags, finalMassDict):
+
+    start = time.time()
+    combined, combinedRef = outputCreate(peptide, mined, maxed, overlapFlag, maxDistance)
+    massDict = combMass(combined, combinedRef)
+    massDict = applyMods(massDict, modList)
+
+    chargeIonMass(massDict, chargeFlags)
+    end = time.time()
+    print(peptide[0:5] + ' took: ' + str(end-start))
+    print("Cis process complete for: " + peptide)
+
+
+    finalMassDict[protId] = massDict
+    multiprocessing.current_process().terminate()
+    print("I AM TERMINATED")
 
 def linearOutput(seqDict, mined, maxed, modList, outputPath, chargeFlags):
     # linear dictionary function which converts splits and splits ref to the dictionary output desired
@@ -160,21 +178,6 @@ def specificTransProcess(subsetSplits, subSplitsRef, mined, maxed, overlapFlag, 
     chargeIonMass(massDict, chargeFlags)
     finalMassDict.update(massDict)
     print("Printed trans process to csv!")
-
-def genMassDict(protId, peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags, finalMassDict):
-
-    start = time.time()
-    combined, combinedRef = outputCreate(peptide, mined, maxed, overlapFlag, maxDistance)
-    massDict = combMass(combined, combinedRef)
-    massDict = applyMods(massDict, modList)
-
-    chargeIonMass(massDict, chargeFlags)
-    end = time.time()
-    print(peptide[0:5] + ' took: ' + str(end-start))
-    print("Cis process complete for: " + peptide)
-
-
-    finalMassDict[protId] = massDict
 
 
 def genMassLinear(protId, peptide, mined, maxed, modList, chargeFlags, finalMassDict):

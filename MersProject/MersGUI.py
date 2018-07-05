@@ -308,7 +308,7 @@ class MyTableWidget(QWidget):
     def finished(self):
         print("ITS DONE")
         self.progressBarUpdate.changeFlag()
-        self.deleteProgressBar()
+        #self.deleteProgressBar()
         QMessageBox.about(self, "Message", 'Output Complete')
 
     def updateProgressBar(self,int):
@@ -339,6 +339,7 @@ class MyTableWidget(QWidget):
 
         self.progressBarUpdate = ProgressGenerator()
         self.progressBarUpdate.signals.updateProgBar.connect(self.updateProgressBar)
+        self.progressBarUpdate.signals.finished.connect(self.deleteProgressBar)
         self.threadpool.start(self.progressBarUpdate)
 
 

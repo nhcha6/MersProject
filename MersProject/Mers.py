@@ -64,10 +64,13 @@ def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPa
     num_workers = multiprocessing.cpu_count()
     pool = multiprocessing.Pool(num_workers)
     print("CPU Count is: " + str(num_workers))
-    cisProcessList = []
     finalMassDict = manager.dict()
     for key, value in seqDict.items():
         print("Cis process started for: " + value)
+        # results = pool.starmap_async(genMassDict, (key, value, mined, maxed, overlapFlag,
+        #                                     modList, maxDistance,chargeFlags,
+        #                                     finalMassDict))
+
         pool.apply_async(genMassDict, args=(key, value, mined, maxed, overlapFlag,
                                             modList, maxDistance,chargeFlags,
                                             finalMassDict))
@@ -75,9 +78,7 @@ def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPa
     pool.close()
     print("No more jobs, thanks!")
     pool.join()
-    print("Cis complete!")
-
-
+    print("All cis !joined")
     for key, value in finalMassDict.items():
         writeToCsv(value, 'a', key, outputPath, 'Cis', chargeFlags)
 
@@ -162,10 +163,17 @@ def specificTransProcess(subsetSplits, subSplitsRef, mined, maxed, overlapFlag, 
 
 def genMassDict(protId, peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags, finalMassDict):
 
+    start = time.time()
     combined, combinedRef = outputCreate(peptide, mined, maxed, overlapFlag, maxDistance)
     massDict = combMass(combined, combinedRef)
     massDict = applyMods(massDict, modList)
+
     chargeIonMass(massDict, chargeFlags)
+    end = time.time()
+    print(peptide[0:5] + ' took: ' + str(end-start))
+    print("Cis process complete for: " + peptide)
+
+
     finalMassDict[protId] = massDict
 
 
@@ -177,7 +185,7 @@ def genMassLinear(protId, peptide, mined, maxed, modList, chargeFlags, finalMass
     massDict = applyMods(massDict, modList)
     chargeIonMass(massDict, chargeFlags)
     finalMassDict[protId] = massDict
-    print("Cis process complete for: " + peptide)
+
 
 
 def chargeIonMass(massDict, chargeFlags):

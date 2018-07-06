@@ -336,7 +336,7 @@ class MyTableWidget(QWidget):
                      #           maxDistance, self.outputPath, chargeFlags)
 
     def finished(self):
-        print("ITS DONE")
+        print("IT'S DONE")
         self.progressBarUpdate.changeFlag()
         self.tab2.output.setEnabled(True)
         self.pushButton1.setEnabled(True)

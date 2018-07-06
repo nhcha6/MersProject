@@ -17,6 +17,7 @@ class Fasta:
 
     def __init__(self, seqDict):
         self.seqDict = seqDict
+        self.entries = len(seqDict)
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
                        maxDistance, outputPath, chargeFlags):
@@ -66,12 +67,16 @@ def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPa
     cisProcessList = []
     finalMassDict = manager.dict()
     for key, value in seqDict.items():
+        print("Cis process started for: " + value)
         pool.apply_async(genMassDict, args=(key, value, mined, maxed, overlapFlag,
                                             modList, maxDistance,chargeFlags,
                                             finalMassDict))
         # massDict = genMassLinear(value, mined, maxed, modList, chargeFlags)
     pool.close()
+    print("No more jobs, thanks!")
     pool.join()
+    print("Cis complete!")
+
 
     for key, value in finalMassDict.items():
         writeToCsv(value, 'a', key, outputPath, 'Cis', chargeFlags)
@@ -174,6 +179,7 @@ def genMassLinear(protId, peptide, mined, maxed, modList, chargeFlags, finalMass
     chargeIonMass(massDict, chargeFlags)
     massDict = editRefMassDict(massDict)
     finalMassDict[protId] = massDict
+    print("Cis process complete for: " + peptide)
 
 
 def chargeIonMass(massDict, chargeFlags):

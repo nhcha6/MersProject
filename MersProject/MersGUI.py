@@ -142,6 +142,17 @@ class MyTableWidget(QWidget):
             self.tab2.maximumCombo.addItem(str(i))
             self.tab2.maxDistCombo.addItem(str(i))
 
+        # set default values
+        maxDistIndex = self.tab2.maxDistCombo.findText(str('25'))
+        self.tab2.maxDistCombo.setCurrentIndex(maxDistIndex)
+
+        maxIndex = self.tab2.maximumCombo.findText(str('12'))
+        self.tab2.maximumCombo.setCurrentIndex(maxIndex)
+
+        minIndex = self.tab2.minimumCombo.findText(str('8'))
+        self.tab2.minimumCombo.setCurrentIndex(minIndex)
+
+
         # Modifications combo boxes and labels
         self.tab2.mod1 = QLabel('Modification 1 : ')
         self.tab2.mod2 = QLabel('Modification 2 : ')
@@ -169,6 +180,14 @@ class MyTableWidget(QWidget):
         self.tab2.cis = QCheckBox('Cis', self)
         self.tab2.linear = QCheckBox('Linear', self)
 
+        # set to true as defauls for linear, cis and overlap off. Set trans off for now.
+        self.tab2.overlap.setChecked(True)
+        self.tab2.cis.setChecked(True)
+        self.tab2.linear.setChecked(True)
+        self.tab2.trans.setEnabled(False)
+
+
+
         # create generate output push button
         self.tab2.output = QPushButton('Generate Output!', self)
         self.tab2.output.clicked.connect(self.confirmationFunction)
@@ -180,6 +199,7 @@ class MyTableWidget(QWidget):
         self.tab2.plusThree = QCheckBox('+3', self)
         self.tab2.plusFour = QCheckBox('+4', self)
         self.tab2.plusFive = QCheckBox('+5', self)
+        self.tab2.plusTwo.setChecked(True)
 
         # All the labels added to grid layout of tab2
         self.tab2.layout.addWidget(self.tab2.minimum, 1, 3)

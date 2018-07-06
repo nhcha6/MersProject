@@ -98,6 +98,9 @@ class MyTableWidget(QWidget):
         self.fasta = None
         #Init threading
         self.threadpool = QThreadPool()
+        self.minDefault = '8'
+        self.maxDefault = '12'
+        self.maxDistDefault = '25'
 
         # Initialisation of two tabs
         self.tabs = QTabWidget()
@@ -137,19 +140,23 @@ class MyTableWidget(QWidget):
 
         # Adding values to the max/min/maxDist combos
         self.tab2.maxDistCombo.addItem('None')
-        for i in range(2, 26):
-            self.tab2.minimumCombo.addItem(str(i))
+        for i in range(int(self.minDefault), 26):
             self.tab2.maximumCombo.addItem(str(i))
+        for i in range(2, int(self.maxDefault) + 1):
+            self.tab2.minimumCombo.addItem(str(i))
+        for i in range(int(self.maxDefault), 26):
             self.tab2.maxDistCombo.addItem(str(i))
 
+
+
         # set default values
-        maxDistIndex = self.tab2.maxDistCombo.findText(str('25'))
+        maxDistIndex = self.tab2.maxDistCombo.findText(str(self.maxDistDefault))
         self.tab2.maxDistCombo.setCurrentIndex(maxDistIndex)
 
-        maxIndex = self.tab2.maximumCombo.findText(str('12'))
+        maxIndex = self.tab2.maximumCombo.findText(str(self.maxDefault))
         self.tab2.maximumCombo.setCurrentIndex(maxIndex)
 
-        minIndex = self.tab2.minimumCombo.findText(str('8'))
+        minIndex = self.tab2.minimumCombo.findText(str(self.minDefault))
         self.tab2.minimumCombo.setCurrentIndex(minIndex)
 
 
@@ -412,7 +419,7 @@ class MyTableWidget(QWidget):
         else:
             comboChange = self.tab2.minimumCombo
 
-        # current Max Value
+        # current Value of combo to be changed
         value = int(comboChange.currentText())
 
         # Current Max Distance - convert 'None' to 0 so it can be used as a comparator later.
@@ -422,12 +429,10 @@ class MyTableWidget(QWidget):
         else:
             maxDistInt = int(maxDistValue)
 
-        # Clear combo box values, add 'None' option back to maxDistCombo
+        # Clear combo box values for combo to be changed
         comboChange.clear()
-        self.tab2.maxDistCombo.clear()
-        self.tab2.maxDistCombo.addItem('None')
 
-        # Creates new values in combo box which are greater than the min
+        # Creates new values in max combo box which are greater than the min
         if minChanged:
             for i in range(int(text)-1, 26):
                 comboChange.addItem(str(i+1))
@@ -444,12 +449,17 @@ class MyTableWidget(QWidget):
             if value <= int(text):
                 indexMin = comboChange.findText(str(value))
                 comboChange.setCurrentIndex(indexMin)
+                
+            # wipe max distance values only if max is changed. Add None back to combo box.
+            self.tab2.maxDistCombo.clear()
+            self.tab2.maxDistCombo.addItem('None')
+            # refill max distance combo box with items greater than or equal to max
+            for i in range(int(text) - 1, 26):
+                self.tab2.maxDistCombo.addItem(str(i + 1))
+            if maxDistInt >= int(text):
+                indexDist = self.tab2.maxDistCombo.findText(str(maxDistValue))
+                self.tab2.maxDistCombo.setCurrentIndex(indexDist)
 
-        for i in range(int(text)-1, 26):
-            self.tab2.maxDistCombo.addItem(str(i+1))
-        if maxDistInt >= int(text):
-            indexDist = self.tab2.maxDistCombo.findText(str(maxDistValue))
-            self.tab2.maxDistCombo.setCurrentIndex(indexDist)
 
 
     def modSelected(self, text):

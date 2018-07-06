@@ -13,7 +13,7 @@ from Mers import *
 class WorkerSignals(QObject):
     finished = pyqtSignal()
     updateProgBar = pyqtSignal(int)
-    generateProgBar = pyqtSignal()
+    disableButtons = pyqtSignal()
 
 class ProgressGenerator(QRunnable):
 
@@ -30,6 +30,7 @@ class ProgressGenerator(QRunnable):
 
     @pyqtSlot()
     def run(self):
+        self.signals.disableButtons.emit()
         while self.flag:
             self.signals.updateProgBar.emit(0)
             time.sleep(0.5)
@@ -337,7 +338,8 @@ class MyTableWidget(QWidget):
     def finished(self):
         print("ITS DONE")
         self.progressBarUpdate.changeFlag()
-        #self.deleteProgressBar()
+        self.tab2.output.setEnabled(True)
+        self.pushButton1.setEnabled(True)
         QMessageBox.about(self, "Message", 'Output Complete')
 
     def updateProgressBar(self,int):
@@ -351,6 +353,10 @@ class MyTableWidget(QWidget):
         self.tab2.layout.removeWidget(self.tab2.progressBar)
         self.tab2.progressBar.deleteLater()
         self.tab2.progressBar = None
+
+    def disableButtons(self):
+        self.tab2.output.setEnabled(False)
+        self.pushButton1.setEnabled(False)
 
     def outputPreStep(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList, maxDistance,
                       outputPath, chargeFlags):
@@ -369,6 +375,7 @@ class MyTableWidget(QWidget):
         self.progressBarUpdate = ProgressGenerator()
         self.progressBarUpdate.signals.updateProgBar.connect(self.updateProgressBar)
         self.progressBarUpdate.signals.finished.connect(self.deleteProgressBar)
+        self.progressBarUpdate.signals.disableButtons.connect(self.disableButtons)
         self.threadpool.start(self.progressBarUpdate)
 
 

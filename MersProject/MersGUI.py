@@ -449,7 +449,7 @@ class MyTableWidget(QWidget):
             if value <= int(text):
                 indexMin = comboChange.findText(str(value))
                 comboChange.setCurrentIndex(indexMin)
-                
+
             # wipe max distance values only if max is changed. Add None back to combo box.
             self.tab2.maxDistCombo.clear()
             self.tab2.maxDistCombo.addItem('None')

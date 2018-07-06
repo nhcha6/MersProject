@@ -161,6 +161,7 @@ def genMassDict(protId, peptide, mined, maxed, overlapFlag, modList, maxDistance
     massDict = combMass(combined, combinedRef)
     massDict = applyMods(massDict, modList)
     chargeIonMass(massDict, chargeFlags)
+    massDict = editRefMassDict(massDict)
     finalMassDict[protId] = massDict
 
 
@@ -171,6 +172,7 @@ def genMassLinear(protId, peptide, mined, maxed, modList, chargeFlags, finalMass
     massDict = combMass(combined, combinedRef)
     massDict = applyMods(massDict, modList)
     chargeIonMass(massDict, chargeFlags)
+    massDict = editRefMassDict(massDict)
     finalMassDict[protId] = massDict
 
 
@@ -332,7 +334,7 @@ def splitDictPeptide(peptide, mined, maxed, linearFlag):
         # add and append first character and add and append reference number which indexes this character
 
         toAdd += character
-        ref = list([i])
+        ref = list([i+1])
         temp = list(ref)  # use list because otherwise shared memory overwrites
 
         # linear flag to ensure min is correct for cis and trans
@@ -349,7 +351,7 @@ def splitDictPeptide(peptide, mined, maxed, linearFlag):
         for j in range(i + 1, length):
             toAdd += peptide[j]
             if linearFlag:
-                ref.append(j)
+                ref.append(j+1)
                 if maxSize(toAdd, maxed) and minSize(toAdd, mined):
                     splits.append(toAdd)
                     temp = list(ref)
@@ -358,7 +360,7 @@ def splitDictPeptide(peptide, mined, maxed, linearFlag):
             else:
                 if maxSize(toAdd, maxed-1):
                     splits.append(toAdd)
-                    ref.append(j)
+                    ref.append(j+1)
                     temp = list(ref)
                     splitRef.append(temp)
                 else:
@@ -573,6 +575,43 @@ def combMass(combine, combineRef):
         massDict[combine[i]] = massRefPair
     return massDict
 
+def changeRefToDash(ref):
+    newRef = []
+    for i in range(0,len(ref)):
+        refVal = ref[i]
+        # check if last element reached and thus input is linear
+        if i == len(ref)-1:
+            newLinRef = str(ref[0]) + ' - ' + str(ref[-1])
+            newRef = [newLinRef]
+            return newRef
+        # otherwise, check if the next element is still sequential, and if so continue for loop
+        if refVal + 1 == ref[i+1]:
+            continue
+        else:
+            if i == 0:
+                newStrRef1 = str(ref[0])
+            else:
+                newStrRef1 = str(ref[0]) + "-" + str(ref[i])
+            if i + 1 == len(ref) - 1:
+                newStrRef2 = str(ref[-1])
+            else:
+                newStrRef2 = str(ref[i+1]) + "-" + str(ref[-1])
+
+            newRef = [newStrRef1, newStrRef2]
+            return newRef
+
+def editRefMassDict(massDict):
+    for key, value in massDict.items():
+        refNew = changeRefToDash(value[1])
+        value[1] = refNew
+    return massDict
+
+# massdict = {}
+# key1 = ['A', 'B', 'C']
+# value1 = [[1,[1,2,3,1]], [2,[1,2,3,2,3]], [3,[1,2,3,4,3,4]]]
+# for i in range(0,3):
+#     massdict[key1[i]] = value1[i]
+# print(editRefMassDict(massdict))
 
 def nth_replace(string, old, new, n=1, option='only nth'):
 

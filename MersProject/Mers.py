@@ -1,4 +1,5 @@
 from Bio import SeqIO
+from TransPlaceholder import *
 import csv
 from MonoAminoAndMods import *
 import threading
@@ -23,14 +24,15 @@ class Fasta:
                        maxDistance, outputPath, chargeFlags):
 
         """
-           Function that literally combines everything to generate output
+        Function that literally combines everything to generate output
         """
+
         allProcessList = []
+
         if transFlag:
             finalPeptide = combinePeptides(self.seqDict)
             transProcess = multiprocessing.Process(target=transOutput, args=(finalPeptide, mined, maxed, overlapFlag,
-                                                                             modList, outputPath,
-                                                                              chargeFlags))
+                                                                             modList, outputPath, chargeFlags))
             transProcess.start()
 
             allProcessList.append(transProcess)
@@ -39,16 +41,19 @@ class Fasta:
             # file.write(json.dumps(combined))  # use `json.loads` to do the reverse
 
         if cisFlag:
-            cisProcess = multiprocessing.Process(target=cisOutput, args=(self.seqDict, mined, maxed, overlapFlag,
-                                                                        modList, maxDistance,
-                                                                        outputPath, chargeFlags))
+            cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.seqDict, CIS, mined, maxed,
+                                                                                  overlapFlag, modList,
+                                                                                  maxDistance,
+                                                                                  outputPath, chargeFlags))
             allProcessList.append(cisProcess)
             cisProcess.start()
 
         if linearFlag:
 
-            linearProcess = multiprocessing.Process(target = linearOutput, args = (self.seqDict, mined, maxed,
-                                                                                   modList, outputPath, chargeFlags))
+            linearProcess = multiprocessing.Process(target = cisAndLinearOutput, args=(self.seqDict, LINEAR, mined,
+                                                                                       maxed, overlapFlag, modList,
+                                                                                       maxDistance,
+                                                                                       outputPath, chargeFlags))
             allProcessList.append(linearProcess)
             linearProcess.start()
 
@@ -56,114 +61,38 @@ class Fasta:
             process.join()
 
 
-def cisOutput(seqDict, mined, maxed, overlapFlag, modList, maxDistance, outputPath, chargeFlags):
+def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag,  modList, maxDistance, outputPath, chargeFlags):
+
+    # WHY IS THIS HERE????
     entries = 3
-    finalPath = str(outputPath) + '/Cis.csv'
+
+    # Open the csv file
+    finalPath = getFinalPath(outputPath, spliceType)
     open(finalPath, 'w', newline='')
-    manager = multiprocessing.Manager()
+
     num_workers = multiprocessing.cpu_count()
     pool = multiprocessing.Pool(num_workers)
     print("CPU Count is: " + str(num_workers))
-    finalMassDict = manager.dict()
-    for key, value in seqDict.items():
-        print("Cis process started for: " + value)
-        # results = pool.starmap_async(genMassDict, (key, value, mined, maxed, overlapFlag,
-        #                                     modList, maxDistance,chargeFlags,
-        #                                     finalMassDict))
 
-        pool.apply_async(genMassDict, args=(key, value, mined, maxed, overlapFlag,
-                                            modList, maxDistance,chargeFlags
-                                            ))
-        # massDict = genMassLinear(value, mined, maxed, modList, chargeFlags)
+    for key, value in seqDict.items():
+        print(spliceType + " process started for: " + value)
+
+        if spliceType == CIS:
+            pool.apply_async(genMassDict, args=(key, value, mined, maxed, overlapFlag,
+                                                modList, maxDistance, chargeFlags))
+
+        elif spliceType == LINEAR:
+            pool.apply_async(genMassLinear, args=(key, value, mined, maxed,
+                                                  modList, chargeFlags))
+
     pool.close()
     print("No more jobs, thanks!")
 
     pool.join()
 
-    print("All cis !joined")
+    print("All " + spliceType + " !joined")
     # for key, value in finalMassDict.items():
     #     writeToCsv(value, 'a', key, outputPath, 'Cis', chargeFlags)
-
-
-
-def linearOutput(seqDict, mined, maxed, modList, outputPath, chargeFlags):
-    # linear dictionary function which converts splits and splits ref to the dictionary output desired
-    finalPath = str(outputPath) + '/Linear.csv'
-
-
-    open(finalPath, 'w', newline='')
-    manager = multiprocessing.Manager()
-    num_workers = multiprocessing.cpu_count()
-    pool = multiprocessing.Pool(num_workers)
-
-    finalMassDict = manager.dict()
-    for key, value in seqDict.items():
-        pool.apply_async(genMassLinear, args=(key, value, mined, maxed,
-                                                    modList, chargeFlags, finalMassDict))
-
-    pool.close()
-    pool.join()
-    for key, value in finalMassDict.items():
-        writeToCsv(value, 'a', key, outputPath, 'linear', chargeFlags)
-
-
-
-def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, outputPath, chargeFlags, linearFlag=False):
-    print('output create trans')
-    finalPath = str(outputPath) + '/Trans.csv'
-    open(finalPath, 'w', newline='')
-    splits, splitRef = splitDictPeptide(finalPeptide, mined, maxed, linearFlag)
-
-    # combined eg: ['ABC', 'BCA', 'ACD', 'DCA']
-    # combinedRef eg: [[0,1,2], [1,0,2], [0,2,3], [3,2,0]]
-    # pass splits through combined overlap peptide and then delete all duplicates
-
-    createTransProcess(splits, splitRef, mined, maxed, overlapFlag, modList, outputPath, chargeFlags)
-
-
-def createTransProcess(splits, splitsRef, mined, maxed, overlapFlag, modList, outputPath, chargeFlags):
-
-    print('create trans thread')
-    combModless = []
-    combModlessRef = []
-    length = len(splits)
-
-
-    # iterate through all of the splits creating a process for each split
-    combProcesses = []
-    startComb = time.time()
-    print(len(splits))
-    manager = multiprocessing.Manager()
-    finalMassDict = manager.dict()
-    for i in range(0, length):
-        subsetSplits = splits[i:-1]
-        subsetSplitsRef = splitsRef[i:-1]
-        combinationProcess = multiprocessing.Process(target=specificTransProcess,
-                                                     args=(subsetSplits, subsetSplitsRef, mined, maxed,
-                                                           overlapFlag, modList, outputPath, chargeFlags, finalMassDict))
-        combProcesses.append(combinationProcess)
-        combinationProcess.start()
-
-
-
-    for process in combProcesses:
-        process.join()
-
-    writeToCsv(finalMassDict, 'a', 'Trans', outputPath, 'Trans', chargeFlags)
-    endComb = time.time()
-    print('combination time: ' + str(endComb - startComb))
-
-
-def specificTransProcess(subsetSplits, subSplitsRef, mined, maxed, overlapFlag, modList, outputPath, chargeFlags,
-                         finalMassDict):
-    print("Created trans process!!")
-    subsetComb, subsetCombRef = combinePeptideTrans(subsetSplits, subSplitsRef, mined, maxed, overlapFlag)
-    subsetComb, subsetCombRef = removeDupsQuick(subsetComb, subsetCombRef)
-    massDict = combMass(subsetComb, subsetCombRef)
-    massDict = applyMods(massDict, modList)
-    chargeIonMass(massDict, chargeFlags)
-    finalMassDict.update(massDict)
-    print("Printed trans process to csv!")
 
 
 def genMassDict(protId, peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):
@@ -186,7 +115,7 @@ def genMassDict(protId, peptide, mined, maxed, overlapFlag, modList, maxDistance
 
     #finalMassDict[protId] = massDict
 
-def genMassLinear(protId, peptide, mined, maxed, modList, chargeFlags, finalMassDict):
+def genMassLinear(protId, peptide, mined, maxed, modList, chargeFlags):
     linearFlag = True
     combined, combinedRef = splitDictPeptide(peptide, mined, maxed, linearFlag)
     combined, combinedRef = removeDupsQuick(combined, combinedRef)
@@ -194,7 +123,6 @@ def genMassLinear(protId, peptide, mined, maxed, modList, chargeFlags, finalMass
     massDict = applyMods(massDict, modList)
     chargeIonMass(massDict, chargeFlags)
     massDict = editRefMassDict(massDict)
-    finalMassDict[protId] = massDict
 
 
 
@@ -628,12 +556,10 @@ def editRefMassDict(massDict):
         value[1] = refNew
     return massDict
 
-# massdict = {}
-# key1 = ['A', 'B', 'C']
-# value1 = [[1,[1,2,3,1]], [2,[1,2,3,2,3]], [3,[1,2,3,4,3,4]]]
-# for i in range(0,3):
-#     massdict[key1[i]] = value1[i]
-# print(editRefMassDict(massdict))
+
+def getFinalPath(outputPath, spliceType):
+    finalPath = str(outputPath) + '/' + spliceType + '.csv'
+    return finalPath
 
 def nth_replace(string, old, new, n=1, option='only nth'):
 

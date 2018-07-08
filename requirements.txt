@@ -1,0 +1,7 @@
+biopython
+pyqt5
+numpy
+setuptools
+sip
+vs2015_runtime
+

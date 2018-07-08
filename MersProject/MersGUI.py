@@ -249,14 +249,18 @@ class MyTableWidget(QWidget):
                                        outputPath, chargeFlags)
 
     def finished(self):
+
+        """
+        Alerts when done!
+        """
         print("IT'S DONE")
         self.progressBarUpdate.changeFlag()
         self.tab2.output.setEnabled(True)
         self.pushButton1.setEnabled(True)
         QMessageBox.about(self, "Message", 'Output Complete')
 
-    def updateProgressBar(self,int):
-        self.tab2.progressBar.setValue(int)
+    def updateProgressBar(self, value):
+        self.tab2.progressBar.setValue(value)
 
     def deleteProgressBar(self):
         # Delete progress label and progress bar
@@ -268,11 +272,19 @@ class MyTableWidget(QWidget):
         self.tab2.progressBar = None
 
     def disableButtons(self):
+        """
+        These buttons should not be being used when an output is being generated.
+        """
         self.tab2.output.setEnabled(False)
         self.pushButton1.setEnabled(False)
 
     def outputPreStep(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList, maxDistance,
                       outputPath, chargeFlags):
+
+        """
+        Begins the output by creating a threadpool to keep gui responsive. Called by the confirmation function; also
+        calls the actual output function to generate output
+        """
 
         self.tab2.progressLabel = QLabel('Collating Combinations. Please Wait: ')
         self.tab2.layout.addWidget(self.tab2.progressLabel, 14, 3, 1, 2)
@@ -280,7 +292,7 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.progressBar, 15, 3, 1, 4)
 
         outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
-                               maxDistance, outputPath, chargeFlags)
+                                    maxDistance, outputPath, chargeFlags)
 
         outputGen.signals.finished.connect(self.finished)
         self.threadpool.start(outputGen)
@@ -291,11 +303,12 @@ class MyTableWidget(QWidget):
         self.progressBarUpdate.signals.disableButtons.connect(self.disableButtons)
         self.threadpool.start(self.progressBarUpdate)
 
-
-
-    # called when trans is selected, it disables the use of the max distance function
     def disableMaxDist(self, state):
-
+        """
+        Called when trans is selected, it disables the use of the max distance function
+        :param state: Whether trans flag is True or False
+        :return:
+        """
         if state == Qt.Checked:
             index = self.tab2.maxDistCombo.findText('None')
             self.tab2.maxDistCombo.setCurrentIndex(index)
@@ -303,13 +316,15 @@ class MyTableWidget(QWidget):
         else:
             self.tab2.maxDistCombo.setEnabled(True)
 
-    # called by confirmation function, it runs the generateOutput function from Mers.py while outputing small
-    # bits of information to the user via a statusbar in the GUI
     def output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
                maxDistance, outputPath, chargeFlags):
-        start = time.time()
 
-        #self.parent().statusbar.showMessage('Processing Data')
+        """
+        called by output pre-step function, it runs the generateOutput function from Mers.py; This is shown to be
+        running via the progress bar
+        """
+
+        start = time.time()
 
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
@@ -317,21 +332,24 @@ class MyTableWidget(QWidget):
         self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
                                   maxDistance, outputPath, chargeFlags)
         end = time.time()
-        #self.parent().statusbar.hide()
+
         print(end - start)
 
-
-        #print(tryString)
-        #replacedOutpath = outputPath.replace("/", '\\')
-        #print(replacedOutpath)
-        #openString = r'explorer "' + replacedOutpath + '"'
-        #print(openString)
+        # The following statements are used to open the output directory after output is created into file format
+        # print(tryString)
+        # replacedOutpath = outputPath.replace("/", '\\')
+        # print(replacedOutpath)
+        # openString = r'explorer "' + replacedOutpath + '"'
+        # print(openString)
         # subprocess.Popen(openString)
 
-
-    # called when minimumCombo value changes. It alters the values available in max and maxDistance combos to
-    # ensure a realistic input
     def minMaxChanged(self, text):
+
+        """
+        Data Validation Function.
+        Called when minimumCombo value changes. It alters the values available in max and maxDistance combos to
+        ensure a realistic input
+        """
 
         sender = self.tab2.sender()
         minChanged = sender == self.tab2.minimumCombo
@@ -363,7 +381,7 @@ class MyTableWidget(QWidget):
                 indexMax = comboChange.findText(str(value))
                 comboChange.setCurrentIndex(indexMax)
 
-        else: #maxChanged
+        else:  # maxChanged
             # Creates new values in combo box which are less than than the max
             for i in range(2, int(text) + 1):
                 comboChange.addItem(str(i))
@@ -382,9 +400,12 @@ class MyTableWidget(QWidget):
                 indexDist = self.tab2.maxDistCombo.findText(str(maxDistValue))
                 self.tab2.maxDistCombo.setCurrentIndex(indexDist)
 
-
-
     def modSelected(self, text):
+
+        """
+        Ensures only one mod can be selected.
+        """
+
         modCombos = [self.tab2.mod1Combo, self.tab2.mod2Combo, self.tab2.mod3Combo]
         modSender = []
         modChange = []
@@ -392,7 +413,7 @@ class MyTableWidget(QWidget):
         for combo in modCombos:
             modSender.append(combo == self.tab2.sender())
 
-        for i in range (0,len(modSender)):
+        for i in range(0, len(modSender)):
             if not modSender[i]:
                 modChange.append(modCombos[i])
 
@@ -405,7 +426,8 @@ class MyTableWidget(QWidget):
         modChange[1].addItem('None')
 
         for modification in modTable.keys():
-            if modification not in (text, modValue1, modValue2): #and modification != modValue1 and modification != modValue2:
+            # and modification != modValue1 and modification != modValue2:
+            if modification not in (text, modValue1, modValue2):
                 modChange[0].addItem(modification)
                 modChange[1].addItem(modification)
 

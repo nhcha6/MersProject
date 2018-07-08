@@ -1,4 +1,5 @@
-### Need to fix no parameter
+# pyinstaller MersGUI --> this command from the relevant file location creates executable file
+# Need to fix no parameter
 import sys
 import subprocess
 from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTabWidget, QVBoxLayout, \
@@ -8,16 +9,26 @@ from PyQt5.QtCore import *
 from PyQt5.QtCore import pyqtSlot
 from Mers import *
 
-# pyinstaller MersGUI --> this command from the relevant file location creates executable file
 
 class WorkerSignals(QObject):
+
+    """
+    Signals class that is used for the GUI when emitting custom signals
+    """
+
     finished = pyqtSignal()
     updateProgBar = pyqtSignal(int)
     disableButtons = pyqtSignal()
 
+
 class ProgressGenerator(QRunnable):
 
+    """
+    Progress Bar that shows up under the charge states once the peptide slicing begins
+    """
+
     def __init__(self, *args, **kwargs):
+
         super(ProgressGenerator, self).__init__()
         # Store constructor arguments (re-used for processing)
         self.args = args
@@ -30,6 +41,7 @@ class ProgressGenerator(QRunnable):
 
     @pyqtSlot()
     def run(self):
+
         self.signals.disableButtons.emit()
         while self.flag:
             self.signals.updateProgBar.emit(0)
@@ -47,6 +59,9 @@ class ProgressGenerator(QRunnable):
 
 class OutputGenerator(QRunnable):
 
+    """
+
+    """
     def __init__(self, fn, *args, **kwargs):
         super(OutputGenerator, self).__init__()
         # Store constructor arguments (re-used for processing)
@@ -57,16 +72,20 @@ class OutputGenerator(QRunnable):
 
     @pyqtSlot()
     def run(self):
-        #print(*self.args)
-        #print(**self.kwargs)
+
         self.fn(*self.args)
         self.signals.finished.emit()
 
+
 class App(QMainWindow):
-    # App serves as the parent class for the embedded MyTableWidget
+
+    """
+    App serves as the parent class for the embedded MyTableWidget
+    """
 
     # Initialisation of main window class
     def __init__(self):
+
         super().__init__()
         self.title = 'Peptide Splicer'
         self.left = 500
@@ -81,24 +100,34 @@ class App(QMainWindow):
 
         self.show()
 
-    # center function is called to centre the main window on the screen
     def center(self):
+
+        """
+        center function is called to centre the main window on the screen
+        """
+
         qr = self.frameGeometry()
         cp = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
 
-# MyTableWidget class is the child of the App class. It holds the tabs where most of the GUI functionality occurs
 class MyTableWidget(QWidget):
+
+    """
+    MyTableWidget class is the child of the App class. It holds the tabs where most of the GUI functionality occurs
+    """
 
     # Initialisation of table child
     def __init__(self, parent):
         super(QWidget, self).__init__(parent)
         self.layout = QVBoxLayout(self)
+        # self.fasta will store the fasta class once initialised
         self.fasta = None
-        #Init threading
+        # Init threading
         self.threadpool = QThreadPool()
+
+        # Default values for the input parameters
         self.minDefault = '8'
         self.maxDefault = '12'
         self.maxDistDefault = '25'
@@ -127,114 +156,8 @@ class MyTableWidget(QWidget):
         self.tab2.layout = QGridLayout(self)
         self.tab2.layout.setSpacing(10)
 
-        # Minimum/maximum Combo boxes and connector functions
-        self.tab2.minimum = QLabel('Minimum Peptide Length : ')
-        self.tab2.minimumCombo = QComboBox(self)
-        self.tab2.minimumCombo.activated[str].connect(self.minMaxChanged)
-        self.tab2.maximum = QLabel('Maximum Peptide Length : ')
-        self.tab2.maximumCombo = QComboBox(self)
-        self.tab2.maximumCombo.activated[str].connect(self.minMaxChanged)
-
-        # Max distance combo box
-        self.tab2.maxDistance = QLabel('Maximum Distance : ')
-        self.tab2.maxDistCombo = QComboBox(self)
-
-        # Adding values to the max/min/maxDist combos
-        self.tab2.maxDistCombo.addItem('None')
-        for i in range(int(self.minDefault), 26):
-            self.tab2.maximumCombo.addItem(str(i))
-        for i in range(2, int(self.maxDefault) + 1):
-            self.tab2.minimumCombo.addItem(str(i))
-        for i in range(int(self.maxDefault), 26):
-            self.tab2.maxDistCombo.addItem(str(i))
-
-
-
-        # set default values
-        maxDistIndex = self.tab2.maxDistCombo.findText(str(self.maxDistDefault))
-        self.tab2.maxDistCombo.setCurrentIndex(maxDistIndex)
-
-        maxIndex = self.tab2.maximumCombo.findText(str(self.maxDefault))
-        self.tab2.maximumCombo.setCurrentIndex(maxIndex)
-
-        minIndex = self.tab2.minimumCombo.findText(str(self.minDefault))
-        self.tab2.minimumCombo.setCurrentIndex(minIndex)
-
-
-        # Modifications combo boxes and labels
-        self.tab2.mod1 = QLabel('Modification 1 : ')
-        self.tab2.mod2 = QLabel('Modification 2 : ')
-        self.tab2.mod3 = QLabel('Modification 3 : ')
-        self.tab2.mod1Combo = QComboBox(self)
-        self.tab2.mod1Combo.activated[str].connect(self.modSelected)
-        self.tab2.mod2Combo = QComboBox(self)
-        self.tab2.mod2Combo.activated[str].connect(self.modSelected)
-        self.tab2.mod3Combo = QComboBox(self)
-        self.tab2.mod3Combo.activated[str].connect(self.modSelected)
-
-        # Adding values to modification combo boxes
-        self.tab2.mod1Combo.addItem("None")
-        self.tab2.mod2Combo.addItem("None")
-        self.tab2.mod3Combo.addItem("None")
-        for modification in modificationList:
-            self.tab2.mod1Combo.addItem(modification)
-            self.tab2.mod2Combo.addItem(modification)
-            self.tab2.mod3Combo.addItem(modification)
-
-        # initialise overlap, trans, cis and linear check boxes
-        self.tab2.overlap = QCheckBox('Overlap Off', self)
-        self.tab2.trans = QCheckBox('Trans', self)
-        self.tab2.trans.stateChanged.connect(self.disableMaxDist) # connect trans check box to relevant function
-        self.tab2.cis = QCheckBox('Cis', self)
-        self.tab2.linear = QCheckBox('Linear', self)
-
-        # set to true as defauls for linear, cis and overlap off. Set trans off for now.
-        self.tab2.overlap.setChecked(True)
-        self.tab2.cis.setChecked(True)
-        self.tab2.linear.setChecked(True)
-        self.tab2.trans.setEnabled(False)
-
-
-
-        # create generate output push button
-        self.tab2.output = QPushButton('Generate Output!', self)
-        self.tab2.output.clicked.connect(self.confirmationFunction)
-
-        # Add charge state check boxes
-        self.tab2.chargeLabel = QLabel('Charge states (z): ')
-        self.tab2.plusOne = QCheckBox('+1', self)
-        self.tab2.plusTwo = QCheckBox('+2', self)
-        self.tab2.plusThree = QCheckBox('+3', self)
-        self.tab2.plusFour = QCheckBox('+4', self)
-        self.tab2.plusFive = QCheckBox('+5', self)
-        self.tab2.plusTwo.setChecked(True)
-
-        # All the labels added to grid layout of tab2
-        self.tab2.layout.addWidget(self.tab2.minimum, 1, 3)
-        self.tab2.layout.addWidget(self.tab2.maximum, 2, 3)
-        self.tab2.layout.addWidget(self.tab2.maxDistance, 3, 3)
-        self.tab2.layout.addWidget(self.tab2.mod1, 4, 3)
-        self.tab2.layout.addWidget(self.tab2.mod2, 5, 3)
-        self.tab2.layout.addWidget(self.tab2.mod3, 6, 3)
-        self.tab2.layout.addWidget(self.tab2.overlap, 7, 3)
-        self.tab2.layout.addWidget(self.tab2.linear, 8, 3)
-        self.tab2.layout.addWidget(self.tab2.cis, 9, 3)
-        self.tab2.layout.addWidget(self.tab2.trans, 10, 3)
-        self.tab2.layout.addWidget(self.tab2.chargeLabel, 11, 3)
-
-        # all dynamic elements added to the grid layout of tab 2
-        self.tab2.layout.addWidget(self.tab2.minimumCombo, 1, 4, 1, 3)
-        self.tab2.layout.addWidget(self.tab2.maximumCombo, 2, 4, 1, 3)
-        self.tab2.layout.addWidget(self.tab2.maxDistCombo, 3, 4, 1, 3)
-        self.tab2.layout.addWidget(self.tab2.mod1Combo, 4, 4, 1, 3)
-        self.tab2.layout.addWidget(self.tab2.mod2Combo, 5, 4, 1, 3)
-        self.tab2.layout.addWidget(self.tab2.mod3Combo, 6, 4, 1, 3)
-        self.tab2.layout.addWidget(self.tab2.plusOne, 11, 4)
-        self.tab2.layout.addWidget(self.tab2.plusTwo, 11, 5)
-        self.tab2.layout.addWidget(self.tab2.plusThree, 11, 6)
-        self.tab2.layout.addWidget(self.tab2.plusFour, 12, 4)
-        self.tab2.layout.addWidget(self.tab2.plusFive, 12, 5)
-        self.tab2.layout.addWidget(self.tab2.output, 13, 5, 1, 2)
+        self.createParameterWidgets()
+        self.addParameterWidgets()
 
         # set layout
         self.tab2.setLayout(self.tab2.layout)
@@ -491,7 +414,7 @@ class MyTableWidget(QWidget):
         modChange[0].addItem('None')
         modChange[1].addItem('None')
 
-        for modification in modificationList:
+        for modification in modTable.keys():
             if modification not in (text, modValue1, modValue2): #and modification != modValue1 and modification != modValue2:
                 modChange[0].addItem(modification)
                 modChange[1].addItem(modification)
@@ -506,7 +429,138 @@ class MyTableWidget(QWidget):
             indexMod2 = modChange[1].findText(modValue2)
             modChange[1].setCurrentIndex(indexMod2)
 
+    def createParameterWidgets(self):
 
+        self.addMinMaxAndDist()
+        self.addModifications()
+        self.addFlagChecks()
+        self.addChargeStates()
+
+        # create generate output push button
+        self.tab2.output = QPushButton('Generate Output!', self)
+        self.tab2.output.clicked.connect(self.confirmationFunction)
+
+        self.setDefaultParameters()
+
+    def addMinMaxAndDist(self):
+
+        # Minimum/maximum Combo boxes and connector functions
+        self.tab2.minimum = QLabel('Minimum Peptide Length : ')
+        self.tab2.minimumCombo = QComboBox(self)
+        self.tab2.minimumCombo.activated[str].connect(self.minMaxChanged)
+        self.tab2.maximum = QLabel('Maximum Peptide Length : ')
+        self.tab2.maximumCombo = QComboBox(self)
+        self.tab2.maximumCombo.activated[str].connect(self.minMaxChanged)
+
+        # Max distance combo box
+        self.tab2.maxDistance = QLabel('Maximum Distance : ')
+        self.tab2.maxDistCombo = QComboBox(self)
+
+        # Adding values to the max/min/maxDist combos
+        self.tab2.maxDistCombo.addItem('None')
+        for i in range(int(self.minDefault), 26):
+            self.tab2.maximumCombo.addItem(str(i))
+        for i in range(2, int(self.maxDefault) + 1):
+            self.tab2.minimumCombo.addItem(str(i))
+        for i in range(int(self.maxDefault), 26):
+            self.tab2.maxDistCombo.addItem(str(i))
+
+    def addFlagChecks(self):
+
+        # initialise overlap, trans, cis and linear check boxes
+        self.tab2.overlap = QCheckBox('Overlap Off', self)
+        self.tab2.trans = QCheckBox('Trans', self)
+        self.tab2.trans.stateChanged.connect(self.disableMaxDist)  # connect trans check box to relevant function
+        self.tab2.cis = QCheckBox('Cis', self)
+        self.tab2.linear = QCheckBox('Linear', self)
+
+    def addChargeStates(self):
+
+        """
+        Add charge state check boxes
+        """
+        self.tab2.chargeLabel = QLabel('Charge states (z): ')
+        self.tab2.plusOne = QCheckBox('+1', self)
+        self.tab2.plusTwo = QCheckBox('+2', self)
+        self.tab2.plusThree = QCheckBox('+3', self)
+        self.tab2.plusFour = QCheckBox('+4', self)
+        self.tab2.plusFive = QCheckBox('+5', self)
+
+    def addModifications(self):
+
+        # Modifications combo boxes and labels
+        self.tab2.mod1 = QLabel('Modification 1 : ')
+        self.tab2.mod2 = QLabel('Modification 2 : ')
+        self.tab2.mod3 = QLabel('Modification 3 : ')
+        self.tab2.mod1Combo = QComboBox(self)
+        self.tab2.mod1Combo.activated[str].connect(self.modSelected)
+        self.tab2.mod2Combo = QComboBox(self)
+        self.tab2.mod2Combo.activated[str].connect(self.modSelected)
+        self.tab2.mod3Combo = QComboBox(self)
+        self.tab2.mod3Combo.activated[str].connect(self.modSelected)
+
+        # Adding values to modification combo boxes
+        self.tab2.mod1Combo.addItem("None")
+        self.tab2.mod2Combo.addItem("None")
+        self.tab2.mod3Combo.addItem("None")
+        for modification in modTable.keys():
+            self.tab2.mod1Combo.addItem(modification)
+            self.tab2.mod2Combo.addItem(modification)
+            self.tab2.mod3Combo.addItem(modification)
+
+    def addParameterWidgets(self):
+
+        """
+        Add all widgets in the correct grid format where they should be on the screen
+        """
+
+        # All the labels added to grid layout of tab2
+        self.tab2.layout.addWidget(self.tab2.minimum, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.maximum, 2, 3)
+        self.tab2.layout.addWidget(self.tab2.maxDistance, 3, 3)
+        self.tab2.layout.addWidget(self.tab2.mod1, 4, 3)
+        self.tab2.layout.addWidget(self.tab2.mod2, 5, 3)
+        self.tab2.layout.addWidget(self.tab2.mod3, 6, 3)
+        self.tab2.layout.addWidget(self.tab2.overlap, 7, 3)
+        self.tab2.layout.addWidget(self.tab2.linear, 8, 3)
+        self.tab2.layout.addWidget(self.tab2.cis, 9, 3)
+        self.tab2.layout.addWidget(self.tab2.trans, 10, 3)
+        self.tab2.layout.addWidget(self.tab2.chargeLabel, 11, 3)
+
+        # all dynamic elements added to the grid layout of tab 2
+        self.tab2.layout.addWidget(self.tab2.minimumCombo, 1, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.maximumCombo, 2, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.maxDistCombo, 3, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.mod1Combo, 4, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.mod2Combo, 5, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.mod3Combo, 6, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.plusOne, 11, 4)
+        self.tab2.layout.addWidget(self.tab2.plusTwo, 11, 5)
+        self.tab2.layout.addWidget(self.tab2.plusThree, 11, 6)
+        self.tab2.layout.addWidget(self.tab2.plusFour, 12, 4)
+        self.tab2.layout.addWidget(self.tab2.plusFive, 12, 5)
+        self.tab2.layout.addWidget(self.tab2.output, 13, 5, 1, 2)
+
+    def setDefaultParameters(self):
+
+        """
+        set default values
+        """
+        maxDistIndex = self.tab2.maxDistCombo.findText(str(self.maxDistDefault))
+        self.tab2.maxDistCombo.setCurrentIndex(maxDistIndex)
+
+        maxIndex = self.tab2.maximumCombo.findText(str(self.maxDefault))
+        self.tab2.maximumCombo.setCurrentIndex(maxIndex)
+
+        minIndex = self.tab2.minimumCombo.findText(str(self.minDefault))
+
+        # set to true as defaults for linear, cis and overlap off. Set trans off for now.
+        self.tab2.minimumCombo.setCurrentIndex(minIndex)
+        self.tab2.overlap.setChecked(True)
+        self.tab2.cis.setChecked(True)
+        self.tab2.linear.setChecked(True)
+        self.tab2.trans.setEnabled(False)
+        self.tab2.plusTwo.setChecked(True)
 
     @pyqtSlot()
     def on_click(self):

@@ -661,14 +661,3 @@ def nth_replace(string, old, new, n=1, option='only nth'):
     groups = string.split(old)
     nth_split = [left_join.join(groups[:n]), right_join.join(groups[n:])]
     return new.join(nth_split)
-
-"""
-def initiateIteration(length):
-    iterationArray = []
-    for i in range(0,length):
-        combinationThread = CombinationThread(i, iterationArray)
-        combinationThread.start()
-    print(iterationArray)
-
-initiateIteration(5)
-"""

@@ -60,6 +60,9 @@ class Fasta:
         for process in allProcessList:
             process.join()
 
+def processLockInit(lockVar):
+    global lock
+    lock = lockVar
 
 def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag,  modList, maxDistance, outputPath, chargeFlags):
 
@@ -71,7 +74,8 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag,  modList,
     open(finalPath, 'w', newline='')
 
     num_workers = multiprocessing.cpu_count()
-    pool = multiprocessing.Pool(num_workers)
+    lockVar = multiprocessing.Lock()
+    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, ))
     print("CPU Count is: " + str(num_workers))
 
     for key, value in seqDict.items():
@@ -104,7 +108,11 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, modList,
     massDict = editRefMassDict(massDict)
 
     ## WRITE TO FILE HERE!!!!
-
+    lock.acquire()
+    print("Writing locked :(")
+    writeToCsv(massDict, protId, finalPath, chargeFlags)
+    lock.release()
+    print("Writing Released!")
     end = time.time()
     print(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
 
@@ -339,11 +347,11 @@ def massCharge(predictedMass, z):
     return chargeMass
 
 
-def writeToCsv(massDict, writeFlag, header, outputPath, linkType, chargeFlags):
-
-    finalPath = str(outputPath) + '/' + linkType + '.csv'
+def writeToCsv(massDict, header, finalPath, chargeFlags):
 
     chargeHeaders = getChargeIndex(chargeFlags)
+
+    writeFlag = 'a'
 
     with open(finalPath, writeFlag, newline='') as csv_file:
 

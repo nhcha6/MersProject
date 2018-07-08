@@ -77,13 +77,8 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag,  modList,
     for key, value in seqDict.items():
         print(spliceType + " process started for: " + value)
 
-        if spliceType == CIS:
-            pool.apply_async(genMassDict, args=(key, value, mined, maxed, overlapFlag,
-                                                modList, maxDistance, chargeFlags))
-
-        elif spliceType == LINEAR:
-            pool.apply_async(genMassLinear, args=(key, value, mined, maxed,
-                                                  modList, chargeFlags))
+        pool.apply_async(genMassDict, args=(spliceType, key, value, mined, maxed, overlapFlag,
+                                            modList, maxDistance, finalPath, chargeFlags))
 
     pool.close()
     print("No more jobs, thanks!")
@@ -95,10 +90,12 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag,  modList,
     #     writeToCsv(value, 'a', key, outputPath, 'Cis', chargeFlags)
 
 
-def genMassDict(protId, peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):
+def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, modList, maxDistance, finalPath, chargeFlags):
 
     start = time.time()
-    combined, combinedRef = outputCreate(peptide, mined, maxed, overlapFlag, maxDistance)
+
+    combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
+
     massDict = combMass(combined, combinedRef)
     massDict = applyMods(massDict, modList)
 
@@ -109,91 +106,35 @@ def genMassDict(protId, peptide, mined, maxed, overlapFlag, modList, maxDistance
     ## WRITE TO FILE HERE!!!!
 
     end = time.time()
-    print(peptide[0:5] + ' took: ' + str(end-start))
-    print("Cis process complete for: " + peptide)
-
+    print(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
 
     #finalMassDict[protId] = massDict
 
-def genMassLinear(protId, peptide, mined, maxed, modList, chargeFlags):
-    linearFlag = True
-    combined, combinedRef = splitDictPeptide(peptide, mined, maxed, linearFlag)
-    combined, combinedRef = removeDupsQuick(combined, combinedRef)
-    massDict = combMass(combined, combinedRef)
-    massDict = applyMods(massDict, modList)
-    chargeIonMass(massDict, chargeFlags)
-    massDict = editRefMassDict(massDict)
 
-
-
-def chargeIonMass(massDict, chargeFlags):
-
-    """
-    chargeFlags: [True, False, True, False, True]
-    """
-
-    for key, value in massDict.items():
-        chargeAssoc = {}
-        for z in range(0, len(chargeFlags)):
-
-            if chargeFlags[z]:
-                chargeMass = massCharge(value[0], z+1) # +1 for actual value
-                chargeAssoc[z+1] = chargeMass
-        value.append(chargeAssoc)
-
-
-def massCharge(predictedMass, z):
-    chargeMass = (predictedMass + (z * 1.00794))/z
-    return chargeMass
-
-
-def writeToCsv(massDict, writeFlag, header, outputPath, linkType, chargeFlags):
-
-    finalPath = str(outputPath) + '/' + linkType + '.csv'
-
-    chargeHeaders = getChargeIndex(chargeFlags)
-
-    with open(finalPath, writeFlag, newline='') as csv_file:
-
-
-        writer = csv.writer(csv_file, delimiter=',')
-        writer.writerow([header, ' ', ' '])
-        headerRow = ['Peptide', 'Mass', 'Positions']
-
-        for chargeIndex in chargeHeaders:
-
-            headerRow.append('+' + str(chargeIndex+1))
-
-        writer.writerow(headerRow)
-        for key, value in massDict.items():
-            infoRow = [key, value[0], value[1]]
-            for chargeIndex in chargeHeaders:
-                chargeMass = value[2][chargeIndex+1]
-                infoRow.append(str(chargeMass))
-            writer.writerow(infoRow)
-
-
-def getChargeIndex(chargeFlags):
-    chargeHeaders = [i for i, e in enumerate(chargeFlags) if e]
-    return chargeHeaders
-
-
-def outputCreate(peptide, mined, maxed, overlapFlag, maxDistance=None, linearFlag=False):
+def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance):
 
     # Splits eg: ['A', 'AB', 'AD', 'B', 'BD']
     # SplitRef eg: [[0], [0,1], [0,2], [1], [1,2]]
     # Produces splits and splitRef arrays which are passed through combined
-    splits, splitRef = splitDictPeptide(peptide, mined, maxed, linearFlag)
+    splits, splitRef = splitDictPeptide(spliceType, peptide, mined, maxed)
 
-    combineLinear, combineLinearRef = splitDictPeptide(peptide, mined, maxed, True)
+    if spliceType == CIS:
+        # get the linear set to ensure no linear peptides are added to cis set. ( Redoing is a little redundant,
+        # need to find something better )
+        combineLinear, combineLinearRef = splitDictPeptide(LINEAR, peptide, mined, maxed)
 
-    combineLinearSet = set(combineLinear)
+        combineLinearSet = set(combineLinear)
 
-    # combined eg: ['ABC', 'BCA', 'ACD', 'DCA']
-    # combinedRef eg: [[0,1,2], [1,0,2], [0,2,3], [3,2,0]]
-    # pass splits through combined overlap peptide and then delete all duplicates
+        # combined eg: ['ABC', 'BCA', 'ACD', 'DCA']
+        # combinedRef eg: [[0,1,2], [1,0,2], [0,2,3], [3,2,0]]
+        # pass splits through combined overlap peptide and then delete all duplicates
 
-    combined, combinedRef = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance, combineLinearSet)
+        combined, combinedRef = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance,
+                                                      combineLinearSet)
+    elif spliceType == LINEAR:
+
+        # Explicit change for high visibility regarding what's happening
+        combined, combinedRef = splits, splitRef
 
     combined, combinedRef = removeDupsQuick(combined, combinedRef)
 
@@ -261,13 +202,17 @@ def genericMod(combineModlessDict, character, massChange, modNo):
     return modDict
 
 
-def splitDictPeptide(peptide, mined, maxed, linearFlag):
+def splitDictPeptide(spliceType, peptide, mined, maxed):
 
     """
     Inputs: peptide string, max length of split peptide.
     Outputs: all possible splits that could be formed that are smaller in length than the maxed input
     """
 
+    # Makes it easier to integrate with earlier iteration where linearFlag was being passed as an external flag
+    # instead of spliceType
+
+    linearFlag = spliceType == LINEAR
     length = len(peptide)
 
     # splits will hold all possible splits that can occur
@@ -278,7 +223,7 @@ def splitDictPeptide(peptide, mined, maxed, linearFlag):
 
     # embedded for loops build all possible splits
     for i in range(0, length):
-        
+
         character = peptide[i]
         toAdd = ""
         # add and append first character and add and append reference number which indexes this character
@@ -373,44 +318,56 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
     return combModless, combModlessRef
 
 
-def combinePeptideTrans(splits, splitRef, mined, maxed, overlapFlag):
+def chargeIonMass(massDict, chargeFlags):
 
-    splitComb = []
-    splitCombRef = []
+    """
+    chargeFlags: [True, False, True, False, True]
+    """
 
-    # toAdd variables hold temporary combinations for insertion in final matrix if it meets criteria
-    toAddForward = ""
-    # addForwardRef = []
-    toAddReverse = ""
-    # addReverseRef = []
-    for j in range(0, len(splits)):
-        # create forward combination of i and j
-        toAddForward += splits[0]
-        toAddForward += splits[j]
-        addForwardRef = splitRef[0] + splitRef[j]
-        toAddReverse += splits[j]
-        toAddReverse += splits[0]
-        addReverseRef = splitRef[j] + splitRef[0]
+    for key, value in massDict.items():
+        chargeAssoc = {}
+        for z in range(0, len(chargeFlags)):
 
-        # max, min and max distance checks combined into one function for clarity for clarity
-        if combineCheck(toAddForward, mined, maxed, splitRef[0], splitRef[j]):
-            if overlapFlag:
-                if overlapComp(splitRef[0], splitRef[j]):
-                    splitComb.append(toAddForward)
-                    splitComb.append(toAddReverse)
-                    splitCombRef.append(addForwardRef)
-                    splitCombRef.append(addReverseRef)
-            else:
-                splitComb.append(toAddForward)
-                splitComb.append(toAddReverse)
-                splitCombRef.append(addForwardRef)
-                splitCombRef.append(addReverseRef)
+            if chargeFlags[z]:
+                chargeMass = massCharge(value[0], z+1) # +1 for actual value
+                chargeAssoc[z+1] = chargeMass
+        value.append(chargeAssoc)
 
-        toAddForward = ""
-        toAddReverse = ""
-        # addForwardRef = []
-        # addReverseRef = []
-    return splitComb, splitCombRef
+
+def massCharge(predictedMass, z):
+    chargeMass = (predictedMass + (z * 1.00794))/z
+    return chargeMass
+
+
+def writeToCsv(massDict, writeFlag, header, outputPath, linkType, chargeFlags):
+
+    finalPath = str(outputPath) + '/' + linkType + '.csv'
+
+    chargeHeaders = getChargeIndex(chargeFlags)
+
+    with open(finalPath, writeFlag, newline='') as csv_file:
+
+
+        writer = csv.writer(csv_file, delimiter=',')
+        writer.writerow([header, ' ', ' '])
+        headerRow = ['Peptide', 'Mass', 'Positions']
+
+        for chargeIndex in chargeHeaders:
+
+            headerRow.append('+' + str(chargeIndex+1))
+
+        writer.writerow(headerRow)
+        for key, value in massDict.items():
+            infoRow = [key, value[0], value[1]]
+            for chargeIndex in chargeHeaders:
+                chargeMass = value[2][chargeIndex+1]
+                infoRow.append(str(chargeMass))
+            writer.writerow(infoRow)
+
+
+def getChargeIndex(chargeFlags):
+    chargeHeaders = [i for i, e in enumerate(chargeFlags) if e]
+    return chargeHeaders
 
 
 def maxDistCheck(ref1, ref2, maxDistance):

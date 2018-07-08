@@ -1,4 +1,6 @@
 from Mers import *
+
+
 def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, outputPath, chargeFlags, linearFlag=False):
     print('output create trans')
     finalPath = str(outputPath) + '/Trans.csv'
@@ -55,3 +57,43 @@ def specificTransProcess(subsetSplits, subSplitsRef, mined, maxed, overlapFlag, 
     chargeIonMass(massDict, chargeFlags)
     finalMassDict.update(massDict)
     print("Printed trans process to csv!")
+
+def combinePeptideTrans(splits, splitRef, mined, maxed, overlapFlag):
+
+    splitComb = []
+    splitCombRef = []
+
+    # toAdd variables hold temporary combinations for insertion in final matrix if it meets criteria
+    toAddForward = ""
+    # addForwardRef = []
+    toAddReverse = ""
+    # addReverseRef = []
+    for j in range(0, len(splits)):
+        # create forward combination of i and j
+        toAddForward += splits[0]
+        toAddForward += splits[j]
+        addForwardRef = splitRef[0] + splitRef[j]
+        toAddReverse += splits[j]
+        toAddReverse += splits[0]
+        addReverseRef = splitRef[j] + splitRef[0]
+
+        # max, min and max distance checks combined into one function for clarity for clarity
+        if combineCheck(toAddForward, mined, maxed, splitRef[0], splitRef[j]):
+            if overlapFlag:
+                if overlapComp(splitRef[0], splitRef[j]):
+                    splitComb.append(toAddForward)
+                    splitComb.append(toAddReverse)
+                    splitCombRef.append(addForwardRef)
+                    splitCombRef.append(addReverseRef)
+            else:
+                splitComb.append(toAddForward)
+                splitComb.append(toAddReverse)
+                splitCombRef.append(addForwardRef)
+                splitCombRef.append(addReverseRef)
+
+        toAddForward = ""
+        toAddReverse = ""
+        # addForwardRef = []
+        # addReverseRef = []
+    return splitComb, splitCombRef
+

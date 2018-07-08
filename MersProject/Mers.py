@@ -176,7 +176,7 @@ def genMassDict(protId, peptide, mined, maxed, overlapFlag, modList, maxDistance
     chargeIonMass(massDict, chargeFlags)
 
     massDict = editRefMassDict(massDict)
-    
+
     ## WRITE TO FILE HERE!!!!
 
     end = time.time()

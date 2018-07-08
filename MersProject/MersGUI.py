@@ -219,31 +219,8 @@ class MyTableWidget(QWidget):
         called which begins generating results
         """
 
-        mined = int(self.tab2.minimumCombo.currentText())
-        maxed = int(self.tab2.maximumCombo.currentText())
-        maxDistance = self.tab2.maxDistCombo.currentText()
-
-        overlapFlag = self.tab2.overlap.isChecked()
-        transFlag = self.tab2.trans.isChecked()
-        cisFlag = self.tab2.cis.isChecked()
-        linearFlag = self.tab2.linear.isChecked()
-
-        outputFlag = cisFlag or linearFlag or transFlag
-
-        plusOneFlag = self.tab2.plusOne.isChecked()
-        plusTwoFlag = self.tab2.plusTwo.isChecked()
-        plusThreeFlag = self.tab2.plusThree.isChecked()
-        plusFourFlag = self.tab2.plusFour.isChecked()
-        plusFiveFlag = self.tab2.plusFive.isChecked()
-
-        chargeFlags = [plusOneFlag, plusTwoFlag, plusThreeFlag, plusFourFlag, plusFiveFlag]
-
-        # self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/small.fasta'))
-        # self.outputPath = '/Users/nicolaschapman/Desktop/Mers Output'
-        # self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
-        # self.outputPath = 'C:/Users/Arpit/Desktop/UROP'
-        modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(),
-                   self.tab2.mod3Combo.currentText()]
+        mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, modList, outputFlag, chargeFlags \
+            = self.getInputParams()
 
         if self.fasta is None:
 
@@ -269,8 +246,7 @@ class MyTableWidget(QWidget):
                 outputPath = self.getOutputPath()
                 if outputPath is not False:
                     self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList, maxDistance,
-                      outputPath, chargeFlags)
-
+                                       outputPath, chargeFlags)
 
     def finished(self):
         print("IT'S DONE")
@@ -442,6 +418,34 @@ class MyTableWidget(QWidget):
             modChange[1].addItem(modValue2)
             indexMod2 = modChange[1].findText(modValue2)
             modChange[1].setCurrentIndex(indexMod2)
+
+    def getInputParams(self):
+        mined = int(self.tab2.minimumCombo.currentText())
+        maxed = int(self.tab2.maximumCombo.currentText())
+        maxDistance = self.tab2.maxDistCombo.currentText()
+
+        overlapFlag = self.tab2.overlap.isChecked()
+        transFlag = self.tab2.trans.isChecked()
+        cisFlag = self.tab2.cis.isChecked()
+        linearFlag = self.tab2.linear.isChecked()
+
+        outputFlag = cisFlag or linearFlag or transFlag
+
+        plusOneFlag = self.tab2.plusOne.isChecked()
+        plusTwoFlag = self.tab2.plusTwo.isChecked()
+        plusThreeFlag = self.tab2.plusThree.isChecked()
+        plusFourFlag = self.tab2.plusFour.isChecked()
+        plusFiveFlag = self.tab2.plusFive.isChecked()
+
+        chargeFlags = [plusOneFlag, plusTwoFlag, plusThreeFlag, plusFourFlag, plusFiveFlag]
+
+        # self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/small.fasta'))
+        # self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/Example.fasta'))
+
+        modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(),
+                   self.tab2.mod3Combo.currentText()]
+
+        return mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, modList, outputFlag, chargeFlags
 
     def createParameterWidgets(self):
 

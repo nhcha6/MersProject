@@ -83,8 +83,11 @@ class App(QMainWindow):
     App serves as the parent class for the embedded MyTableWidget
     """
 
-    # Initialisation of main window class
     def __init__(self):
+
+        """
+         Initialisation of main window class
+        """
 
         super().__init__()
         self.title = 'Peptide Splicer'
@@ -118,8 +121,12 @@ class MyTableWidget(QWidget):
     MyTableWidget class is the child of the App class. It holds the tabs where most of the GUI functionality occurs
     """
 
-    # Initialisation of table child
     def __init__(self, parent):
+
+        """
+        Initialisation of table child
+        """
+
         super(QWidget, self).__init__(parent)
         self.layout = QVBoxLayout(self)
         # self.fasta will store the fasta class once initialised
@@ -166,52 +173,59 @@ class MyTableWidget(QWidget):
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
 
-    # called from the Upload Fasta File button. Opens a window to select a file, and check if the file ends in fasta
     def uploadFasta(self):
+
+        """
+        Called from the Upload Fasta File button. Opens a window to select a file, and check if the file ends in fasta
+        """
+
         fname = QFileDialog.getOpenFileName(self, 'Open File', '/home')
 
-        self.fastaTest = fname[0][-5:]
-        if self.fastaTest == 'fasta':
+        fastaTest = fname[0][-5:]
+
+        # Ensure opening fasta extension file by checking last five chars
+        if fastaTest == 'fasta':
             self.fasta = Fasta(addSequenceList(fname[0]))
 
             QMessageBox.about(self, "Message", 'Fasta file imported.'
                                                'There are ' + str(self.fasta.entries) + ' proteins in this file!')
 
+        # Ensuring program does not crash if no file is selected
         elif fname[0] == '':
             print('')
+
+        # Wrong extension selected! Try Again!
         else:
             QMessageBox.about(self, "Message", 'Please select a Fasta file!')
 
-    # called from the Select Output Path button. Opens a window to select a file location to save the output to.
     def getOutputPath(self):
 
-        self.outputPath = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+        """
+        Called after generate output is clicked. Opens a window to select a file location to save the output to.
+        Returns False if no path is selected, otherwise returns the selected path.
+        """
 
-        if self.outputPath == '':
+        outputPath = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+
+        if outputPath == '':
             return False
-        print(self.outputPath)
-        return True
-        # else:
-            # convert to tool tip later
-            # QMessageBox.about(self, "Message", 'Valid Path Selected')
-
-
+        return outputPath
 
     def confirmationFunction(self):
 
         """
-        called on click of generate output button on tab2. Checks to ensure all input values are relevant and outputs
+        Called on click of generate output button on tab2. Checks to ensure all input values are relevant and outputs
         message box summarising the inputs of the user. When yes is clicked on the message box, the output function is
         called which begins generating results
         """
 
         mined = int(self.tab2.minimumCombo.currentText())
         maxed = int(self.tab2.maximumCombo.currentText())
+        maxDistance = self.tab2.maxDistCombo.currentText()
+
         overlapFlag = self.tab2.overlap.isChecked()
         transFlag = self.tab2.trans.isChecked()
-
         cisFlag = self.tab2.cis.isChecked()
-        maxDistance = self.tab2.maxDistCombo.currentText()
         linearFlag = self.tab2.linear.isChecked()
 
         outputFlag = cisFlag or linearFlag or transFlag
@@ -239,24 +253,24 @@ class MyTableWidget(QWidget):
             QMessageBox.about(self, "Message", 'Please select at least one output type; either trans, cis or linear')
         else:
             reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' +
-                                         'Minimum Length: ' + str(mined) + '\n' +
-                                         'Maximum Length: ' + str(maxed) + '\n' +
+                                         'Minimum Peptide Length: ' + str(mined) + '\n' +
+                                         'Maximum Peptide Length: ' + str(maxed) + '\n' +
+                                         'Maximum Distance: ' + str(maxDistance) + '\n' +
+                                         'Mod List: ' + str(modList) + '\n' +
                                          'Overlap Flag: ' + str(overlapFlag) + '\n' +
-                                         'Trans Flag: ' + str(transFlag) + '\n' +
                                          'Linear Flag: ' + str(linearFlag) + '\n' +
                                          'Cis Flag: ' + str(cisFlag) + '\n' +
-                                         'Mod List: ' + str(modList) + '\n' +
-                                         'Maximum Distance: ' + str(maxDistance) + '\n',
+                                         'Trans Flag: ' + str(transFlag) + '\n' +
+                                         'Charge States: ' + str(chargeFlags) + '\n',
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
             if reply == QMessageBox.Yes:
-                print('reply is yes')
 
-                if self.getOutputPath():
+                outputPath = self.getOutputPath()
+                if outputPath is not False:
                     self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList, maxDistance,
-                      self.outputPath, chargeFlags)
-                    #self.output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
-                     #           maxDistance, self.outputPath, chargeFlags)
+                      outputPath, chargeFlags)
+
 
     def finished(self):
         print("IT'S DONE")

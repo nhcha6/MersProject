@@ -1,4 +1,5 @@
 biopython
+h5py
 pyqt5
 numpy
 setuptools

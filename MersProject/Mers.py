@@ -6,6 +6,9 @@ import threading
 import multiprocessing
 import time
 import sys
+import h5py
+import json
+
 
 TRANS = "Trans"
 LINEAR = "Linear"
@@ -75,7 +78,6 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag,  modList,
 
     # Open the csv file
     finalPath = getFinalPath(outputPath, spliceType)
-    open(finalPath, 'w', newline='')
 
     num_workers = multiprocessing.cpu_count()
     lockVar = multiprocessing.Lock()
@@ -98,7 +100,8 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag,  modList,
     #     writeToCsv(value, 'a', key, outputPath, 'Cis', chargeFlags)
 
 
-def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, modList, maxDistance, finalPath, chargeFlags):
+def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, modList, maxDistance, finalPath, chargeFlags,
+                ):
 
     start = time.time()
 
@@ -110,11 +113,14 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, modList,
     chargeIonMass(massDict, chargeFlags)
 
     massDict = editRefMassDict(massDict)
+    jsonMassDict = json.dumps(massDict)
+
 
     # Locked as will break otherwise (likely)
     lock.acquire()
     print("Writing locked :(")
-    writeToCsv(massDict, protId, finalPath, chargeFlags)
+    with h5py.File(finalPath, "a") as f:
+        f.create_dataset(str(protId), data=jsonMassDict)
     lock.release()
     print("Writing Released!")
     end = time.time()
@@ -529,7 +535,7 @@ def editRefMassDict(massDict):
 
 
 def getFinalPath(outputPath, spliceType):
-    finalPath = str(outputPath) + '/' + spliceType + '.csv'
+    finalPath = str(outputPath) + '/' + spliceType + '.hdf5'
     return finalPath
 
 

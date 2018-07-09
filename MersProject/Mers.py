@@ -50,24 +50,28 @@ class Fasta:
 
         if linearFlag:
 
-            linearProcess = multiprocessing.Process(target = cisAndLinearOutput, args=(self.seqDict, LINEAR, mined,
-                                                                                       maxed, overlapFlag, modList,
-                                                                                       maxDistance,
-                                                                                       outputPath, chargeFlags))
+            linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.seqDict, LINEAR, mined,
+                                                                                     maxed, overlapFlag, modList,
+                                                                                     maxDistance,
+                                                                                     outputPath, chargeFlags))
             allProcessList.append(linearProcess)
             linearProcess.start()
 
         for process in allProcessList:
             process.join()
 
+
 def processLockInit(lockVar):
+
+    """
+    Designed to set up a global lock for a child processes (child per protein)
+    """
+
     global lock
     lock = lockVar
 
-def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag,  modList, maxDistance, outputPath, chargeFlags):
 
-    # WHY IS THIS HERE????
-    entries = 3
+def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag,  modList, maxDistance, outputPath, chargeFlags):
 
     # Open the csv file
     finalPath = getFinalPath(outputPath, spliceType)
@@ -107,7 +111,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, modList,
 
     massDict = editRefMassDict(massDict)
 
-    ## WRITE TO FILE HERE!!!!
+    # Locked as will break otherwise (likely)
     lock.acquire()
     print("Writing locked :(")
     writeToCsv(massDict, protId, finalPath, chargeFlags)
@@ -116,8 +120,6 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, modList,
     end = time.time()
     print(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
 
-    #finalMassDict[protId] = massDict
-
 
 def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance):
 
@@ -125,8 +127,10 @@ def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance):
     # SplitRef eg: [[0], [0,1], [0,2], [1], [1,2]]
     # Produces splits and splitRef arrays which are passed through combined
     splits, splitRef = splitDictPeptide(spliceType, peptide, mined, maxed)
+    combined, combinedRef = None, None
 
     if spliceType == CIS:
+
         # get the linear set to ensure no linear peptides are added to cis set. ( Redoing is a little redundant,
         # need to find something better )
         combineLinear, combineLinearRef = splitDictPeptide(LINEAR, peptide, mined, maxed)
@@ -219,7 +223,6 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
 
     # Makes it easier to integrate with earlier iteration where linearFlag was being passed as an external flag
     # instead of spliceType
-
     linearFlag = spliceType == LINEAR
     length = len(peptide)
 
@@ -272,7 +275,7 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
     return splits, splitRef
 
 
-def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance, combineLinearSet = None):
+def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance, combineLinearSet=None):
 
     """
     Input: splits: list of splits, splitRef: list of the character indexes for splits, mined/maxed: min and max
@@ -288,9 +291,9 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
 
         # toAdd variables hold temporary combinations for insertion in final matrix if it meets criteria
         toAddForward = ""
-        # addForwardRef = []
+
         toAddReverse = ""
-        # addReverseRef = []
+
         for j in range(i + 1, len(splits)):
             # create forward combination of i and j
             toAddForward += splits[i]
@@ -302,6 +305,8 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
 
             # max, min and max distance checks combined into one function for clarity for clarity
             if combineCheck(toAddForward, mined, maxed, splitRef[i], splitRef[j], maxDistance):
+
+                # V. messy, need a way to get better visual
                 if overlapFlag:
                     if overlapComp(splitRef[i], splitRef[j]):
                         if linearCheck(toAddForward, combineLinearSet):
@@ -321,8 +326,7 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
 
             toAddForward = ""
             toAddReverse = ""
-            # addForwardRef = []
-            # addReverseRef = []
+
     return combModless, combModlessRef
 
 
@@ -337,7 +341,7 @@ def chargeIonMass(massDict, chargeFlags):
         for z in range(0, len(chargeFlags)):
 
             if chargeFlags[z]:
-                chargeMass = massCharge(value[0], z+1) # +1 for actual value
+                chargeMass = massCharge(value[0], z+1)  # +1 for actual value
                 chargeAssoc[z+1] = chargeMass
         value.append(chargeAssoc)
 
@@ -354,7 +358,6 @@ def writeToCsv(massDict, header, finalPath, chargeFlags):
     writeFlag = 'a'
 
     with open(finalPath, writeFlag, newline='') as csv_file:
-
 
         writer = csv.writer(csv_file, delimiter=',')
         writer.writerow([header, ' ', ' '])
@@ -410,9 +413,10 @@ def minSize(split, mined):
     return True
 
 
-def combineCheck(split, mined, maxed, ref1, ref2, maxDistance = 'None'):
+def combineCheck(split, mined, maxed, ref1, ref2, maxDistance='None'):
     booleanCheck = maxSize(split, maxed) and minSize(split, mined) and maxDistCheck(ref1, ref2, maxDistance)
     return booleanCheck
+
 
 def linearCheck(toAdd, combinedLinearSet):
     if toAdd in combinedLinearSet:
@@ -490,6 +494,7 @@ def combMass(combine, combineRef):
         massDict[combine[i]] = massRefPair
     return massDict
 
+
 def changeRefToDash(ref):
     newRef = []
     for i in range(0,len(ref)):
@@ -515,6 +520,7 @@ def changeRefToDash(ref):
             newRef = [newStrRef1, newStrRef2]
             return newRef
 
+
 def editRefMassDict(massDict):
     for key, value in massDict.items():
         refNew = changeRefToDash(value[1])
@@ -525,6 +531,7 @@ def editRefMassDict(massDict):
 def getFinalPath(outputPath, spliceType):
     finalPath = str(outputPath) + '/' + spliceType + '.csv'
     return finalPath
+
 
 def nth_replace(string, old, new, n=1, option='only nth'):
 

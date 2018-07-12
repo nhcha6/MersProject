@@ -6,7 +6,7 @@ import threading
 import multiprocessing
 import time
 import sys
-import h5py
+# import h5py
 import json
 
 
@@ -78,12 +78,17 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag,  modList,
 
     # Open the csv file
     finalPath = getFinalPath(outputPath, spliceType)
+
     open(finalPath, 'w')
 
     num_workers = multiprocessing.cpu_count()
+    # Don't need all processes for small file?
+    if (len(seqDict) < num_workers):
+        num_workers = len(seqDict)
     lockVar = multiprocessing.Lock()
     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, ))
     print("CPU Count is: " + str(num_workers))
+    print("Number of proteins is:: " + str(len(seqDict)))
 
     for key, value in seqDict.items():
         print(spliceType + " process started for: " + value[0:5])
@@ -118,15 +123,15 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, modList,
 
 
     # Locked as will break otherwise (likely)
-    lock.acquire()
-    print("Writing locked :(")
-    writeToCsv(massDict, protId, finalPath, chargeFlags)
-    # with open(finalPath, 'a') as file:
-    #     file.write(jsonMassDict)  # use `json.loads` to do the reverse
-    # with h5py.File(finalPath, "a") as f:
-    #
-    #     f.create_dataset(str(protId),  data=jsonMassDict)
-    lock.release()
+    # lock.acquire()
+    # print("Writing locked :(")
+    # writeToCsv(massDict, protId, finalPath, chargeFlags)
+    # # with open(finalPath, 'a') as file:
+    # #     file.write(jsonMassDict)  # use `json.loads` to do the reverse
+    # # with h5py.File(finalPath, "a") as f:
+    # #
+    # #     f.create_dataset(str(protId),  data=jsonMassDict)
+    # lock.release()
     print("Writing Released!")
     end = time.time()
     print(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)

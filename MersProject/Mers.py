@@ -6,7 +6,7 @@ import threading
 import multiprocessing
 import time
 import sys
-import h5py
+# import h5py
 import json
 
 

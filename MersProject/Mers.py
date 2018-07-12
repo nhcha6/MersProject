@@ -81,9 +81,14 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag,  modList,
     open(finalPath, 'w')
 
     num_workers = multiprocessing.cpu_count()
+    print("CPU Count is: " + str(num_workers))
+    # Don't need all processes for small file?
+    if (len(seqDict) < num_workers):
+        num_workers = len(seqDict)
     lockVar = multiprocessing.Lock()
     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, ))
-    print("CPU Count is: " + str(num_workers))
+
+    print("Worker count: " + str(len(seqDict)))
 
     for key, value in seqDict.items():
         print(spliceType + " process started for: " + value[0:5])

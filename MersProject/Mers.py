@@ -78,6 +78,7 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag,  modList,
 
     # Open the csv file
     finalPath = getFinalPath(outputPath, spliceType)
+    open(finalPath, 'w')
 
     num_workers = multiprocessing.cpu_count()
     lockVar = multiprocessing.Lock()
@@ -85,7 +86,7 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag,  modList,
     print("CPU Count is: " + str(num_workers))
 
     for key, value in seqDict.items():
-        print(spliceType + " process started for: " + value)
+        print(spliceType + " process started for: " + value[0:5])
 
         pool.apply_async(genMassDict, args=(spliceType, key, value, mined, maxed, overlapFlag,
                                             modList, maxDistance, finalPath, chargeFlags))
@@ -96,8 +97,6 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag,  modList,
     pool.join()
 
     print("All " + spliceType + " !joined")
-    # for key, value in finalMassDict.items():
-    #     writeToCsv(value, 'a', key, outputPath, 'Cis', chargeFlags)
 
 
 def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, modList, maxDistance, finalPath, chargeFlags,
@@ -113,14 +112,18 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, modList,
     chargeIonMass(massDict, chargeFlags)
 
     massDict = editRefMassDict(massDict)
-    jsonMassDict = json.dumps(massDict)
+    jsonMassDict = json.dumps({str(protId): massDict})
 
 
     # Locked as will break otherwise (likely)
     lock.acquire()
     print("Writing locked :(")
-    with h5py.File(finalPath, "a") as f:
-        f.create_dataset(str(protId), data=jsonMassDict)
+    writeToCsv(massDict, protId, finalPath, chargeFlags)
+    # with open(finalPath, 'a') as file:
+    #     file.write(jsonMassDict)  # use `json.loads` to do the reverse
+    # with h5py.File(finalPath, "a") as f:
+    #
+    #     f.create_dataset(str(protId),  data=jsonMassDict)
     lock.release()
     print("Writing Released!")
     end = time.time()
@@ -361,9 +364,7 @@ def writeToCsv(massDict, header, finalPath, chargeFlags):
 
     chargeHeaders = getChargeIndex(chargeFlags)
 
-    writeFlag = 'a'
-
-    with open(finalPath, writeFlag, newline='') as csv_file:
+    with open(finalPath, 'a', newline='') as csv_file:
 
         writer = csv.writer(csv_file, delimiter=',')
         writer.writerow([header, ' ', ' '])
@@ -380,6 +381,8 @@ def writeToCsv(massDict, header, finalPath, chargeFlags):
                 chargeMass = value[2][chargeIndex+1]
                 infoRow.append(str(chargeMass))
             writer.writerow(infoRow)
+            # BREAK FOR TESTING!!!!!
+            break;
 
 
 def getChargeIndex(chargeFlags):
@@ -535,7 +538,7 @@ def editRefMassDict(massDict):
 
 
 def getFinalPath(outputPath, spliceType):
-    finalPath = str(outputPath) + '/' + spliceType + '.hdf5'
+    finalPath = str(outputPath) + '/' + spliceType + '.csv'
     return finalPath
 
 

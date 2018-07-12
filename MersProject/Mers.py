@@ -387,7 +387,7 @@ def writeToCsv(massDict, header, finalPath, chargeFlags):
                 infoRow.append(str(chargeMass))
             writer.writerow(infoRow)
             # BREAK FOR TESTING!!!!!
-            break;
+            # break;
 
 
 def getChargeIndex(chargeFlags):

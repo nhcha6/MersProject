@@ -610,6 +610,7 @@ class MyTableWidget(QWidget):
 
 
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
     app = QApplication(sys.argv)
     ex = App()
     sys.exit(app.exec_())

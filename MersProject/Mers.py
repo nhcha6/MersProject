@@ -15,7 +15,7 @@ LINEAR = "Linear"
 CIS = "Cis"
 
 logging.basicConfig(level = logging.DEBUG, format = '%(message)s')
-
+#logging.disable(logging.INFO)
 
 class Fasta:
 
@@ -81,17 +81,17 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag,  modList,
     open(finalPath, 'w')
 
     num_workers = multiprocessing.cpu_count()
-    logging.debug("CPU Count is: " + str(num_workers))
+
     # Don't need all processes for small file?
     if (len(seqDict) < num_workers):
         num_workers = len(seqDict)
     lockVar = multiprocessing.Lock()
     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, ))
 
-    logging.debug("Worker count: " + str(len(seqDict)))
+
 
     for key, value in seqDict.items():
-        logging.debug(spliceType + " process started for: " + value[0:5])
+        logging.info(spliceType + " process started for: " + value[0:5])
 
         pool.apply_async(genMassDict, args=(spliceType, key, value, mined, maxed, overlapFlag,
                                             modList, maxDistance, finalPath, chargeFlags))
@@ -99,16 +99,63 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag,  modList,
     pool.close()
     pool.join()
 
-    logging.debug("All " + spliceType + " !joined")
+    logging.info("All " + spliceType + " !joined")
 
 
 def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, modList, maxDistance, finalPath, chargeFlags,
                 ):
 
-    if maxDistance != 'None' and maxDistance < len(peptide):
-        logging.debug("START PROCESS HERE")
+    enoughFlag = True
     start = time.time()
 
+    if maxDistance != 'None' and maxDistance < len(peptide) and len(peptide) > 2000:
+
+        logging.warning("MEETS CONDITIONS")
+        currProcess = multiprocessing.current_process()
+
+        currProcess.daemon = False
+
+        peptidePool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+        for i in range(0, len(peptide)):
+
+            if not enoughFlag:
+                break;
+
+            nextVal = i+maxDistance
+            if nextVal > len(peptide):
+                nextVal = -1
+                enoughFlag = False
+            peptidePool.apply_async(genMassDictSplit, args=(spliceType, peptide[i:nextVal], mined, maxed, overlapFlag,
+                                                            modList, maxDistance, chargeFlags,))
+        peptidePool.close()
+        peptidePool.join()
+        end = time.time()
+        logging.info(peptide[0:5] + ' took: ' + str(end - start) + ' for ' + spliceType)
+
+    else:
+
+        logging.warning("DIDNT MEET PREVIOUS CONDITIONS")
+        combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
+
+        massDict = combMass(combined, combinedRef)
+        massDict = applyMods(massDict, modList)
+
+        chargeIonMass(massDict, chargeFlags)
+
+        massDict = editRefMassDict(massDict)
+
+
+    # logging.info("Writing locked :(")
+    # lock.acquire()
+    #
+    # writeToCsv(massDict, protId, finalPath, chargeFlags)
+    # lock.release()
+    # logging.info("Writing released!")
+    # end = time.time()
+    # logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
+
+
+def genMassDictSplit(spliceType, peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):
     combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
 
     massDict = combMass(combined, combinedRef)
@@ -117,22 +164,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, modList,
     chargeIonMass(massDict, chargeFlags)
 
     massDict = editRefMassDict(massDict)
-    jsonMassDict = json.dumps({str(protId): massDict})
 
-
-    # Locked as will break otherwise (likely)
-    lock.acquire()
-
-    writeToCsv(massDict, protId, finalPath, chargeFlags)
-    # with open(finalPath, 'a') as file:
-    #     file.write(jsonMassDict)  # use `json.loads` to do the reverse
-    # with h5py.File(finalPath, "a") as f:
-    #
-    #     f.create_dataset(str(protId),  data=jsonMassDict)
-    lock.release()
-
-    end = time.time()
-    logging.debug(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
 
 
 def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance):

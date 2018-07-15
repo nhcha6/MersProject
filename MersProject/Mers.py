@@ -135,7 +135,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, modList,
 
     else:
 
-        
+            
         combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
 
         massDict = combMass(combined, combinedRef)

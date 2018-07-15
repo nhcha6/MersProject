@@ -12,20 +12,25 @@ def readMGF(input_path):
             mgfDf.loc[len(mgfDf)] = [spectrum['params']['title'], spectrum['params']['pepmass'][0]]
     return mgfDf
 
+
 def ppmToPercent(ppmVal):
     return ppmVal/10000
 
+
 def ppmPosNeg(actualMass, ppmVal):
     ppmPercent = ppmToPercent(ppmVal)
-    print(ppmPercent)
     ppmPositive = actualMass + actualMass*ppmPercent
     ppmNegative = actualMass - actualMass*ppmPercent
+    print("PPM Positive value is: " + str(ppmPositive))
+    print("PPM Negative value is: " + str(ppmNegative))
     return ppmPositive, ppmNegative
 
-def ppmCheck(pepmass, ppmPositive, ppmNegative):
-    negCheck = math.isclose(pepmass, ppmNegative, abs_tol = 0.00001)
-    posCheck = math.isclose(pepmass, ppmNegative, abs_tol = 0.00001)
+
+def ppmCheck(pepmass, ppmPositive, ppmNegative, tolerance):
+    negCheck = math.isclose(pepmass, ppmPositive, abs_tol = tolerance)
+    posCheck = math.isclose(pepmass, ppmNegative, abs_tol = tolerance)
     return negCheck, posCheck
+
 
 def addMass(listType, pepmass, actualMass, ppmVal):
     ppmPositive, ppmNegative = ppmPosNeg(actualMass, ppmVal)
@@ -35,13 +40,18 @@ def addMass(listType, pepmass, actualMass, ppmVal):
     if posCheck:
         listType.append(posCheck)
 
+
 actualMass = 495.25851750000004
-ppmVal = 10
-ppmPositive, ppmNegative = ppmCheck(1, actualMass, ppmVal)
+pepmass = 495.7115
+ppmVal = 30
+tolerance = 0.000001
+ppmPositive, ppmNegative = ppmPosNeg(actualMass, ppmVal)
+ppmPosCheck, ppmNegCheck = ppmCheck(pepmass, ppmPositive, ppmNegative, tolerance)
 
 print('Actual mass: ' + str(actualMass))
-print('PPM Positive:' + str(ppmPositive))
-print('PPM Negative:' + str(ppmNegative))
+
+print('PPM PosCheck: ' + str(ppmPosCheck))
+print('PPM NegCheck: ' + str(ppmNegCheck))
 #
 # mgfDf = readMGF("MgfExample.mgf")
 # mgfDf.set_index('TITLE', inplace=True, drop=True)

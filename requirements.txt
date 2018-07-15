@@ -1,8 +1,10 @@
 biopython
-h5py
 pyqt5
 numpy
 setuptools
 sip
-vs2015_runtime
+memory_profiler
+matplotlib
+pyinstaller
+
 

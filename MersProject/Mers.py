@@ -108,6 +108,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, modList,
     enoughFlag = True
     start = time.time()
 
+    # THIS IS WHERE THE SPLITTING PIECES INTO OVER LAPPING SHOULD STEP IN!!!!!!!!
     if maxDistance != 'None' and maxDistance < len(peptide) and len(peptide) > 2000:
 
         logging.warning("MEETS CONDITIONS")
@@ -134,7 +135,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, modList,
 
     else:
 
-        logging.warning("DIDNT MEET PREVIOUS CONDITIONS")
+        
         combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
 
         massDict = combMass(combined, combinedRef)
@@ -145,14 +146,14 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, modList,
         massDict = editRefMassDict(massDict)
 
 
-    # logging.info("Writing locked :(")
-    # lock.acquire()
-    #
-    # writeToCsv(massDict, protId, finalPath, chargeFlags)
-    # lock.release()
-    # logging.info("Writing released!")
-    # end = time.time()
-    # logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
+    logging.info("Writing locked :(")
+    lock.acquire()
+
+    writeToCsv(massDict, protId, finalPath, chargeFlags)
+    lock.release()
+    logging.info("Writing released!")
+    end = time.time()
+    logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
 
 
 def genMassDictSplit(spliceType, peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):

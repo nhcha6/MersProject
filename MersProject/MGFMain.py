@@ -3,8 +3,15 @@ import pandas as pd
 from pyteomics import mgf
 import math
 
+class MGF:
+
+    def __init__(self, mgfDf):
+        self.mgfDf = mgfDf
+        self.mgfEntries = len(mgfDf)
+
 
 def readMGF(input_path):
+    print(input_path)
     colNames = ['TITLE', 'PEPMASS']
     mgfDf = pd.DataFrame(columns=colNames)
     with mgf.read(input_path) as mgfReader:

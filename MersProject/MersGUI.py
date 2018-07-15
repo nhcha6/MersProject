@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTa
 from PyQt5.QtCore import *
 from PyQt5.QtCore import pyqtSlot
 from Mers import *
+from MGFMain import *
 
 
 class WorkerSignals(QObject):
@@ -131,6 +132,8 @@ class MyTableWidget(QWidget):
         self.layout = QVBoxLayout(self)
         # self.fasta will store the fasta class once initialised
         self.fasta = None
+        self.mgf = None
+
         # Init threading
         self.threadpool = QThreadPool()
 
@@ -152,10 +155,14 @@ class MyTableWidget(QWidget):
         # Creation of tab layout and widgets within tab
         self.tab1.layout = QVBoxLayout(self)
 
-        self.pushButton1 = QPushButton("Select File")
+        self.pushButton1 = QPushButton("Select Fasta File")
         self.pushButton1.clicked.connect(self.uploadFasta)
+        self.mgfButton = QPushButton("Select MGF File")
+        self.mgfButton.clicked.connect(self.uploadMGF)
 
         self.tab1.layout.addWidget(self.pushButton1)
+        self.tab1.layout.addWidget(self.mgfButton)
+
 
         self.tab1.setLayout(self.tab1.layout)
 
@@ -173,13 +180,33 @@ class MyTableWidget(QWidget):
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
 
+    def uploadMGF(self):
+        """
+        Called from the select Fasta file button. Opens a window to select a file, and check if the file ends in MGF
+        """
+
+        fname = QFileDialog.getOpenFileName(self, 'Open File', '/home')
+        mgfTest = fname[0][-3:]
+
+        if mgfTest == 'mgf':
+            self.mgf = MGF(readMGF(fname[0]))
+            QMessageBox.about(self, "Message", 'MGF file imported.')
+
+        # Ensuring program does not crash if no file is selected
+        elif fname[0] == '':
+            print('')
+
+        # Wrong extension selected! Try Again!
+        else:
+            QMessageBox.about(self, "Message", 'Please select a MGF file!')
+
     def uploadFasta(self):
 
         """
         Called from the Upload Fasta File button. Opens a window to select a file, and check if the file ends in fasta
         """
 
-        fname = QFileDialog.getOpenFileName(self, 'Open File', '/home')
+        fname = QFileDialog.getOpenFileName(self, 'Open File', '/home/')
 
         fastaTest = fname[0][-5:]
 

@@ -3,20 +3,37 @@ import pandas as pd
 from pyteomics import mgf
 import math
 
+
 class MGF:
 
     def __init__(self, mgfDf):
         self.mgfDf = mgfDf
         self.mgfEntries = len(mgfDf)
 
+    def removeChargeStates(self, chargeFlags):
+        """
+        Remove all charges that are irrelevant, which is given by the chargeFlags params
+        """
+        for i in range(0, len(chargeFlags)):
+            if not chargeFlags[i]:
+                # Comparing to i+1 because of charge state!
+                self.mgfDf.drop(self.mgfDf[self.mgfDf.CHARGE_STATE == i+1].index, inplace=True)
+
+        print(self.mgfDf.head())
+
 
 def readMGF(input_path):
-    print(input_path)
-    colNames = ['TITLE', 'PEPMASS']
+    """
+    Creates a pandas dataframe based on mgf data
+    """
+
+    colNames = ['TITLE', 'CHARGE_STATE', 'PEPMASS']
     mgfDf = pd.DataFrame(columns=colNames)
     with mgf.read(input_path) as mgfReader:
         for spectrum in mgfReader:
-            mgfDf.loc[len(mgfDf)] = [spectrum['params']['title'], spectrum['params']['pepmass'][0]]
+
+            mgfDf.loc[len(mgfDf)] = [spectrum['params']['title'], spectrum['params']['charge'][0],
+                                     spectrum['params']['pepmass'][0]]
     return mgfDf
 
 
@@ -50,17 +67,17 @@ def addMass(listType, pepmass, actualMass, ppmVal):
 
 actualMass = 495.25851750000004
 pepmass = 495.7115
-ppmVal = 30
+ppmVal = 90
 tolerance = 0.000001
-ppmPositive, ppmNegative = ppmPosNeg(actualMass, ppmVal)
-ppmPosCheck, ppmNegCheck = ppmCheck(pepmass, ppmPositive, ppmNegative, tolerance)
-
-print('Actual mass: ' + str(actualMass))
-
-print('PPM PosCheck: ' + str(ppmPosCheck))
-print('PPM NegCheck: ' + str(ppmNegCheck))
+# ppmPositive, ppmNegative = ppmPosNeg(actualMass, ppmVal)
+# ppmPosCheck, ppmNegCheck = ppmCheck(pepmass, ppmPositive, ppmNegative, tolerance)
 #
-# mgfDf = readMGF("MgfExample.mgf")
-# mgfDf.set_index('TITLE', inplace=True, drop=True)
+# print('Actual mass: ' + str(actualMass))
 #
-# print(mgfDf.head(5))
+# print('PPM PosCheck: ' + str(ppmPosCheck))
+# print('PPM NegCheck: ' + str(ppmNegCheck))
+#
+# chargeFlags = [False, True, False, True, False]
+# mgf = MGF(readMGF("MgfExample.mgf"))
+# mgf.removeChargeStates(chargeFlags)
+# print(mgf.mgfDf.head())

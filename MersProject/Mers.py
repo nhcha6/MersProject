@@ -8,6 +8,8 @@ import sys
 # import h5py
 import json
 import logging
+from MGFMain import *
+
 
 
 TRANS = "Trans"

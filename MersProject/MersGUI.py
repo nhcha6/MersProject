@@ -246,7 +246,8 @@ class MyTableWidget(QWidget):
         called which begins generating results
         """
 
-        mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, modList, outputFlag, chargeFlags \
+        mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList, outputFlag, \
+        chargeFlags \
             = self.getInputParams()
 
         if self.fasta is None:
@@ -265,6 +266,7 @@ class MyTableWidget(QWidget):
                                          'Linear Flag: ' + str(linearFlag) + '\n' +
                                          'Cis Flag: ' + str(cisFlag) + '\n' +
                                          'Trans Flag: ' + str(transFlag) + '\n' +
+                                         'CSV Flag: ' + str(csvFlag) + '\n' +
                                          'Charge States: ' + str(chargeFlags) + '\n',
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
@@ -272,8 +274,8 @@ class MyTableWidget(QWidget):
 
                 outputPath = self.getOutputPath()
                 if outputPath is not False:
-                    self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList, maxDistance,
-                                       outputPath, chargeFlags)
+                    self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
+                                       maxDistance, outputPath, chargeFlags)
 
     def finished(self):
 
@@ -305,7 +307,7 @@ class MyTableWidget(QWidget):
         self.tab2.output.setEnabled(False)
         self.pushButton1.setEnabled(False)
 
-    def outputPreStep(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList, maxDistance,
+    def outputPreStep(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList, maxDistance,
                       outputPath, chargeFlags):
 
         """
@@ -318,8 +320,8 @@ class MyTableWidget(QWidget):
         self.tab2.progressBar = QProgressBar(self)
         self.tab2.layout.addWidget(self.tab2.progressBar, 15, 3, 1, 4)
 
-        outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
-                                    maxDistance, outputPath, chargeFlags)
+        outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag,
+                                    modList, maxDistance, outputPath, chargeFlags)
 
         outputGen.signals.finished.connect(self.finished)
         self.threadpool.start(outputGen)
@@ -343,7 +345,7 @@ class MyTableWidget(QWidget):
         else:
             self.tab2.maxDistCombo.setEnabled(True)
 
-    def output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
+    def output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                maxDistance, outputPath, chargeFlags):
 
         """
@@ -355,6 +357,9 @@ class MyTableWidget(QWidget):
 
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
+
+        if self.mgf is not None:
+            self.mgf.removeChargeStates(chargeFlags)
 
         self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
                                   maxDistance, outputPath, chargeFlags)
@@ -478,6 +483,8 @@ class MyTableWidget(QWidget):
         cisFlag = self.tab2.cis.isChecked()
         linearFlag = self.tab2.linear.isChecked()
 
+        csvFlag = self.tab2.csv.isChecked()
+
         outputFlag = cisFlag or linearFlag or transFlag
 
         plusOneFlag = self.tab2.plusOne.isChecked()
@@ -494,7 +501,8 @@ class MyTableWidget(QWidget):
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(),
                    self.tab2.mod3Combo.currentText()]
 
-        return mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, modList, outputFlag, chargeFlags
+        return mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,\
+               outputFlag, chargeFlags
 
     def createParameterWidgets(self):
 
@@ -502,6 +510,9 @@ class MyTableWidget(QWidget):
         self.addModifications()
         self.addFlagChecks()
         self.addChargeStates()
+
+        # AN EXTRA ADD "WRITE TO CSV FUNCTION CHECKBOX"
+        self.tab2.csv = QCheckBox('Write To Csv')
 
         # create generate output push button
         self.tab2.output = QPushButton('Generate Output!', self)
@@ -592,7 +603,8 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.linear, 8, 3)
         self.tab2.layout.addWidget(self.tab2.cis, 9, 3)
         self.tab2.layout.addWidget(self.tab2.trans, 10, 3)
-        self.tab2.layout.addWidget(self.tab2.chargeLabel, 11, 3)
+        self.tab2.layout.addWidget(self.tab2.csv, 11, 3)
+        self.tab2.layout.addWidget(self.tab2.chargeLabel, 12, 3)
 
         # all dynamic elements added to the grid layout of tab 2
         self.tab2.layout.addWidget(self.tab2.minimumCombo, 1, 4, 1, 3)
@@ -601,12 +613,12 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.mod1Combo, 4, 4, 1, 3)
         self.tab2.layout.addWidget(self.tab2.mod2Combo, 5, 4, 1, 3)
         self.tab2.layout.addWidget(self.tab2.mod3Combo, 6, 4, 1, 3)
-        self.tab2.layout.addWidget(self.tab2.plusOne, 11, 4)
-        self.tab2.layout.addWidget(self.tab2.plusTwo, 11, 5)
-        self.tab2.layout.addWidget(self.tab2.plusThree, 11, 6)
-        self.tab2.layout.addWidget(self.tab2.plusFour, 12, 4)
-        self.tab2.layout.addWidget(self.tab2.plusFive, 12, 5)
-        self.tab2.layout.addWidget(self.tab2.output, 13, 5, 1, 2)
+        self.tab2.layout.addWidget(self.tab2.plusOne, 12, 4)
+        self.tab2.layout.addWidget(self.tab2.plusTwo, 12, 5)
+        self.tab2.layout.addWidget(self.tab2.plusThree, 12, 6)
+        self.tab2.layout.addWidget(self.tab2.plusFour, 13, 4)
+        self.tab2.layout.addWidget(self.tab2.plusFive, 13, 5)
+        self.tab2.layout.addWidget(self.tab2.output, 14, 5, 1, 2)
 
     def setDefaultParameters(self):
 

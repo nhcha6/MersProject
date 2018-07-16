@@ -85,12 +85,12 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
         finalPath = getFinalPath(outputPath, spliceType)
         open(finalPath, 'w')
 
-
     num_workers = multiprocessing.cpu_count()
 
     # Don't need all processes for small file?
-    if (len(seqDict) < num_workers):
+    if len(seqDict) < num_workers:
         num_workers = len(seqDict)
+
     lockVar = multiprocessing.Lock()
     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, ))
 
@@ -156,8 +156,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
         writeToCsv(massDict, protId, finalPath, chargeFlags)
         lock.release()
         logging.info("Writing released!")
-    else:
-        logging.info("Don't need to write! Yay!")
+
     end = time.time()
     logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
 

@@ -92,7 +92,6 @@ class App(QMainWindow):
 
         super().__init__()
         self.title = 'Peptide Splicer'
-        self.left = 500
         self.fastaTest = False
         self.outputPath = ""
         self.statusbar = self.statusBar()
@@ -101,6 +100,7 @@ class App(QMainWindow):
 
         self.table_widget = MyTableWidget(self)
         self.setCentralWidget(self.table_widget)
+        self.setWindowTitle(self.title)
 
         self.show()
 

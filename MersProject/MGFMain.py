@@ -94,13 +94,15 @@ def addMass(listType, pepmass, actualMass, ppmVal):
         listType.append(posCheck)
 
 def generateMGFList(mgfObj, massDict):
+    print(mgfObj.tempMgfDf)
 
+    print('IN MGF:)')
     for key, value in massDict.items():
 
         pepMgfList = []
-        for charge, chargeMass in value[2].items():
+        #for charge, chargeMass in value[2].items():
 
-            currList = mgfObj.tempMgfDf.loc[mgfObj.tempMgfDf['CHARGE_STATE'] == charge, 'PEPMASS'].iloc[0]
+            #currList = mgfObj.tempMgfDf.loc[mgfObj.tempMgfDf['CHARGE_STATE'] == 1, 'PEPMASS'].iloc[0]
 
 
 

@@ -169,8 +169,8 @@ def fulfillPpmReq(massDict):
     """
     Assumption there are charges.
     """
-    print('hi')
-    #generateMGFList(globalMgfObj, massDict)
+    
+    generateMGFList(globalMgfObj, massDict)
 
 
 def genMassDictSplit(spliceType, peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):

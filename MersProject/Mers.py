@@ -138,8 +138,9 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
         chargeIonMass(massDict, chargeFlags)
 
         massDict = editRefMassDict(massDict)
-        # if True in chargeFlags:
-        #     fulfillPpmReq(massDict)
+        if mgfObj is not None and True in chargeFlags:
+            fulfillPpmReq(mgfObj, massDict)
+
 
     if csvFlag:
         logging.info("Writing locked :(")
@@ -152,12 +153,12 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     end = time.time()
     logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
 
-def fulfillPpmReq(massDict):
+def fulfillPpmReq(mgfObj, massDict):
     """
     Assumption there are charges.
     """
-    print(3)
-    #generateMGFList(globalMgfObj, massDict)
+
+    generateMGFList(mgfObj, massDict)
 
 
 def genMassDictSplit(spliceType, peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):

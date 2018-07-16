@@ -43,6 +43,21 @@ class MGF:
         self.tempMgfDf.reset_index(inplace=True)
 
 
+def generateMGFList(mgfObj, massDict):
+    print(mgfObj.tempMgfDf.head())
+
+    print('IN MGF:)')
+    #for key, value in massDict.items():
+
+        #pepMgfList = []
+        #for charge, chargeMass in value[2].items():
+
+            #currList = mgfObj.tempMgfDf.loc[mgfObj.tempMgfDf['CHARGE_STATE'] == 1, 'PEPMASS'].iloc[0]
+
+
+
+
+    # print(mgfObj.tempMgfDf.loc[mgfObj.tempMgfDf['CHARGE_STATE'] == 1, 'PEPMASS'].iloc[0])
 
 
 def readMGF(input_path):
@@ -95,22 +110,6 @@ def addMass(listType, pepmass, actualMass, ppmVal):
     if posCheck:
         listType.append(posCheck)
 
-
-def generateMGFList(mgfObj, massDict):
-    print(mgfObj.tempMgfDf)
-
-    print('IN MGF:)')
-    for key, value in massDict.items():
-
-        pepMgfList = []
-        #for charge, chargeMass in value[2].items():
-
-            #currList = mgfObj.tempMgfDf.loc[mgfObj.tempMgfDf['CHARGE_STATE'] == 1, 'PEPMASS'].iloc[0]
-
-
-
-
-    # print(mgfObj.tempMgfDf.loc[mgfObj.tempMgfDf['CHARGE_STATE'] == 1, 'PEPMASS'].iloc[0])
 
 def takeClosest(myList, myNumber):
     """

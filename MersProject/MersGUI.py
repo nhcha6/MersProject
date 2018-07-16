@@ -505,8 +505,8 @@ class MyTableWidget(QWidget):
         chargeFlags = [plusOneFlag, plusTwoFlag, plusThreeFlag, plusFourFlag, plusFiveFlag]
 
         # self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/small.fasta'))
-        self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/InputData/Example.fasta'))
-        self.mgf = MGF(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/mgf.mgf'))
+        self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/InputData/OneProtein.fasta'))
+        # self.mgf = MGF(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/mgf.mgf'))
 
 
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(),

@@ -13,11 +13,7 @@ class MGF:
         self.ppmVal = None
         self.toleranceLevel = None
         self.tempMgfDf = None
-        self.chargeOne = None
-        self.chargeTwo = None
-        self.chargeThree = None
-        self.chargeFour = None
-        self.chargeFive = None
+
 
     def initValues(self, ppmVal, toleranceLevel):
         self.ppmVal = ppmVal
@@ -44,9 +40,11 @@ class MGF:
 
         self.tempMgfDf.sort_values(by=['CHARGE_STATE', 'PEPMASS'], inplace = True)
         groupedTempDf = self.tempMgfDf.groupby('CHARGE_STATE')
-        result = groupedTempDf['PEPMASS'].unique()
-        
-        print(result.head())
+        self.tempMgfDf = groupedTempDf['PEPMASS'].unique()
+        self.tempMgfDf = self.tempMgfDf.to_frame()
+        self.tempMgfDf.reset_index(inplace=True)
+
+
 
 
 def readMGF(input_path):
@@ -92,7 +90,8 @@ def addMass(listType, pepmass, actualMass, ppmVal):
         listType.append(posCheck)
 
 def generateMGFList(mgfObj, massDict):
-    a = 3
+    a=3
+    print(mgfObj.tempMgfDf.loc[mgfObj.tempMgfDf['CHARGE_STATE'] == 1, 'PEPMASS'].iloc[0])
 
 def takeClosest(myList, myNumber):
     """

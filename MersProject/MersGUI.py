@@ -361,7 +361,7 @@ class MyTableWidget(QWidget):
         if self.mgf is not None:
             self.mgf.removeChargeStates(chargeFlags)
 
-        self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
+        self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                                   maxDistance, outputPath, chargeFlags)
         end = time.time()
 

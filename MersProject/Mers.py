@@ -25,7 +25,7 @@ class Fasta:
         self.seqDict = seqDict
         self.entries = len(seqDict)
 
-    def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, modList,
+    def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                        maxDistance, outputPath, chargeFlags):
 
         """
@@ -47,7 +47,7 @@ class Fasta:
 
         if cisFlag:
             cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.seqDict, CIS, mined, maxed,
-                                                                                  overlapFlag, modList,
+                                                                                  overlapFlag, csvFlag, modList,
                                                                                   maxDistance,
                                                                                   outputPath, chargeFlags))
             allProcessList.append(cisProcess)
@@ -56,8 +56,8 @@ class Fasta:
         if linearFlag:
 
             linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.seqDict, LINEAR, mined,
-                                                                                     maxed, overlapFlag, modList,
-                                                                                     maxDistance,
+                                                                                     maxed, overlapFlag, csvFlag,
+                                                                                     modList, maxDistance,
                                                                                      outputPath, chargeFlags))
             allProcessList.append(linearProcess)
             linearProcess.start()
@@ -76,7 +76,8 @@ def processLockInit(lockVar):
     lock = lockVar
 
 
-def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag,  modList, maxDistance, outputPath, chargeFlags):
+def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
+                       modList, maxDistance, outputPath, chargeFlags):
 
     # Open the csv file
     finalPath = getFinalPath(outputPath, spliceType)
@@ -90,13 +91,12 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag,  modList,
     lockVar = multiprocessing.Lock()
     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, ))
 
-
-
     for key, value in seqDict.items():
+
         logging.info(spliceType + " process started for: " + value[0:5])
 
         pool.apply_async(genMassDict, args=(spliceType, key, value, mined, maxed, overlapFlag,
-                                            modList, maxDistance, finalPath, chargeFlags))
+                                            csvFlag, modList, maxDistance, finalPath, chargeFlags))
 
     pool.close()
     pool.join()
@@ -104,8 +104,8 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag,  modList,
     logging.info("All " + spliceType + " !joined")
 
 
-def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, modList, maxDistance, finalPath, chargeFlags,
-                ):
+def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList,
+                maxDistance, finalPath, chargeFlags,):
 
     enoughFlag = True
     start = time.time()
@@ -137,7 +137,6 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, modList,
 
     else:
 
-
         combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
 
         massDict = combMass(combined, combinedRef)
@@ -147,13 +146,15 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, modList,
 
         massDict = editRefMassDict(massDict)
 
+    if csvFlag:
+        logging.info("Writing locked :(")
+        lock.acquire()
 
-    logging.info("Writing locked :(")
-    lock.acquire()
-
-    writeToCsv(massDict, protId, finalPath, chargeFlags)
-    lock.release()
-    logging.info("Writing released!")
+        writeToCsv(massDict, protId, finalPath, chargeFlags)
+        lock.release()
+        logging.info("Writing released!")
+    else:
+        logging.info("Don't need to write! Yay!")
     end = time.time()
     logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
 

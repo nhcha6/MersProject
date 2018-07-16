@@ -241,8 +241,8 @@ class MyTableWidget(QWidget):
         called which begins generating results
         """
 
-        mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList, outputFlag, \
-        chargeFlags \
+        ppmVal, toleranceLevel, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, \
+        modList, outputFlag, chargeFlags \
             = self.getInputParams()
 
         if self.fasta is None:
@@ -262,10 +262,13 @@ class MyTableWidget(QWidget):
                                          'Cis Flag: ' + str(cisFlag) + '\n' +
                                          'Trans Flag: ' + str(transFlag) + '\n' +
                                          'CSV Flag: ' + str(csvFlag) + '\n' +
-                                         'Charge States: ' + str(chargeFlags) + '\n',
+                                         'Charge States: ' + str(chargeFlags) + '\n' +
+                                         'PPM Value: ' + str(ppmVal),
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
             if reply == QMessageBox.Yes:
+                if self.mgf is not None:
+                    self.mgf.initValues(ppmVal, toleranceLevel)
                 if csvFlag:
                     outputPath = self.getOutputPath()
                     if outputPath is not False:
@@ -273,8 +276,9 @@ class MyTableWidget(QWidget):
                         self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                                            maxDistance, outputPath, chargeFlags)
                 else:
-                    print("IM HERE")
+
                     outputPath = None
+
                     self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                                        maxDistance, outputPath, chargeFlags)
 
@@ -363,7 +367,7 @@ class MyTableWidget(QWidget):
             self.mgf.removeChargeStates(chargeFlags)
 
         self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                                  maxDistance, outputPath, chargeFlags)
+                                  maxDistance, outputPath, chargeFlags, self.mgf)
         end = time.time()
 
         print(end - start)
@@ -475,6 +479,10 @@ class MyTableWidget(QWidget):
             modChange[1].setCurrentIndex(indexMod2)
 
     def getInputParams(self):
+
+        ppmVal = int(self.tab1.ppmCombo.currentText())
+        toleranceLevel = float(self.tab1.toleranceCombo.currentText())
+
         mined = int(self.tab2.minimumCombo.currentText())
         maxed = int(self.tab2.maximumCombo.currentText())
         maxDistance = self.tab2.maxDistCombo.currentText()
@@ -502,8 +510,8 @@ class MyTableWidget(QWidget):
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(),
                    self.tab2.mod3Combo.currentText()]
 
-        return mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,\
-               outputFlag, chargeFlags
+        return ppmVal, toleranceLevel, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, \
+               linearFlag, csvFlag, modList, outputFlag, chargeFlags
 
 
 

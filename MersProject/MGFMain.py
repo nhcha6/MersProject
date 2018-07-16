@@ -10,15 +10,26 @@ class MGF:
     def __init__(self, mgfDf):
         self.mgfDf = mgfDf
         self.mgfEntries = len(mgfDf)
+        self.ppmVal = None
+        self.toleranceLevel = None
         self.tempMgfDf = None
+        self.chargeOne = None
+        self.chargeTwo = None
+        self.chargeThree = None
+        self.chargeFour = None
+        self.chargeFive = None
+
+    def initValues(self, ppmVal, toleranceLevel):
+        self.ppmVal = ppmVal
+        self.toleranceLevel = toleranceLevel
 
     def removeChargeStates(self, chargeFlags):
         """
         Remove all charges that are irrelevant, which is given by the chargeFlags params
         """
         firstTrue = True
+        charges = []
         for i in range(0, len(chargeFlags)):
-
             if not chargeFlags[i]:
                 # Comparing to i+1 because of charge state!
 
@@ -28,10 +39,15 @@ class MGF:
                     firstTrue = False
                 else:
                     self.tempMgfDf.drop(self.mgfDf[self.mgfDf.CHARGE_STATE == i + 1].index, inplace=True)
+            else:
+                charges.append(i + 1)
 
-        pepmassList = self.tempMgfDf['PEPMASS'].tolist()
-        pepmassList.sort()
-        return pepmassList
+        self.tempMgfDf.sort_values(by=['CHARGE_STATE', 'PEPMASS'], inplace = True)
+        groupedTempDf = self.tempMgfDf.groupby('CHARGE_STATE')
+        result = groupedTempDf['PEPMASS'].unique()
+        
+        print(result.head())
+
 
 def readMGF(input_path):
     """
@@ -75,29 +91,31 @@ def addMass(listType, pepmass, actualMass, ppmVal):
     if posCheck:
         listType.append(posCheck)
 
+def generateMGFList(mgfObj, massDict):
+    a = 3
 
 def takeClosest(myList, myNumber):
     """
-    Assumes myList is sorted. Returns closest value to myNumber.
+    Assumes myList is sorted. Returns closest value to myNumber via index.
 
     If two numbers are equally close, return the smallest number.
     """
     pos = bisect_left(myList, myNumber)
     if pos == 0:
-        return myList[0]
+        return 0
     if pos == len(myList):
-        return myList[-1]
+        return -1
     before = myList[pos - 1]
     after = myList[pos]
     if after - myNumber < myNumber - before:
-       return after
+       return pos
     else:
-       return before
+       return pos-1
 
-actualMass = 495.25851750000004
-pepmass = 495.7115
-ppmVal = 90
-tolerance = 0.000001
+# actualMass = 495.25851750000004
+# pepmass = 495.7115
+# ppmVal = 90
+# tolerance = 0.000001
 # ppmPositive, ppmNegative = ppmPosNeg(actualMass, ppmVal)
 # ppmPosCheck, ppmNegCheck = ppmCheck(pepmass, ppmPositive, ppmNegative, tolerance)
 #
@@ -111,9 +129,10 @@ tolerance = 0.000001
 # mgf.removeChargeStates(chargeFlags)
 # print(mgf.mgfDf.head())
 
-
-
-pepList = [559.28780, 559.2831, 560.2133, 600, 231.23]
-pepList.sort()
-actualMass = 100
-print(takeClosest(pepList, actualMass))
+#
+#
+# pepList = [559.28780, 559.2831, 560.2133, 600, 231.23]
+# pepList.sort()
+# print(pepList)
+# actualMass = 894
+# print(takeClosest(pepList, actualMass))

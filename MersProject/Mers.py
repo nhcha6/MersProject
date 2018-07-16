@@ -19,6 +19,8 @@ CIS = "Cis"
 logging.basicConfig(level = logging.DEBUG, format = '%(message)s')
 #logging.disable(logging.INFO)
 
+globalMgfObj = None
+
 class Fasta:
 
     def __init__(self, seqDict):
@@ -26,11 +28,12 @@ class Fasta:
         self.entries = len(seqDict)
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                       maxDistance, outputPath, chargeFlags):
+                       maxDistance, outputPath, chargeFlags, mgfObj):
 
         """
         Function that literally combines everything to generate output
         """
+        globalMgfObj = mgfObj
 
         allProcessList = []
 
@@ -148,7 +151,8 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
         chargeIonMass(massDict, chargeFlags)
 
         massDict = editRefMassDict(massDict)
-        print(massDict)
+        if True in chargeFlags:
+            fulfilledList = fulfillPpmReq(massDict)
 
     if csvFlag:
         logging.info("Writing locked :(")
@@ -160,6 +164,12 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
 
     end = time.time()
     logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
+
+def fulfillPpmReq(massDict):
+    """
+    Assumption there are charges.
+    """
+    return generateMGFList(globalMgfObj, massDict)
 
 
 def genMassDictSplit(spliceType, peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):

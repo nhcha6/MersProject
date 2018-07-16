@@ -79,11 +79,13 @@ def ppmCheck(actualMass, pepmass, ppmPositive, ppmNegative, tolerance):
     posCheck = math.isclose(pepmass, ppmNegative, abs_tol = tolerance)
     return negCheck, normCheck, posCheck
 
+
 def pepMatch(actualMass, pepmass, ppmVal, tolerance):
     ppmPositive, ppmNegative = ppmPosNeg(actualMass, ppmVal)
     negCheck, normCheck, posCheck = ppmCheck(actualMass, pepmass, ppmPositive, ppmNegative, tolerance)
 
     return negCheck or normCheck or posCheck
+
 
 def addMass(listType, pepmass, actualMass, ppmVal):
     ppmPositive, ppmNegative = ppmPosNeg(actualMass, ppmVal)
@@ -92,6 +94,7 @@ def addMass(listType, pepmass, actualMass, ppmVal):
         listType.append(negCheck)
     if posCheck:
         listType.append(posCheck)
+
 
 def generateMGFList(mgfObj, massDict):
     print(mgfObj.tempMgfDf)

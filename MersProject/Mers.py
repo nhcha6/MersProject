@@ -10,8 +10,6 @@ import json
 import logging
 from MGFMain import *
 
-
-
 TRANS = "Trans"
 LINEAR = "Linear"
 CIS = "Cis"
@@ -19,7 +17,6 @@ CIS = "Cis"
 logging.basicConfig(level = logging.DEBUG, format = '%(message)s')
 #logging.disable(logging.INFO)
 
-globalMgfObj = None
 
 class Fasta:
 
@@ -33,7 +30,7 @@ class Fasta:
         """
         Function that literally combines everything to generate output
         """
-        globalMgfObj = mgfObj
+        # Create a single access point for the mgf object! (Look to passing it on as a parameter.
 
         allProcessList = []
 
@@ -52,7 +49,7 @@ class Fasta:
             cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.seqDict, CIS, mined, maxed,
                                                                                   overlapFlag, csvFlag, modList,
                                                                                   maxDistance,
-                                                                                  outputPath, chargeFlags))
+                                                                                  outputPath, chargeFlags, mgfObj))
             allProcessList.append(cisProcess)
             cisProcess.start()
 
@@ -61,7 +58,7 @@ class Fasta:
             linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.seqDict, LINEAR, mined,
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      modList, maxDistance,
-                                                                                     outputPath, chargeFlags))
+                                                                                     outputPath, chargeFlags, mgfObj))
             allProcessList.append(linearProcess)
             linearProcess.start()
 
@@ -69,18 +66,8 @@ class Fasta:
             process.join()
 
 
-def processLockInit(lockVar):
-
-    """
-    Designed to set up a global lock for a child processes (child per protein)
-    """
-
-    global lock
-    lock = lockVar
-
-
 def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
-                       modList, maxDistance, outputPath, chargeFlags):
+                       modList, maxDistance, outputPath, chargeFlags, mgfObj):
 
     finalPath = None
     # Open the csv file if the csv file is selected
@@ -102,7 +89,7 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
         logging.info(spliceType + " process started for: " + value[0:5])
 
         pool.apply_async(genMassDict, args=(spliceType, key, value, mined, maxed, overlapFlag,
-                                            csvFlag, modList, maxDistance, finalPath, chargeFlags))
+                                            csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfObj))
 
     pool.close()
     pool.join()
@@ -111,7 +98,7 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
 
 
 def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList,
-                maxDistance, finalPath, chargeFlags,):
+                maxDistance, finalPath, chargeFlags, mgfObj):
 
     enoughFlag = True
     start = time.time()
@@ -151,8 +138,8 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
         chargeIonMass(massDict, chargeFlags)
 
         massDict = editRefMassDict(massDict)
-        if True in chargeFlags:
-            fulfillPpmReq(massDict)
+        # if True in chargeFlags:
+        #     fulfillPpmReq(massDict)
 
     if csvFlag:
         logging.info("Writing locked :(")
@@ -169,8 +156,8 @@ def fulfillPpmReq(massDict):
     """
     Assumption there are charges.
     """
-    
-    generateMGFList(globalMgfObj, massDict)
+    print(3)
+    #generateMGFList(globalMgfObj, massDict)
 
 
 def genMassDictSplit(spliceType, peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):
@@ -623,3 +610,13 @@ def nth_replace(string, old, new, n=1, option='only nth'):
     groups = string.split(old)
     nth_split = [left_join.join(groups[:n]), right_join.join(groups[n:])]
     return new.join(nth_split)
+
+
+def processLockInit(lockVar):
+
+    """
+    Designed to set up a global lock for a child processes (child per protein)
+    """
+
+    global lock
+    lock = lockVar

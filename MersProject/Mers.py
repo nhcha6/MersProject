@@ -79,9 +79,12 @@ def processLockInit(lockVar):
 def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
                        modList, maxDistance, outputPath, chargeFlags):
 
-    # Open the csv file
-    finalPath = getFinalPath(outputPath, spliceType)
-    open(finalPath, 'w')
+    finalPath = None
+    # Open the csv file if the csv file is selected
+    if csvFlag:
+        finalPath = getFinalPath(outputPath, spliceType)
+        open(finalPath, 'w')
+
 
     num_workers = multiprocessing.cpu_count()
 

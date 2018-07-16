@@ -271,9 +271,15 @@ class MyTableWidget(QWidget):
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
             if reply == QMessageBox.Yes:
+                if csvFlag:
+                    outputPath = self.getOutputPath()
+                    if outputPath is not False:
 
-                outputPath = self.getOutputPath()
-                if outputPath is not False:
+                        self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
+                                           maxDistance, outputPath, chargeFlags)
+                else:
+                    print("IM HERE")
+                    outputPath = None
                     self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                                        maxDistance, outputPath, chargeFlags)
 

@@ -9,17 +9,26 @@ class MGF:
     def __init__(self, mgfDf):
         self.mgfDf = mgfDf
         self.mgfEntries = len(mgfDf)
+        self.tempMgfDf = None
 
     def removeChargeStates(self, chargeFlags):
         """
         Remove all charges that are irrelevant, which is given by the chargeFlags params
         """
+        firstTrue = True
         for i in range(0, len(chargeFlags)):
+
             if not chargeFlags[i]:
                 # Comparing to i+1 because of charge state!
-                self.mgfDf.drop(self.mgfDf[self.mgfDf.CHARGE_STATE == i+1].index, inplace=True)
 
-        print(self.mgfDf.head())
+                # Resolve the bug where would have to reattach the mgf file everytime charge state is changed.
+                if firstTrue:
+                    self.tempMgfDf = self.mgfDf.drop(self.mgfDf[self.mgfDf.CHARGE_STATE == i+1].index)
+                    firstTrue = False
+                else:
+                    self.tempMgfDf.drop(self.mgfDf[self.mgfDf.CHARGE_STATE == i + 1].index, inplace=True)
+
+        print(self.tempMgfDf.head())
 
 
 def readMGF(input_path):

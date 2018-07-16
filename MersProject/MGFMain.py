@@ -24,7 +24,6 @@ class MGF:
         Remove all charges that are irrelevant, which is given by the chargeFlags params
         """
         firstTrue = True
-        charges = []
         for i in range(0, len(chargeFlags)):
             if not chargeFlags[i]:
                 # Comparing to i+1 because of charge state!
@@ -35,8 +34,7 @@ class MGF:
                     firstTrue = False
                 else:
                     self.tempMgfDf.drop(self.mgfDf[self.mgfDf.CHARGE_STATE == i + 1].index, inplace=True)
-            else:
-                charges.append(i + 1)
+
 
         self.tempMgfDf.sort_values(by=['CHARGE_STATE', 'PEPMASS'], inplace = True)
         groupedTempDf = self.tempMgfDf.groupby('CHARGE_STATE')
@@ -75,11 +73,17 @@ def ppmPosNeg(actualMass, ppmVal):
     return ppmPositive, ppmNegative
 
 
-def ppmCheck(pepmass, ppmPositive, ppmNegative, tolerance):
+def ppmCheck(actualMass, pepmass, ppmPositive, ppmNegative, tolerance):
     negCheck = math.isclose(pepmass, ppmPositive, abs_tol = tolerance)
+    normCheck = math.isclose(pepmass, actualMass, abs_tol = tolerance)
     posCheck = math.isclose(pepmass, ppmNegative, abs_tol = tolerance)
-    return negCheck, posCheck
+    return negCheck, normCheck, posCheck
 
+def pepMatch(actualMass, pepmass, ppmVal, tolerance):
+    ppmPositive, ppmNegative = ppmPosNeg(actualMass, ppmVal)
+    negCheck, normCheck, posCheck = ppmCheck(actualMass, pepmass, ppmPositive, ppmNegative, tolerance)
+
+    return negCheck or normCheck or posCheck
 
 def addMass(listType, pepmass, actualMass, ppmVal):
     ppmPositive, ppmNegative = ppmPosNeg(actualMass, ppmVal)
@@ -90,8 +94,18 @@ def addMass(listType, pepmass, actualMass, ppmVal):
         listType.append(posCheck)
 
 def generateMGFList(mgfObj, massDict):
-    a=3
-    print(mgfObj.tempMgfDf.loc[mgfObj.tempMgfDf['CHARGE_STATE'] == 1, 'PEPMASS'].iloc[0])
+
+    for key, value in massDict.items():
+
+        pepMgfList = []
+        for charge, chargeMass in value[2].items():
+
+            currList = mgfObj.tempMgfDf.loc[mgfObj.tempMgfDf['CHARGE_STATE'] == charge, 'PEPMASS'].iloc[0]
+
+
+
+
+    # print(mgfObj.tempMgfDf.loc[mgfObj.tempMgfDf['CHARGE_STATE'] == 1, 'PEPMASS'].iloc[0])
 
 def takeClosest(myList, myNumber):
     """

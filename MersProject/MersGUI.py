@@ -153,15 +153,10 @@ class MyTableWidget(QWidget):
         self.tabs.addTab(self.tab2, "Input Parameters")
 
         # Creation of tab layout and widgets within tab
-        self.tab1.layout = QVBoxLayout(self)
-
-        self.pushButton1 = QPushButton("Select Fasta File")
-        self.pushButton1.clicked.connect(self.uploadFasta)
-        self.mgfButton = QPushButton("Select MGF File")
-        self.mgfButton.clicked.connect(self.uploadMGF)
-
-        self.tab1.layout.addWidget(self.pushButton1)
-        self.tab1.layout.addWidget(self.mgfButton)
+        self.tab1.layout = QGridLayout(self)
+        self.tab1.layout.setSpacing(10)
+        self.createTab1ParameterWidgets()
+        self.addTab1ParameterWidgets()
 
 
         self.tab1.setLayout(self.tab1.layout)
@@ -170,8 +165,8 @@ class MyTableWidget(QWidget):
         self.tab2.layout = QGridLayout(self)
         self.tab2.layout.setSpacing(10)
 
-        self.createParameterWidgets()
-        self.addParameterWidgets()
+        self.createTab2ParameterWidgets()
+        self.addTab2ParameterWidgets()
 
         # set layout
         self.tab2.setLayout(self.tab2.layout)
@@ -510,21 +505,7 @@ class MyTableWidget(QWidget):
         return mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,\
                outputFlag, chargeFlags
 
-    def createParameterWidgets(self):
 
-        self.addMinMaxAndDist()
-        self.addModifications()
-        self.addFlagChecks()
-        self.addChargeStates()
-
-        # AN EXTRA ADD "WRITE TO CSV FUNCTION CHECKBOX"
-        self.tab2.csv = QCheckBox('Write To Csv')
-
-        # create generate output push button
-        self.tab2.output = QPushButton('Generate Output!', self)
-        self.tab2.output.clicked.connect(self.confirmationFunction)
-
-        self.setDefaultParameters()
 
     def addMinMaxAndDist(self):
 
@@ -592,7 +573,55 @@ class MyTableWidget(QWidget):
             self.tab2.mod2Combo.addItem(modification)
             self.tab2.mod3Combo.addItem(modification)
 
-    def addParameterWidgets(self):
+    def createTab1ParameterWidgets(self):
+        self.pushButton1 = QPushButton("Select Fasta File")
+        self.pushButton1.clicked.connect(self.uploadFasta)
+        self.mgfButton = QPushButton("Select MGF File")
+        self.mgfButton.clicked.connect(self.uploadMGF)
+
+        self.tab1.ppmLabel = QLabel('PPM: ')
+        self.tab1.ppmCombo = QComboBox(self)
+
+        self.tab1.toleranceLabel = QLabel('Accuracy Level: ')
+        self.tab1.toleranceCombo = QComboBox(self)
+
+        for i in range(10, 110, 10):
+            self.tab1.ppmCombo.addItem(str(i))
+
+        ppms = [0.1, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001, 0.00000001, 0.000000001]
+        for ppm in ppms:
+            self.tab1.toleranceCombo.addItem(str(ppm))
+
+    def addTab1ParameterWidgets(self):
+        self.tab1.layout.setColumnStretch(0, 1)
+        self.tab1.layout.setColumnStretch(5, 1)
+        self.tab1.layout.setRowStretch(0, 1)
+        self.tab1.layout.setRowStretch(5, 1)
+        self.tab1.layout.addWidget(self.pushButton1, 1, 2, 1, 2)
+        self.tab1.layout.addWidget(self.mgfButton, 2, 2, 1, 2)
+        self.tab1.layout.addWidget(self.tab1.ppmLabel, 3, 2)
+        self.tab1.layout.addWidget(self.tab1.ppmCombo, 3, 3)
+        self.tab1.layout.addWidget(self.tab1.toleranceLabel, 4, 2)
+        self.tab1.layout.addWidget(self.tab1.toleranceCombo, 4, 3)
+
+
+    def createTab2ParameterWidgets(self):
+
+        self.addMinMaxAndDist()
+        self.addModifications()
+        self.addFlagChecks()
+        self.addChargeStates()
+
+        # AN EXTRA ADD "WRITE TO CSV FUNCTION CHECKBOX"
+        self.tab2.csv = QCheckBox('Write To Csv')
+
+        # create generate output push button
+        self.tab2.output = QPushButton('Generate Output!', self)
+        self.tab2.output.clicked.connect(self.confirmationFunction)
+
+        self.setDefaultParameters()
+
+    def addTab2ParameterWidgets(self):
 
         """
         Add all widgets in the correct grid format where they should be on the screen

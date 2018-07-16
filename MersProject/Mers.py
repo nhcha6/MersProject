@@ -148,6 +148,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
         chargeIonMass(massDict, chargeFlags)
 
         massDict = editRefMassDict(massDict)
+        print(massDict)
 
     if csvFlag:
         logging.info("Writing locked :(")

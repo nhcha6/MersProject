@@ -97,20 +97,27 @@ def readMGF(input_path):
     colNames = ['CHARGE_STATE', 'PEPMASS']
     mgfDf = pd.DataFrame(columns=colNames)
     with mgf.read(input_path) as mgfReader:
-        count = 0
+        totalEntries = 0
+        chargedEntries = 0
         for spectrum in mgfReader:
-            count+=1
-            elem = (spectrum['params']['charge'][0], spectrum['params']['pepmass'][0])
-            uniqueSpec.add(elem)
+
+            if 'charge' in spectrum['params'].keys():
+                uniqueSpec.add((spectrum['params']['charge'][0], spectrum['params']['pepmass'][0]))
+                chargedEntries+=1
+
+            totalEntries+=1
+
             # mgfDf.loc[len(mgfDf)] = [spectrum['params']['charge'][0],
             #                          spectrum['params']['pepmass'][0]]
-    print(uniqueSpec)
+    print("There are " + str(totalEntries) + " total entries in this MGF file")
+    print("There are " + str(chargedEntries) + " entries with a charge in this MGF file")
     print("There are " + str(len(uniqueSpec)) + " unique entries in this MGF file")
-    print("There are " + str(count - len(uniqueSpec)) + " duplicate entries in this MGF file")
-    print("There are " + str(count) + " total entries in this MGF file")
+    print("There are " + str(chargedEntries - len(uniqueSpec)) + " duplicate entries in this MGF file")
 
     return mgfDf
 
+#readMGF('C:/Users/Arpit/Desktop/UROP/InputData/600MB.mgf')
+#readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf')
 
 def takeClosest(myList, myNumber):
     """

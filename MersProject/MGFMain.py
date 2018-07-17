@@ -4,7 +4,7 @@ from pyteomics import mgf
 import math
 from bisect import bisect_left
 
-
+# 347805 entries - 6 minutes
 class MGF:
 
     def __init__(self, mgfDf):
@@ -82,6 +82,7 @@ def pepMatch(predictedMass, pepmass, ppmVal):
         return True
     return False
 
+
 def calcPpm(predictedMass, pepmass):
     a = (abs(predictedMass - pepmass) / predictedMass)*1000000
     return a
@@ -92,16 +93,20 @@ def readMGF(input_path):
     """
     Creates a pandas dataframe based on mgf data
     """
-
+    uniqueSpec = set()
     colNames = ['CHARGE_STATE', 'PEPMASS']
     mgfDf = pd.DataFrame(columns=colNames)
     with mgf.read(input_path) as mgfReader:
         count = 0
         for spectrum in mgfReader:
             count+=1
-            mgfDf.loc[len(mgfDf)] = [spectrum['params']['charge'][0],
-                                     spectrum['params']['pepmass'][0]]
-    print("There are " + str(count) + " in this MGF file")
+            elem = (spectrum['params']['charge'][0], spectrum['params']['pepmass'][0])
+            uniqueSpec.add(elem)
+            # mgfDf.loc[len(mgfDf)] = [spectrum['params']['charge'][0],
+            #                          spectrum['params']['pepmass'][0]]
+    print(uniqueSpec)
+    print("There are " + str(len(uniqueSpec)) + " unique entries in this MGF file")
+    print("There are " + str(count) + " total entries in this MGF file")
     return mgfDf
 
 

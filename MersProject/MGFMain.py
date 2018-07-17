@@ -14,7 +14,6 @@ class MGF:
         self.toleranceLevel = None
         self.tempMgfDf = None
 
-
     def initValues(self, ppmVal, toleranceLevel):
         self.ppmVal = ppmVal
         self.toleranceLevel = toleranceLevel
@@ -35,7 +34,6 @@ class MGF:
                 else:
                     self.tempMgfDf.drop(self.mgfDf[self.mgfDf.CHARGE_STATE == i + 1].index, inplace=True)
 
-
         self.tempMgfDf.sort_values(by=['CHARGE_STATE', 'PEPMASS'], inplace = True)
         groupedTempDf = self.tempMgfDf.groupby('CHARGE_STATE')
         self.tempMgfDf = groupedTempDf['PEPMASS'].unique()
@@ -44,21 +42,51 @@ class MGF:
 
 
 def generateMGFList(mgfObj, massDict):
-    print(mgfObj.tempMgfDf.head())
+    if len(mgfObj.tempMgfDf.index) != 0:
 
-    print('IN MGF:)')
-    #for key, value in massDict.items():
+        for key, value in massDict.items():
 
-        #pepMgfList = []
-        #for charge, chargeMass in value[2].items():
+            for charge, chargeMass in value[2].items():
+                pepMgfList = []
+                chargeList = mgfObj.tempMgfDf.loc[mgfObj.tempMgfDf['CHARGE_STATE'] == charge, 'PEPMASS'].iloc[0]
+                closest = takeClosest(chargeList, chargeMass)
 
-            #currList = mgfObj.tempMgfDf.loc[mgfObj.tempMgfDf['CHARGE_STATE'] == 1, 'PEPMASS'].iloc[0]
+                for i in range(closest, len(chargeList)):
+
+                    if pepMatch(chargeMass, chargeList[i], mgfObj.ppmVal):
+                        diffPpm = calcPpm(chargeMass, chargeList[i])
+                        pepMgfList.append((chargeList[i], diffPpm))
+                    else:
+                        break
+
+                backwards = closest-1 # -1 as the first one should already have been added in the forward iteration
+                while backwards >=0:
+                    if pepMatch(chargeMass, chargeList[backwards], mgfObj.ppmVal):
+                        diffPpm = calcPpm(chargeMass, chargeList[backwards])
+                        pepMgfList.append((chargeList[backwards], diffPpm))
+                    else:
+                        break;
+                    backwards-=1
+                if len(pepMgfList)>0:
+                    print(key, charge, chargeMass, pepMgfList)
+                # if pepMatch(chargeMass, chargeList[closest], mgfObj.ppmVal):
+                #     diffPpm = calcPpm(chargeMass, chargeList[closest])
+                #
+                #     print(key, charge, chargeMass, chargeList[closest], diffPpm)
 
 
+def pepMatch(predictedMass, pepmass, ppmVal):
 
+    currentPpm = calcPpm(predictedMass, pepmass)
+    if int(round(currentPpm)) <= ppmVal:
+        return True
+    return False
 
-    # print(mgfObj.tempMgfDf.loc[mgfObj.tempMgfDf['CHARGE_STATE'] == 1, 'PEPMASS'].iloc[0])
+def calcPpm(predictedMass, pepmass):
+    a = (abs(predictedMass - pepmass) / predictedMass)*1000000
+    return a
 
+print(pepMatch(495.2594, 495.2585175, 10))
 
 def readMGF(input_path):
     """
@@ -68,11 +96,14 @@ def readMGF(input_path):
     colNames = ['CHARGE_STATE', 'PEPMASS']
     mgfDf = pd.DataFrame(columns=colNames)
     with mgf.read(input_path) as mgfReader:
+        count = 0
         for spectrum in mgfReader:
-
+            count+=1
             mgfDf.loc[len(mgfDf)] = [spectrum['params']['charge'][0],
                                      spectrum['params']['pepmass'][0]]
+    print("There are " + str(count) + " in this MGF file")
     return mgfDf
+
 
 
 def ppmToPercent(ppmVal):
@@ -83,8 +114,6 @@ def ppmPosNeg(actualMass, ppmVal):
     ppmPercent = ppmToPercent(ppmVal)
     ppmPositive = actualMass + actualMass*ppmPercent
     ppmNegative = actualMass - actualMass*ppmPercent
-    print("PPM Positive value is: " + str(ppmPositive))
-    print("PPM Negative value is: " + str(ppmNegative))
     return ppmPositive, ppmNegative
 
 
@@ -93,13 +122,6 @@ def ppmCheck(actualMass, pepmass, ppmPositive, ppmNegative, tolerance):
     normCheck = math.isclose(pepmass, actualMass, abs_tol = tolerance)
     posCheck = math.isclose(pepmass, ppmNegative, abs_tol = tolerance)
     return negCheck, normCheck, posCheck
-
-
-def pepMatch(actualMass, pepmass, ppmVal, tolerance):
-    ppmPositive, ppmNegative = ppmPosNeg(actualMass, ppmVal)
-    negCheck, normCheck, posCheck = ppmCheck(actualMass, pepmass, ppmPositive, ppmNegative, tolerance)
-
-    return negCheck or normCheck or posCheck
 
 
 def addMass(listType, pepmass, actualMass, ppmVal):
@@ -153,3 +175,4 @@ def takeClosest(myList, myNumber):
 # print(pepList)
 # actualMass = 894
 # print(takeClosest(pepList, actualMass))
+

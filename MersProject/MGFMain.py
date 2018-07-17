@@ -105,34 +105,6 @@ def readMGF(input_path):
     return mgfDf
 
 
-
-def ppmToPercent(ppmVal):
-    return ppmVal/10000
-
-
-def ppmPosNeg(actualMass, ppmVal):
-    ppmPercent = ppmToPercent(ppmVal)
-    ppmPositive = actualMass + actualMass*ppmPercent
-    ppmNegative = actualMass - actualMass*ppmPercent
-    return ppmPositive, ppmNegative
-
-
-def ppmCheck(actualMass, pepmass, ppmPositive, ppmNegative, tolerance):
-    negCheck = math.isclose(pepmass, ppmPositive, abs_tol = tolerance)
-    normCheck = math.isclose(pepmass, actualMass, abs_tol = tolerance)
-    posCheck = math.isclose(pepmass, ppmNegative, abs_tol = tolerance)
-    return negCheck, normCheck, posCheck
-
-
-def addMass(listType, pepmass, actualMass, ppmVal):
-    ppmPositive, ppmNegative = ppmPosNeg(actualMass, ppmVal)
-    negCheck, posCheck = ppmCheck(ppmPositive, ppmNegative)
-    if negCheck:
-        listType.append(negCheck)
-    if posCheck:
-        listType.append(posCheck)
-
-
 def takeClosest(myList, myNumber):
     """
     Assumes myList is sorted. Returns closest value to myNumber via index.
@@ -154,14 +126,7 @@ def takeClosest(myList, myNumber):
 # actualMass = 495.25851750000004
 # pepmass = 495.7115
 # ppmVal = 90
-# tolerance = 0.000001
-# ppmPositive, ppmNegative = ppmPosNeg(actualMass, ppmVal)
-# ppmPosCheck, ppmNegCheck = ppmCheck(pepmass, ppmPositive, ppmNegative, tolerance)
-#
-# print('Actual mass: ' + str(actualMass))
-#
-# print('PPM PosCheck: ' + str(ppmPosCheck))
-# print('PPM NegCheck: ' + str(ppmNegCheck))
+
 #
 # chargeFlags = [False, True, False, True, False]
 # mgf = MGF(readMGF("MgfExample.mgf"))

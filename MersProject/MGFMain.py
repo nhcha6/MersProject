@@ -106,7 +106,9 @@ def readMGF(input_path):
             #                          spectrum['params']['pepmass'][0]]
     print(uniqueSpec)
     print("There are " + str(len(uniqueSpec)) + " unique entries in this MGF file")
+    print("There are " + str(count - len(uniqueSpec)) + " duplicate entries in this MGF file")
     print("There are " + str(count) + " total entries in this MGF file")
+
     return mgfDf
 
 

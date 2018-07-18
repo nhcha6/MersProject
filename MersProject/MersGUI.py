@@ -78,6 +78,24 @@ class OutputGenerator(QRunnable):
         self.signals.finished.emit()
 
 
+class MGFImporter(QRunnable):
+    """
+
+    """
+    def __init__(self, fn, *args, **kwargs):
+        super(MGFImporter, self).__init__()
+        # Store constructor arguments (re-used for processing)
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        self.signals = WorkerSignals()
+
+    @pyqtSlot()
+    def run(self):
+        self.fn(*self.args)
+        self.signals.finished.emit()
+
+
 class App(QMainWindow):
 
     """
@@ -175,7 +193,15 @@ class MyTableWidget(QWidget):
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
 
-    def uploadMGF(self):
+    def importedMGF(self):
+        print("MGF FILE UPLOADED")
+        QMessageBox.about(self, "Message", 'MGF file imported.')
+
+    def uploadMgf(self, input_path):
+        self.mgf = MGF(readMGF(input_path))
+
+
+    def uploadMgfPreStep(self):
         """
         Called from the select Fasta file button. Opens a window to select a file, and check if the file ends in MGF
         """
@@ -184,8 +210,12 @@ class MyTableWidget(QWidget):
         mgfTest = fname[0][-3:]
 
         if mgfTest == 'mgf':
-            self.mgf = MGF(readMGF(fname[0]))
-            QMessageBox.about(self, "Message", 'MGF file imported.')
+
+            mgfGen = MGFImporter(self.uploadMgf, fname[0])
+
+            mgfGen.signals.finished.connect(self.importedMGF)
+            self.threadpool.start(mgfGen)
+
 
         # Ensuring program does not crash if no file is selected
         elif fname[0] == '':
@@ -505,7 +535,7 @@ class MyTableWidget(QWidget):
         chargeFlags = [plusOneFlag, plusTwoFlag, plusThreeFlag, plusFourFlag, plusFiveFlag]
 
         # self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/small.fasta'))
-        self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/InputData/oneProtein.fasta'))
+        # self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/InputData/oneProtein.fasta'))
         # self.fasta = Fasta(addSequenceList('C:/Users/Administrator/Desktop/UROP/InputData/OneProtein.fasta'))
         # self.mgf = MGF(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/mgf.mgf'))
 
@@ -588,7 +618,7 @@ class MyTableWidget(QWidget):
         self.pushButton1 = QPushButton("Select Fasta File")
         self.pushButton1.clicked.connect(self.uploadFasta)
         self.mgfButton = QPushButton("Select MGF File")
-        self.mgfButton.clicked.connect(self.uploadMGF)
+        self.mgfButton.clicked.connect(self.uploadMgfPreStep)
 
         self.tab1.ppmLabel = QLabel('PPM: ')
         self.tab1.ppmCombo = QComboBox(self)

@@ -119,6 +119,9 @@ def readMGF(input_path):
 
 #readMGF('C:/Users/Arpit/Desktop/UROP/InputData/600MB.mgf')
 #readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf')
+#readMGF('C:/Users/Administrator/Desktop/UROP/InputData/918MB.mgf')
+# readMGF('C:/Users/Administrator/Desktop/UROP/InputData/MgfExample.mgf')
+
 
 def takeClosest(myList, myNumber):
     """

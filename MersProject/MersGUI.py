@@ -92,8 +92,11 @@ class MGFImporter(QRunnable):
 
     @pyqtSlot()
     def run(self):
+        start = time.time()
         self.fn(*self.args)
         self.signals.finished.emit()
+        end = time.time()
+        print("Uploading mgf took: " + str(end-start))
 
 
 class App(QMainWindow):

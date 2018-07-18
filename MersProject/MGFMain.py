@@ -103,16 +103,17 @@ def readMGF(input_path):
 
             if 'charge' in spectrum['params'].keys():
                 uniqueSpec.add((spectrum['params']['charge'][0], spectrum['params']['pepmass'][0]))
+                mgfDf.loc[len(mgfDf)] = [spectrum['params']['charge'][0],
+                                         spectrum['params']['pepmass'][0]]
                 chargedEntries+=1
 
             totalEntries+=1
 
-            # mgfDf.loc[len(mgfDf)] = [spectrum['params']['charge'][0],
-            #                          spectrum['params']['pepmass'][0]]
-    print("There are " + str(totalEntries) + " total entries in this MGF file")
-    print("There are " + str(chargedEntries) + " entries with a charge in this MGF file")
-    print("There are " + str(len(uniqueSpec)) + " unique entries in this MGF file")
-    print("There are " + str(chargedEntries - len(uniqueSpec)) + " duplicate entries in this MGF file")
+
+    # print("There are " + str(totalEntries) + " total entries in this MGF file")
+    # print("There are " + str(chargedEntries) + " entries with a charge in this MGF file")
+    # print("There are " + str(len(uniqueSpec)) + " unique entries in this MGF file")
+    # print("There are " + str(chargedEntries - len(uniqueSpec)) + " duplicate entries in this MGF file")
 
     return mgfDf
 

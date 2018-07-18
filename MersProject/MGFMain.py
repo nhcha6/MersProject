@@ -102,11 +102,12 @@ def readMGF(input_path):
         for spectrum in mgfReader:
 
             if 'charge' in spectrum['params'].keys():
-                
-                uniqueSpec.add((spectrum['params']['charge'][0], spectrum['params']['pepmass'][0]))
-
-                mgfDf.loc[len(mgfDf)] = [spectrum['params']['charge'][0],
-                                         spectrum['params']['pepmass'][0]]
+                chargePepmassTup = (spectrum['params']['charge'][0], spectrum['params']['pepmass'][0])
+                # Add it to the dataframe if they are not already in the set
+                if chargePepmassTup not in uniqueSpec:
+                    mgfDf.loc[len(mgfDf)] = [spectrum['params']['charge'][0],
+                                             spectrum['params']['pepmass'][0]]
+                uniqueSpec.add(chargePepmassTup)
                 chargedEntries+=1
 
             totalEntries+=1

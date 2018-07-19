@@ -86,15 +86,13 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
     lockVar = multiprocessing.Lock()
     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, ))
 
-    manager = multiprocessing.Manager()
-    finalDict = manager.dict()
 
     for key, value in seqDict.items():
 
         logging.info(spliceType + " process started for: " + value[0:5])
 
         pool.apply_async(genMassDict, args=(spliceType, key, value, mined, maxed, overlapFlag,
-                                            csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfObj, finalDict))
+                                            csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfObj))
 
     pool.close()
     pool.join()
@@ -103,7 +101,7 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
 
 
 def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList,
-                maxDistance, finalPath, chargeFlags, mgfObj, finalDict):
+                maxDistance, finalPath, chargeFlags, mgfObj):
 
     start = time.time()
     combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
@@ -127,7 +125,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
         logging.info("Writing released!")
 
     end = time.time()
-    finalDict.update(massDict)
+
     logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
 
 

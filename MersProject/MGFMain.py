@@ -42,38 +42,24 @@ class MGF:
 
 
 def generateMGFList(mgfObj, massDict):
-    if len(mgfObj.tempMgfDf.index) != 0:
 
+    if len(mgfObj.tempMgfDf.index) != 0:
+        matchedPeptides = set()
         for key, value in massDict.items():
 
             for charge, chargeMass in value[2].items():
-                pepMgfList = []
+
                 chargeList = mgfObj.tempMgfDf.loc[mgfObj.tempMgfDf['CHARGE_STATE'] == charge, 'PEPMASS'].iloc[0]
                 closest = takeClosest(chargeList, chargeMass)
+                if pepMatch(chargeMass, chargeList[closest], mgfObj.ppmVal):
+                    matchedPeptides.add(key)
 
-                for i in range(closest, len(chargeList)):
 
-                    if pepMatch(chargeMass, chargeList[i], mgfObj.ppmVal):
-                        diffPpm = calcPpm(chargeMass, chargeList[i])
-                        pepMgfList.append((chargeList[i], diffPpm))
-                    else:
-                        break
-
-                backwards = closest-1 # -1 as the first one should already have been added in the forward iteration
-                while backwards >=0:
-                    if pepMatch(chargeMass, chargeList[backwards], mgfObj.ppmVal):
-                        diffPpm = calcPpm(chargeMass, chargeList[backwards])
-                        pepMgfList.append((chargeList[backwards], diffPpm))
-                    else:
-                        break;
-                    backwards-=1
-                if len(pepMgfList)>0:
-                    print(key, charge, chargeMass, pepMgfList)
                 # if pepMatch(chargeMass, chargeList[closest], mgfObj.ppmVal):
                 #     diffPpm = calcPpm(chargeMass, chargeList[closest])
                 #
                 #     print(key, charge, chargeMass, chargeList[closest], diffPpm)
-
+        return matchedPeptides
 
 def pepMatch(predictedMass, pepmass, ppmVal):
 
@@ -87,7 +73,6 @@ def calcPpm(predictedMass, pepmass):
     a = (abs(predictedMass - pepmass) / predictedMass)*1000000
     return a
 
-print(pepMatch(495.2594, 495.2585175, 10))
 
 def readMGF(input_path):
     """

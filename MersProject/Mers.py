@@ -1,4 +1,6 @@
 from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 from TransPlaceholder import *
 import csv
 from MonoAminoAndMods import *
@@ -100,46 +102,17 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
 def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList,
                 maxDistance, finalPath, chargeFlags, mgfObj):
 
-    enoughFlag = True
     start = time.time()
+    combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
 
-    # THIS IS WHERE THE SPLITTING PIECES INTO OVER LAPPING SHOULD STEP IN!!!!!!!!
-    if maxDistance != 'None' and maxDistance < len(peptide) and len(peptide) > 2000:
+    massDict = combMass(combined, combinedRef)
+    massDict = applyMods(massDict, modList)
 
-        logging.warning("MEETS CONDITIONS")
-        currProcess = multiprocessing.current_process()
+    chargeIonMass(massDict, chargeFlags)
 
-        currProcess.daemon = False
-
-        peptidePool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
-        for i in range(0, len(peptide)):
-
-            if not enoughFlag:
-                break;
-
-            nextVal = i+maxDistance
-            if nextVal > len(peptide):
-                nextVal = -1
-                enoughFlag = False
-            peptidePool.apply_async(genMassDictSplit, args=(spliceType, peptide[i:nextVal], mined, maxed, overlapFlag,
-                                                            modList, maxDistance, chargeFlags,))
-        peptidePool.close()
-        peptidePool.join()
-        end = time.time()
-        logging.info(peptide[0:5] + ' took: ' + str(end - start) + ' for ' + spliceType)
-
-    else:
-
-        combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
-
-        massDict = combMass(combined, combinedRef)
-        massDict = applyMods(massDict, modList)
-
-        chargeIonMass(massDict, chargeFlags)
-
-        massDict = editRefMassDict(massDict)
-        if mgfObj is not None and True in chargeFlags:
-            fulfillPpmReq(mgfObj, massDict)
+    massDict = editRefMassDict(massDict)
+    if mgfObj is not None and True in chargeFlags:
+        fulfillPpmReq(mgfObj, massDict)
 
 
     if csvFlag:
@@ -153,12 +126,29 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     end = time.time()
     logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
 
+
 def fulfillPpmReq(mgfObj, massDict):
     """
     Assumption there are charges.
     """
 
-    generateMGFList(mgfObj, massDict)
+    matchedPeptides = generateMGFList(mgfObj, massDict)
+
+    lock.acquire()
+    logging.info("Writing to fasta")
+    with open("Output.fasta", "w") as output_handle:
+        SeqIO.write(createSeqObj(matchedPeptides), output_handle, "fasta")
+
+    lock.release()
+    logging.info("Writing complete")
+
+
+def createSeqObj(matchedPeptides):
+    count = 1
+    for sequence in matchedPeptides:
+
+        yield SeqRecord(Seq(sequence), id=str(len(sequence)) + "|pep"+str(count), description="")
+        count += 1
 
 
 def genMassDictSplit(spliceType, peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):

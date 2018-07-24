@@ -138,7 +138,7 @@ def fulfillPpmReq(mgfObj, massDict):
 
     lock.acquire()
     logging.info("Writing to fasta")
-    with open("Output.fasta", "w") as output_handle:
+    with open("OutputMaster.fasta", "a") as output_handle:
         SeqIO.write(createSeqObj(matchedPeptides), output_handle, "fasta")
 
     lock.release()

@@ -83,25 +83,28 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
     if len(seqDict) < num_workers:
         num_workers = len(seqDict)
 
+
     lockVar = multiprocessing.Lock()
+    manager = multiprocessing.Manager()
     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, ))
-
-
+    finalMassDict = manager.dict()
     for key, value in seqDict.items():
 
         logging.info(spliceType + " process started for: " + value[0:5])
 
         pool.apply_async(genMassDict, args=(spliceType, key, value, mined, maxed, overlapFlag,
-                                            csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfObj))
+                                            csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfObj, finalMassDict))
 
     pool.close()
     pool.join()
+    if mgfObj is not None and True in chargeFlags:
+        fulfillPpmReq(mgfObj, finalMassDict)
 
     logging.info("All " + spliceType + " !joined")
 
 
 def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList,
-                maxDistance, finalPath, chargeFlags, mgfObj):
+                maxDistance, finalPath, chargeFlags, mgfObj, finalMassDict):
 
     start = time.time()
     combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
@@ -112,8 +115,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     chargeIonMass(massDict, chargeFlags)
 
     massDict = editRefMassDict(massDict)
-    if mgfObj is not None and True in chargeFlags:
-        fulfillPpmReq(mgfObj, massDict)
+
 
 
     if csvFlag:
@@ -125,7 +127,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
         logging.info("Writing released!")
 
     end = time.time()
-
+    finalMassDict.update(massDict)
     logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
 
 
@@ -136,12 +138,12 @@ def fulfillPpmReq(mgfObj, massDict):
 
     matchedPeptides = generateMGFList(mgfObj, massDict)
 
-    lock.acquire()
+
     logging.info("Writing to fasta")
     with open("Output.fasta", "w") as output_handle:
         SeqIO.write(createSeqObj(matchedPeptides), output_handle, "fasta")
 
-    lock.release()
+    
     logging.info("Writing complete")
 
 
@@ -162,7 +164,6 @@ def genMassDictSplit(spliceType, peptide, mined, maxed, overlapFlag, modList, ma
     chargeIonMass(massDict, chargeFlags)
 
     massDict = editRefMassDict(massDict)
-
 
 
 def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance):

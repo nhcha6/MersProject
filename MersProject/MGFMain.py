@@ -61,6 +61,7 @@ def generateMGFList(mgfObj, massDict):
                 #     print(key, charge, chargeMass, chargeList[closest], diffPpm)
         return matchedPeptides
 
+
 def pepMatch(predictedMass, pepmass, ppmVal):
 
     currentPpm = calcPpm(predictedMass, pepmass)

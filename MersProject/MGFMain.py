@@ -52,6 +52,8 @@ def generateMGFList(mgfObj, massDict):
                 chargeList = mgfObj.tempMgfDf.loc[mgfObj.tempMgfDf['CHARGE_STATE'] == charge, 'PEPMASS'].iloc[0]
                 closest = takeClosest(chargeList, chargeMass)
                 if pepMatch(chargeMass, chargeList[closest], mgfObj.ppmVal):
+                    if not key.isalpha():
+                        key = modToPeptide(key)
                     matchedPeptides.add(key)
 
 
@@ -61,6 +63,10 @@ def generateMGFList(mgfObj, massDict):
                 #     print(key, charge, chargeMass, chargeList[closest], diffPpm)
         return matchedPeptides
 
+def modToPeptide(moddedPeptide):
+    peptide = ''.join(filter(lambda x: x.isalpha(), moddedPeptide))
+
+    return peptide.upper()
 
 def pepMatch(predictedMass, pepmass, ppmVal):
 

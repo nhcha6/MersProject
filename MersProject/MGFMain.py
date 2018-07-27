@@ -58,6 +58,8 @@ def generateMGFList(mgfObj, massDict):
                     if pepMatch(chargeMass, chargeList[closest], mgfObj.ppmVal):
 
                         matchedPeptides.add(alphaKey)
+                else:
+                    break
 
 
                 # if pepMatch(chargeMass, chargeList[closest], mgfObj.ppmVal):

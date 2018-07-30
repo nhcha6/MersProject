@@ -5,6 +5,7 @@ from TransPlaceholder import *
 import csv
 from MonoAminoAndMods import *
 import multiprocessing
+from multiprocessing import Queue
 import time
 import sys
 # import h5py
@@ -19,6 +20,19 @@ CIS = "Cis"
 logging.basicConfig(level = logging.DEBUG, format = '%(message)s')
 #logging.disable(logging.INFO)
 
+class QueueWrite:
+
+    def __init__(self, queue):
+        self.queue = queue
+        self.flag = True
+
+    def writeToFile(self):
+        while self.flag:
+            print(self.queue.get())
+
+
+    def addToQueue(self, matchedPeptide):
+        self.queue.put(matchedPeptide)
 
 class Fasta:
 
@@ -57,19 +71,26 @@ class Fasta:
 
         if linearFlag:
 
+            matchedQueue = Queue()
+            linearWrite = QueueWrite(matchedQueue)
+            #linearWriteProcess = multiprocessing.Process(target=linearWrite.writeToFile)
+
+
             linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.seqDict, LINEAR, mined,
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      modList, maxDistance,
-                                                                                     outputPath, chargeFlags, mgfObj))
+                                                                                     outputPath, chargeFlags, mgfObj, linearWrite))
             allProcessList.append(linearProcess)
+            #allProcessList.append(linearWriteProcess)
             linearProcess.start()
+            #linearWriteProcess.start()
 
         for process in allProcessList:
             process.join()
 
 
 def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
-                       modList, maxDistance, outputPath, chargeFlags, mgfObj):
+                       modList, maxDistance, outputPath, chargeFlags, mgfObj, linearWrite):
 
     finalPath = None
     # Open the csv file if the csv file is selected
@@ -86,13 +107,12 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
     lockVar = multiprocessing.Lock()
     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, ))
 
-
     for key, value in seqDict.items():
 
         logging.info(spliceType + " process started for: " + value[0:5])
 
         pool.apply_async(genMassDict, args=(spliceType, key, value, mined, maxed, overlapFlag,
-                                            csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfObj))
+                                            csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfObj, linearWrite))
 
     pool.close()
     pool.join()
@@ -101,7 +121,7 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
 
 
 def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList,
-                maxDistance, finalPath, chargeFlags, mgfObj):
+                maxDistance, finalPath, chargeFlags, mgfObj, linearWrite):
 
     start = time.time()
     combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
@@ -110,6 +130,8 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     massDict = applyMods(massDict, modList)
 
     chargeIonMass(massDict, chargeFlags)
+
+    linearWrite.addToQueue('hi')
 
     massDict = editRefMassDict(massDict)
     if mgfObj is not None and True in chargeFlags:

@@ -57,9 +57,9 @@ def generateMGFList(mgfObj, massDict):
             for charge, chargeMass in value[2].items():
                 if alphaKey not in matchedPeptides:
 
-                    chargeList = mgfObj.mgfDf[charge]
-                    closest = takeClosest(chargeList, chargeMass)
-                    if pepMatch(chargeMass, chargeList[closest], mgfObj.ppmVal):
+                    # chargeList = mgfObj.mgfDf[charge]
+                    closest = takeClosest(mgfObj.mgfDf[charge], chargeMass)
+                    if pepMatch(chargeMass, closest, mgfObj.ppmVal):
 
                         matchedPeptides.add(alphaKey)
                 else:
@@ -119,12 +119,17 @@ def readMGF(input_path):
 
                 uniqueSpec.add(chargePepmassTup)
 
-
+    sortMgfDf(mgfDf)
     return mgfDf
 
+def sortMgfDf(mgfDf):
+    for charge, masses in mgfDf.items():
+        masses.sort()
 #readMGF('C:/Users/Arpit/Desktop/UROP/InputData/600MB.mgf')
-mgfObj = MGF(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
-
+# mgfObj = MGF(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
+# print((1,mgfObj.mgfDf[1]))
+# print(2,(mgfObj.mgfDf[2]))
+# print((3,mgfObj.mgfDf[3]))
 
 #readMGF('C:/Users/Administrator/Desktop/UROP/InputData/918MB.mgf')
 # readMGF('C:/Users/Administrator/Desktop/UROP/InputData/MgfExample.mgf')
@@ -138,15 +143,15 @@ def takeClosest(myList, myNumber):
     """
     pos = bisect_left(myList, myNumber)
     if pos == 0:
-        return 0
+        return myList[0]
     if pos == len(myList):
-        return -1
+        return myList[-1]
     before = myList[pos - 1]
     after = myList[pos]
     if after - myNumber < myNumber - before:
-       return pos
+       return after
     else:
-       return pos-1
+       return before
 
 # actualMass = 495.25851750000004
 # pepmass = 495.7115

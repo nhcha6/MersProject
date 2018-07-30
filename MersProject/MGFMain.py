@@ -12,7 +12,7 @@ class MGF:
         self.mgfEntries = len(mgfDf)
         self.ppmVal = None
         self.toleranceLevel = None
-        self.tempMgfDf = None
+
 
     def initValues(self, ppmVal, toleranceLevel):
         self.ppmVal = ppmVal
@@ -43,9 +43,12 @@ class MGF:
 
 def generateMGFList(mgfObj, massDict):
 
-    if len(mgfObj.tempMgfDf.index) != 0:
+    if mgfObj.mgfDf:
+
         matchedPeptides = set()
         for key, value in massDict.items():
+
+            # convert modified peptides to original form
             if not key.isalpha():
                 alphaKey = modToPeptide(key)
             else:
@@ -53,7 +56,8 @@ def generateMGFList(mgfObj, massDict):
 
             for charge, chargeMass in value[2].items():
                 if alphaKey not in matchedPeptides:
-                    chargeList = mgfObj.tempMgfDf.loc[mgfObj.tempMgfDf['CHARGE_STATE'] == charge, 'PEPMASS'].iloc[0]
+
+                    chargeList = mgfObj.mgfDf[charge]
                     closest = takeClosest(chargeList, chargeMass)
                     if pepMatch(chargeMass, chargeList[closest], mgfObj.ppmVal):
 
@@ -94,33 +98,34 @@ def readMGF(input_path):
     """
     uniqueSpec = set()
     colNames = ['CHARGE_STATE', 'PEPMASS']
-    mgfDf = pd.DataFrame(columns=colNames)
+    mgfDf = {}
     with mgf.read(input_path) as mgfReader:
-        totalEntries = 0
-        chargedEntries = 0
         for spectrum in mgfReader:
 
             if 'charge' in spectrum['params'].keys():
-                chargePepmassTup = (spectrum['params']['charge'][0], spectrum['params']['pepmass'][0])
+                charge = spectrum['params']['charge'][0]
+                pepmass = spectrum['params']['pepmass'][0]
+                chargePepmassTup = (charge, pepmass)
+
                 # Add it to the dataframe if they are not already in the set
                 if chargePepmassTup not in uniqueSpec:
-                    mgfDf.loc[len(mgfDf)] = [spectrum['params']['charge'][0],
-                                             spectrum['params']['pepmass'][0]]
+
+                    if charge in mgfDf:
+                        mgfDf[charge].append(pepmass)
+                    else:
+                        mgfDf[charge] = [pepmass]
+                    # mgfDf.loc[len(mgfDf)] = [spectrum['params']['charge'][0],
+                    #                          spectrum['params']['pepmass'][0]]
+
                 uniqueSpec.add(chargePepmassTup)
-                chargedEntries+=1
 
-            totalEntries+=1
-
-
-    # print("There are " + str(totalEntries) + " total entries in this MGF file")
-    # print("There are " + str(chargedEntries) + " entries with a charge in this MGF file")
-    # print("There are " + str(len(uniqueSpec)) + " unique entries in this MGF file")
-    # print("There are " + str(chargedEntries - len(uniqueSpec)) + " duplicate entries in this MGF file")
 
     return mgfDf
 
 #readMGF('C:/Users/Arpit/Desktop/UROP/InputData/600MB.mgf')
-#readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf')
+mgfObj = MGF(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
+
+
 #readMGF('C:/Users/Administrator/Desktop/UROP/InputData/918MB.mgf')
 # readMGF('C:/Users/Administrator/Desktop/UROP/InputData/MgfExample.mgf')
 

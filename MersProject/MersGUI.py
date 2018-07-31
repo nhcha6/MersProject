@@ -397,8 +397,7 @@ class MyTableWidget(QWidget):
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
 
-        if self.mgf is not None:
-            self.mgf.removeChargeStates(chargeFlags)
+    
 
         self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                                   maxDistance, outputPath, chargeFlags, self.mgf)

@@ -87,8 +87,8 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, ))
 
     #spawning writer process
-    manager = multiprocessing.Manager()
-    toWriteQueue = manager.Queue()
+    #manager = multiprocessing.Manager()
+    toWriteQueue = multiprocessing.Queue()
     writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue,))
     writerProcess.start()
 

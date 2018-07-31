@@ -266,6 +266,9 @@ class MyTableWidget(QWidget):
             return False
         return outputPath
 
+    def stopFunction(self):
+        sys.exit()
+
     def confirmationFunction(self):
 
         """
@@ -661,7 +664,9 @@ class MyTableWidget(QWidget):
 
         # create generate output push button
         self.tab2.output = QPushButton('Generate Output!', self)
+        self.tab2.stop = QPushButton('Stop Process', self)
         self.tab2.output.clicked.connect(self.confirmationFunction)
+        self.tab2.stop.clicked.connect(self.stopFunction)
 
         self.setDefaultParameters()
 
@@ -698,6 +703,7 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.plusFour, 13, 4)
         self.tab2.layout.addWidget(self.tab2.plusFive, 13, 5)
         self.tab2.layout.addWidget(self.tab2.output, 14, 5, 1, 2)
+        self.tab2.layout.addWidget(self.tab2.stop, 14, 3)
 
     def setDefaultParameters(self):
 

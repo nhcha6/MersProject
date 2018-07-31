@@ -321,6 +321,7 @@ class MyTableWidget(QWidget):
         Alerts when done!
         """
         print("IT'S DONE")
+
         self.progressBarUpdate.changeFlag()
         self.tab2.output.setEnabled(True)
         self.pushButton1.setEnabled(True)

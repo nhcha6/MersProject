@@ -103,6 +103,7 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
     pool.join()
 
     toWriteQueue.put('stop')
+    writerProcess.join()
     logging.info("All " + spliceType + " !joined")
 
 
@@ -136,6 +137,15 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
 
     logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
 
+def writer(queue):
+    with open("OutputMaster.fasta", "w") as output_handle:
+        while True:
+            toPrint = queue.get()
+            if toPrint == 'stop':
+                return
+            logging.info("Writing to fasta")
+
+            SeqIO.write(createSeqObj(toPrint), output_handle, "fasta")
 
 def fulfillPpmReq(mgfObj, massDict):
     """
@@ -625,14 +635,4 @@ def processLockInit(lockVar):
     global lock
     lock = lockVar
 
-def writer(queue):
-    while True:
-        toPrint = queue.get()
-        if toPrint == 'stop':
-            return
-        logging.info("Writing to fasta")
-        with open("OutputMaster.fasta", "a") as output_handle:
-            SeqIO.write(createSeqObj(toPrint), output_handle, "fasta")
 
-def addToQueue(queue, matchedPeptide):
-    queue.put(matchedPeptide)

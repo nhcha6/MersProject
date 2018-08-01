@@ -87,8 +87,8 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, ))
 
     #spawning writer process
-    #manager = multiprocessing.Manager()
-    toWriteQueue = multiprocessing.Queue()
+    manager = multiprocessing.Manager()
+    toWriteQueue = manager.Queue()
     writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue,))
     writerProcess.start()
 
@@ -109,7 +109,7 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
 
 def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList,
                 maxDistance, finalPath, chargeFlags, mgfObj, toWriteQueue):
-
+    print('hi')
     start = time.time()
     combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
 
@@ -122,6 +122,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     if mgfObj is not None and True in chargeFlags:
         #fulfillPpmReq(mgfObj, massDict)
         matchedPeptides = generateMGFList(mgfObj, massDict)
+        print(matchedPeptides)
         toWriteQueue.put(matchedPeptides)
 
 

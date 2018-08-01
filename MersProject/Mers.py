@@ -109,7 +109,7 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
 
 def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList,
                 maxDistance, finalPath, chargeFlags, mgfObj, toWriteQueue):
-    print('hi')
+
     start = time.time()
     combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
 
@@ -122,7 +122,6 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     if mgfObj is not None and True in chargeFlags:
         #fulfillPpmReq(mgfObj, massDict)
         matchedPeptides = generateMGFList(mgfObj, massDict)
-        print(matchedPeptides)
         toWriteQueue.put(matchedPeptides)
 
 
@@ -139,14 +138,20 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
 
 def writer(queue):
-    with open("OutputMaster.fasta", "w") as output_handle:
+    seenPeptides = set()
+    with open("OutputMaster1.fasta", "w") as output_handle:
         while True:
-            toPrint = queue.get()
-            if toPrint == 'stop':
+            matchedPeptides = queue.get()
+            if matchedPeptides == 'stop':
                 return
+
+            matchedPeptides = matchedPeptides - seenPeptides
+            seenPeptides = seenPeptides.union(matchedPeptides)
             logging.info("Writing to fasta")
 
-            SeqIO.write(createSeqObj(toPrint), output_handle, "fasta")
+
+
+            SeqIO.write(createSeqObj(matchedPeptides), output_handle, "fasta")
 
 def fulfillPpmReq(mgfObj, massDict):
     """

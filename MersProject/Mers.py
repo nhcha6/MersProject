@@ -12,6 +12,7 @@ import sys
 import json
 import logging
 from MGFMain import *
+import atexit
 
 TRANS = "Trans"
 LINEAR = "Linear"
@@ -25,6 +26,7 @@ class Fasta:
     def __init__(self, seqDict):
         self.seqDict = seqDict
         self.entries = len(seqDict)
+        self.allProcessList = []
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                        maxDistance, outputPath, chargeFlags, mgfObj):
@@ -34,7 +36,7 @@ class Fasta:
         """
         # Create a single access point for the mgf object! (Look to passing it on as a parameter.
 
-        allProcessList = []
+        self.allProcessList = []
 
         if transFlag:
             finalPeptide = combinePeptides(self.seqDict)
@@ -42,7 +44,7 @@ class Fasta:
                                                                              modList, outputPath, chargeFlags))
             transProcess.start()
 
-            allProcessList.append(transProcess)
+            self.allProcessList.append(transProcess)
             # combined = {'combined': combined}
             # with open('output.txt', 'wb') as file:
             # file.write(json.dumps(combined))  # use `json.loads` to do the reverse
@@ -52,7 +54,7 @@ class Fasta:
                                                                                   overlapFlag, csvFlag, modList,
                                                                                   maxDistance,
                                                                                   outputPath, chargeFlags, mgfObj))
-            allProcessList.append(cisProcess)
+            self.allProcessList.append(cisProcess)
             cisProcess.start()
 
         if linearFlag:
@@ -61,10 +63,10 @@ class Fasta:
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      modList, maxDistance,
                                                                                      outputPath, chargeFlags, mgfObj))
-            allProcessList.append(linearProcess)
+            self.allProcessList.append(linearProcess)
             linearProcess.start()
 
-        for process in allProcessList:
+        for process in self.allProcessList:
             process.join()
 
 
@@ -638,4 +640,9 @@ def processLockInit(lockVar):
     global lock
     lock = lockVar
 
+def killAllProcesses():
+    for process in self.fasta.allProcessList:
+        process.terminate()
+
+atexit.register(killAllProcesses)
 

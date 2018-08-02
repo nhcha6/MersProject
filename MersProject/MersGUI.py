@@ -77,6 +77,9 @@ class OutputGenerator(QRunnable):
         self.fn(*self.args)
         self.signals.finished.emit()
 
+    def killProcess(self):
+        self.terminate()
+
 
 class MGFImporter(QRunnable):
     """
@@ -267,7 +270,8 @@ class MyTableWidget(QWidget):
         return outputPath
 
     def stopFunction(self):
-        sys.exit()
+        for process in self.fasta.allProcessList:
+            process.terminate()
 
     def confirmationFunction(self):
 
@@ -358,15 +362,15 @@ class MyTableWidget(QWidget):
         """
 
         self.tab2.progressLabel = QLabel('Collating Combinations. Please Wait: ')
-        self.tab2.layout.addWidget(self.tab2.progressLabel, 14, 3, 1, 2)
+        self.tab2.layout.addWidget(self.tab2.progressLabel, 15, 3, 1, 2)
         self.tab2.progressBar = QProgressBar(self)
-        self.tab2.layout.addWidget(self.tab2.progressBar, 15, 3, 1, 4)
+        self.tab2.layout.addWidget(self.tab2.progressBar, 16, 3, 1, 4)
 
-        outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag,
+        self.outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag,
                                     modList, maxDistance, outputPath, chargeFlags)
 
-        outputGen.signals.finished.connect(self.finished)
-        self.threadpool.start(outputGen)
+        self.outputGen.signals.finished.connect(self.finished)
+        self.threadpool.start(self.outputGen)
 
         self.progressBarUpdate = ProgressGenerator()
         self.progressBarUpdate.signals.updateProgBar.connect(self.updateProgressBar)
@@ -733,8 +737,11 @@ class MyTableWidget(QWidget):
             print(currentQTableWidgetItem.row(), currentQTableWidgetItem.column(), currentQTableWidgetItem.text())
 
 
+
 if __name__ == '__main__':
     multiprocessing.freeze_support()
     app = QApplication(sys.argv)
     ex = App()
     sys.exit(app.exec_())
+
+

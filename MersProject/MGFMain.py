@@ -198,6 +198,7 @@ def initIonMass(peptide):
     dict = ionMassDict(blist, ylist)
     return dict
 
+print(initIonMass('ARND'))
 
 # actualMass = 495.25851750000004
 # pepmass = 495.7115

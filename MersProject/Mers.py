@@ -640,9 +640,8 @@ def processLockInit(lockVar):
     global lock
     lock = lockVar
 
-def killAllProcesses():
-    for process in self.fasta.allProcessList:
-        process.terminate()
 
-atexit.register(killAllProcesses)
+
+
+
 

@@ -77,9 +77,6 @@ class OutputGenerator(QRunnable):
         self.fn(*self.args)
         self.signals.finished.emit()
 
-    def killProcess(self):
-        self.terminate()
-
 
 class MGFImporter(QRunnable):
     """
@@ -139,6 +136,9 @@ class App(QMainWindow):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
+    def closeEvent(self, event):
+        print('closed')
+        sys.exit()
 
 class MyTableWidget(QWidget):
 
@@ -199,13 +199,14 @@ class MyTableWidget(QWidget):
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
 
+        atexit.register(self.stopFunction)
+
     def importedMGF(self):
         print("MGF FILE UPLOADED")
         QMessageBox.about(self, "Message", 'MGF file imported.')
 
     def uploadMgf(self, input_path):
         self.mgf = MGF(readMGF(input_path))
-
 
     def uploadMgfPreStep(self):
         """
@@ -270,6 +271,7 @@ class MyTableWidget(QWidget):
         return outputPath
 
     def stopFunction(self):
+        print('in stop function')
         for process in self.fasta.allProcessList:
             process.terminate()
 
@@ -743,5 +745,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = App()
     sys.exit(app.exec_())
+
+
 
 

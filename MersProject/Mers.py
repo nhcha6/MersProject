@@ -22,6 +22,10 @@ logging.basicConfig(level = logging.DEBUG, format = '%(message)s')
 
 class Fasta:
 
+    """
+    Class that represents the input from a fasta file
+    """
+
     def __init__(self, seqDict):
         self.seqDict = seqDict
         self.entries = len(seqDict)
@@ -32,7 +36,6 @@ class Fasta:
         """
         Function that literally combines everything to generate output
         """
-        # Create a single access point for the mgf object! (Look to passing it on as a parameter.
 
         allProcessList = []
 
@@ -43,9 +46,7 @@ class Fasta:
             transProcess.start()
 
             allProcessList.append(transProcess)
-            # combined = {'combined': combined}
-            # with open('output.txt', 'wb') as file:
-            # file.write(json.dumps(combined))  # use `json.loads` to do the reverse
+
 
         if cisFlag:
             cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.seqDict, CIS, mined, maxed,
@@ -71,7 +72,13 @@ class Fasta:
 def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
                        modList, maxDistance, outputPath, chargeFlags, mgfObj):
 
+    """
+    Process that is in charge for dealing with cis and linear. Creates sub processes for every protein to compute
+    their respective output
+    """
+
     finalPath = None
+
     # Open the csv file if the csv file is selected
     if csvFlag:
         finalPath = getFinalPath(outputPath, spliceType)
@@ -83,14 +90,15 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
     if len(seqDict) < num_workers:
         num_workers = len(seqDict)
 
+    # Used to lock write access to file
     lockVar = multiprocessing.Lock()
     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, ))
-
 
     for key, value in seqDict.items():
 
         logging.info(spliceType + " process started for: " + value[0:5])
 
+        # Start the processes for each protein with the targe function being genMassDict
         pool.apply_async(genMassDict, args=(spliceType, key, value, mined, maxed, overlapFlag,
                                             csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfObj))
 
@@ -103,19 +111,31 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
 def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList,
                 maxDistance, finalPath, chargeFlags, mgfObj):
 
+    """
+    Compute the peptides for the given protein
+    """
+
     start = time.time()
+
+    # Get the initial peptides and their positions
     combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
 
+    # Convert it into a dictionary that has a mass
     massDict = combMass(combined, combinedRef)
+    # Apply mods to the dictionary values and update the dictionary
     massDict = applyMods(massDict, modList)
 
+    # Add the charge information along with their masses
     chargeIonMass(massDict, chargeFlags)
 
+    # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
     massDict = editRefMassDict(massDict)
+
+    # If there is an mgf file AND there is a charge selected
     if mgfObj is not None and True in chargeFlags:
         fulfillPpmReq(mgfObj, massDict)
 
-
+    # If csv is selected, write to csv file
     if csvFlag:
         logging.info("Writing locked :(")
         lock.acquire()
@@ -131,7 +151,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
 
 def fulfillPpmReq(mgfObj, massDict):
     """
-    Assumption there are charges.
+    Assumption there are charges. Get the peptides that match, and writes them to the output fasta file
     """
 
     matchedPeptides = generateMGFList(mgfObj, massDict)
@@ -146,23 +166,14 @@ def fulfillPpmReq(mgfObj, massDict):
 
 
 def createSeqObj(matchedPeptides):
+    """
+    Given the set of matchedPeptides, converts all of them into SeqRecord objects and passes back a generator
+    """
     count = 1
     for sequence in matchedPeptides:
 
         yield SeqRecord(Seq(sequence), id=str(len(sequence)) + "|pep"+str(count), description="")
         count += 1
-
-
-def genMassDictSplit(spliceType, peptide, mined, maxed, overlapFlag, modList, maxDistance, chargeFlags):
-    combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
-
-    massDict = combMass(combined, combinedRef)
-    massDict = applyMods(massDict, modList)
-
-    chargeIonMass(massDict, chargeFlags)
-
-    massDict = editRefMassDict(massDict)
-
 
 
 def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance):

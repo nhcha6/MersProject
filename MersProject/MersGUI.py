@@ -202,7 +202,6 @@ class MyTableWidget(QWidget):
 
     def uploadMgf(self, input_path):
         mgfDf, pepmassIonArray = readMGF(input_path)
-        print(pepmassIonArray)
         self.mgf = MGF(mgfDf, pepmassIonArray)
 
 

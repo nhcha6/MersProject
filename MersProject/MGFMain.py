@@ -110,7 +110,6 @@ def readMGF(input_path):
 
 
                 uniqueSpec.add(chargePepmassTup)
-                break
 
     sortDictValues(mgfDf)
     sortDictValues(pepmassIonArray)

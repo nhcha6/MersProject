@@ -201,7 +201,9 @@ class MyTableWidget(QWidget):
         QMessageBox.about(self, "Message", 'MGF file imported.')
 
     def uploadMgf(self, input_path):
-        self.mgf = MGF(readMGF(input_path))
+        mgfDf, pepmassIonArray = readMGF(input_path)
+        print(pepmassIonArray)
+        self.mgf = MGF(mgfDf, pepmassIonArray)
 
 
     def uploadMgfPreStep(self):

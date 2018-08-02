@@ -11,9 +11,10 @@ class MGF:
     Class to represent MGF input data
     """
 
-    def __init__(self, mgfDf):
+    def __init__(self, mgfDf, pepmassIonArray):
         # mgfDf looks like: {'charge': [list of masses]}
         self.mgfDf = mgfDf
+        self.pepmassIonArray = pepmassIonArray
         self.mgfEntries = len(mgfDf)
         self.ppmVal = None
         self.toleranceLevel = None
@@ -25,28 +26,6 @@ class MGF:
         """
         self.ppmVal = ppmVal
         self.toleranceLevel = toleranceLevel
-
-    def removeChargeStates(self, chargeFlags):
-        """
-        Remove all charges that are irrelevant, which is given by the chargeFlags params
-        """
-        firstTrue = True
-        for i in range(0, len(chargeFlags)):
-            if not chargeFlags[i]:
-                # Comparing to i+1 because of charge state!
-
-                # Resolve the bug where would have to reattach the mgf file everytime charge state is changed.
-                if firstTrue:
-                    self.tempMgfDf = self.mgfDf.drop(self.mgfDf[self.mgfDf.CHARGE_STATE == i+1].index)
-                    firstTrue = False
-                else:
-                    self.tempMgfDf.drop(self.mgfDf[self.mgfDf.CHARGE_STATE == i + 1].index, inplace=True)
-
-        self.tempMgfDf.sort_values(by=['CHARGE_STATE', 'PEPMASS'], inplace = True)
-        groupedTempDf = self.tempMgfDf.groupby('CHARGE_STATE')
-        self.tempMgfDf = groupedTempDf['PEPMASS'].unique()
-        self.tempMgfDf = self.tempMgfDf.to_frame()
-        self.tempMgfDf.reset_index(inplace=True)
 
 
 def generateMGFList(mgfObj, massDict):
@@ -105,6 +84,7 @@ def readMGF(input_path):
     uniqueSpec = set()
     colNames = ['CHARGE_STATE', 'PEPMASS']
     mgfDf = {}
+    pepmassIonArray = {}
     with mgf.read(input_path) as mgfReader:
         for spectrum in mgfReader:
 
@@ -113,28 +93,37 @@ def readMGF(input_path):
                 pepmass = spectrum['params']['pepmass'][0]
                 chargePepmassTup = (charge, pepmass)
 
+                mzArray = spectrum['m/z array']
+
                 # Add it to the dataframe if they are not already in the set
                 if chargePepmassTup not in uniqueSpec:
 
                     if charge in mgfDf:
                         mgfDf[charge].append(pepmass)
+                        pepmassIonArray[(charge,pepmass)] = mzArray
                     else:
                         mgfDf[charge] = [pepmass]
+                        pepmassIonArray[(charge,pepmass)] = mzArray
                     # mgfDf.loc[len(mgfDf)] = [spectrum['params']['charge'][0],
                     #                          spectrum['params']['pepmass'][0]]
 
+
+
                 uniqueSpec.add(chargePepmassTup)
+                break
 
-    sortMgfDf(mgfDf)
-    return mgfDf
+    sortDictValues(mgfDf)
+    sortDictValues(pepmassIonArray)
+    return mgfDf, pepmassIonArray
 
-def sortMgfDf(mgfDf):
+
+def sortDictValues(mgfDf):
     for charge, masses in mgfDf.items():
         masses.sort()
-#readMGF('C:/Users/Arpit/Desktop/UROP/InputData/600MB.mgf')
-# mgfObj = MGF(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
-# print((1,mgfObj.mgfDf[1]))
-# print(2,(mgfObj.mgfDf[2]))
+# print(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
+# mgfDf, pepmassIonArray = readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf')
+# mgfObj = MGF(readMGF(mgfDf, pepmassIonArray))
+# print(2,(mgfObj.mgfDf[2][0][3]))
 # print((3,mgfObj.mgfDf[3]))
 
 #readMGF('C:/Users/Administrator/Desktop/UROP/InputData/918MB.mgf')

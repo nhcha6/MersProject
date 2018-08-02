@@ -137,18 +137,21 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
 
     logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
 
+
 def writer(queue):
     seenPeptides = set()
     with open("OutputMaster2.fasta", "w") as output_handle:
         while True:
             matchedPeptides = queue.get()
             if matchedPeptides == 'stop':
+                logging.info("ALL LINEAR COMPUTED, STOP MESSAGE SENT")
                 break
 
             seenPeptides = seenPeptides.union(matchedPeptides)
 
         logging.info("Writing to fasta")
         SeqIO.write(createSeqObj(seenPeptides), output_handle, "fasta")
+
 
 def fulfillPpmReq(mgfObj, massDict):
     """
@@ -171,9 +174,10 @@ def createSeqObj(matchedPeptides):
     seqRecords = []
     for sequence in matchedPeptides:
 
-        seq = SeqRecord(Seq(sequence), id=str(len(sequence)) + "|pep"+str(count), description="")
-        seqRecords.append(seq)
+        yield SeqRecord(Seq(sequence), id=str(len(sequence)) + "|pep"+str(count), description="")
+
         count += 1
+
     return seqRecords
 
 

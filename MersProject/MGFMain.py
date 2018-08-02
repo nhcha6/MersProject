@@ -4,17 +4,25 @@ from pyteomics import mgf
 import math
 from bisect import bisect_left
 
-# 347805 entries - 6 minutes
+
 class MGF:
 
+    """
+    Class to represent MGF input data
+    """
+
     def __init__(self, mgfDf):
+        # mgfDf looks like: {'charge': [list of masses]}
         self.mgfDf = mgfDf
         self.mgfEntries = len(mgfDf)
         self.ppmVal = None
         self.toleranceLevel = None
 
-
     def initValues(self, ppmVal, toleranceLevel):
+
+        """
+        Add extra info required such as the ppmValue!
+        """
         self.ppmVal = ppmVal
         self.toleranceLevel = toleranceLevel
 
@@ -42,7 +50,10 @@ class MGF:
 
 
 def generateMGFList(mgfObj, massDict):
+    """
 
+    Generates the list of unique peptides that have masses that match within the specified
+    """
     if mgfObj.mgfDf:
 
         matchedPeptides = set()
@@ -65,11 +76,6 @@ def generateMGFList(mgfObj, massDict):
                 else:
                     break
 
-
-                # if pepMatch(chargeMass, chargeList[closest], mgfObj.ppmVal):
-                #     diffPpm = calcPpm(chargeMass, chargeList[closest])
-                #
-                #     print(key, charge, chargeMass, chargeList[closest], diffPpm)
         return matchedPeptides
 
 

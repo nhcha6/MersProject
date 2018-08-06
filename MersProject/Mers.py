@@ -86,9 +86,8 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
     lockVar = multiprocessing.Lock()
     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, ))
 
-    #spawning writer process
-    manager = multiprocessing.Manager()
-    toWriteQueue = manager.Queue()
+
+    toWriteQueue = multiprocessing.Queue()
     writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue,))
     writerProcess.start()
 
@@ -96,8 +95,11 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
 
         logging.info(spliceType + " process started for: " + value[0:5])
 
-        pool.apply_async(genMassDict, args=(spliceType, key, value, mined, maxed, overlapFlag,
-                                            csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfObj, toWriteQueue))
+        result = pool.apply_async(genMassDict, args=(spliceType, key, value, mined, maxed, overlapFlag,
+                                                     csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfObj))
+        matchedPeptides = result.get()
+        toWriteQueue.put(matchedPeptides)
+
 
     pool.close()
     pool.join()
@@ -108,7 +110,7 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
 
 
 def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList,
-                maxDistance, finalPath, chargeFlags, mgfObj, toWriteQueue):
+                maxDistance, finalPath, chargeFlags, mgfObj):
 
     start = time.time()
     combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
@@ -122,7 +124,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     if mgfObj is not None and True in chargeFlags:
         #fulfillPpmReq(mgfObj, massDict)
         matchedPeptides = generateMGFList(mgfObj, massDict)
-        toWriteQueue.put(matchedPeptides)
+        return matchedPeptides
 
 
     if csvFlag:

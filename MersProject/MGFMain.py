@@ -44,16 +44,23 @@ def generateMGFList(mgfObj, massDict):
             else:
                 alphaKey = key
 
+            # ion dict -> {'b/yion: mass'}
+
             for charge, chargeMass in value[2].items():
+                simComparisons = []
+                # Shift to outside for charge for loop
                 if alphaKey not in matchedPeptides:
 
                     # chargeList = mgfObj.mgfDf[charge]
                     closest = takeClosest(mgfObj.mgfDf[charge], chargeMass)
                     if pepMatch(chargeMass, closest, mgfObj.ppmVal):
+                        mzArray = mgfObj.pepmassIonArray((charge, closest))
+                        # count similar ions and add that to simComparisons
 
                         matchedPeptides.add(alphaKey)
                 else:
                     break
+            # check it passes max simcomparisons and then add alphakey to matchedpeptides!
 
         return matchedPeptides
 

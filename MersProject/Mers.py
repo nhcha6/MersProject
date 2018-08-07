@@ -149,8 +149,8 @@ def writer(queue):
             if matchedPeptides == 'stop':
                 logging.info("ALL LINEAR COMPUTED, STOP MESSAGE SENT")
                 break
-
             seenPeptides = seenPeptides.union(matchedPeptides)
+            logging.info("Adding matched to seen")
 
         logging.info("Writing to fasta")
         SeqIO.write(createSeqObj(seenPeptides), output_handle, "fasta")

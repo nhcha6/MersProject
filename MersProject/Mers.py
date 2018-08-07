@@ -84,10 +84,11 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
         num_workers = len(seqDict)
 
     lockVar = multiprocessing.Lock()
-    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, ))
 
 
     toWriteQueue = multiprocessing.Queue()
+    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, toWriteQueue,))
+
     writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue,))
     writerProcess.start()
 
@@ -95,10 +96,9 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
 
         logging.info(spliceType + " process started for: " + value[0:5])
 
-        result = pool.apply_async(genMassDict, args=(spliceType, key, value, mined, maxed, overlapFlag,
-                                                     csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfObj))
-        matchedPeptides = result.get()
-        toWriteQueue.put(matchedPeptides)
+        pool.apply_async(genMassDict, args=(spliceType, key, value, mined, maxed, overlapFlag,
+                                            csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfObj))
+
 
 
     pool.close()
@@ -124,7 +124,8 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     if mgfObj is not None and True in chargeFlags:
         #fulfillPpmReq(mgfObj, massDict)
         matchedPeptides = generateMGFList(mgfObj, massDict)
-        return matchedPeptides
+        genMassDict.toWriteQueue.put(matchedPeptides)
+
 
 
     if csvFlag:
@@ -635,7 +636,7 @@ def nth_replace(string, old, new, n=1, option='only nth'):
     return new.join(nth_split)
 
 
-def processLockInit(lockVar):
+def processLockInit(lockVar, toWriteQueue):
 
     """
     Designed to set up a global lock for a child processes (child per protein)
@@ -643,5 +644,5 @@ def processLockInit(lockVar):
 
     global lock
     lock = lockVar
-
+    genMassDict.toWriteQueue = toWriteQueue
 

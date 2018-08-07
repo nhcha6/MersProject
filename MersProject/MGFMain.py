@@ -102,6 +102,9 @@ def readMGF(input_path):
 
                 mzArray = spectrum['m/z array']
 
+                # bring pepmassIonArray out here so that duplicates aren't ignored. If the the chargepepmasstuple
+                # already exists, append the mzArray to the existing one as done below.
+
                 # Add it to the dataframe if they are not already in the set
                 if chargePepmassTup not in uniqueSpec:
 
@@ -111,6 +114,7 @@ def readMGF(input_path):
                     else:
                         mgfDf[charge] = [pepmass]
                         pepmassIonArray[(charge,pepmass)] = mzArray
+
                     # mgfDf.loc[len(mgfDf)] = [spectrum['params']['charge'][0],
                     #                          spectrum['params']['pepmass'][0]]
 

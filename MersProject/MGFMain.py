@@ -55,7 +55,7 @@ def generateMGFList(mgfObj, massDict):
                     closest = takeClosest(mgfObj.mgfDf[charge], chargeMass)
                     if pepMatch(chargeMass, closest, mgfObj.ppmVal):
                         mzArray = mgfObj.pepmassIonArray((charge, closest))
-                        # count similar ions and add that to simComparisons
+                        # count similar ions and add that to simComparisons. Note that mzArray have multiple lists
 
                         matchedPeptides.add(alphaKey)
                 else:

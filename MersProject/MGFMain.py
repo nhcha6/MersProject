@@ -113,7 +113,7 @@ def readMGF(input_path):
 
                 # Add it to the dataframe if they are not already in the set
                 if chargePepmassTup not in uniqueSpec and maxIntensity > 5000:
-                    print(chargePepmassTup, maxIntensity)
+
                     if charge in mgfDf:
                         mgfDf[charge].append(pepmass)
                     else:

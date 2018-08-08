@@ -164,46 +164,6 @@ def takeClosest(myList, myNumber):
     else:
        return before
 
-def createBYIons(peptide):
-    blist = []
-    ylist = []
-    for i in range (0,len(peptide)-1):
-        b = peptide[0:i+1]
-        y = peptide[i+1:]
-        blist.append(b)
-        ylist.append(y)
-    return blist, ylist
-
-
-def bMassCalc(peptide):
-    mass = 1
-    for char in peptide:
-        mass += monoAminoMass[char]
-    return mass
-
-def yMassCalc(peptide):
-    mass = H20_MASS + 1
-    for char in peptide:
-        mass += monoAminoMass[char]
-    return mass
-
-def ionMassDict(blist,ylist):
-    dict = {}
-    for i in range(0,len(blist)):
-        pepB = blist[i]
-        pepY = ylist[i]
-        dict[pepB] = bMassCalc(pepB)
-        dict[pepY] = yMassCalc(pepY)
-    return dict
-
-"""returns a dictionary holding the b and y ions and their correspondigg mass"""
-def initIonMass(peptide):
-    blist, ylist = createBYIons(peptide)
-    dict = ionMassDict(blist, ylist)
-    return dict
-
-print(initIonMass('ARND'))
-
 # actualMass = 495.25851750000004
 # pepmass = 495.7115
 # ppmVal = 90

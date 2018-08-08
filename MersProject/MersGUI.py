@@ -266,6 +266,9 @@ class MyTableWidget(QWidget):
             return False
         return outputPath
 
+    def stopFunction(self):
+        sys.exit()
+
     def confirmationFunction(self):
 
         """
@@ -321,6 +324,7 @@ class MyTableWidget(QWidget):
         Alerts when done!
         """
         print("IT'S DONE")
+
         self.progressBarUpdate.changeFlag()
         self.tab2.output.setEnabled(True)
         self.pushButton1.setEnabled(True)
@@ -625,15 +629,15 @@ class MyTableWidget(QWidget):
         self.tab1.ppmLabel = QLabel('PPM: ')
         self.tab1.ppmCombo = QComboBox(self)
 
-        self.tab1.toleranceLabel = QLabel('Accuracy Level: ')
+        self.tab1.toleranceLabel = QLabel('Intensity Threshold: ')
         self.tab1.toleranceCombo = QComboBox(self)
 
         for i in range(10, 110, 10):
             self.tab1.ppmCombo.addItem(str(i))
 
-        ppms = [0.1, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001, 0.00000001, 0.000000001]
-        for ppm in ppms:
-            self.tab1.toleranceCombo.addItem(str(ppm))
+        intensities = [0, 10, 50, 100, 500, 1000, 5000, 10000]
+        for intensity in intensities:
+            self.tab1.toleranceCombo.addItem(str(intensity))
 
     def addTab1ParameterWidgets(self):
         self.tab1.layout.setColumnStretch(0, 1)
@@ -660,7 +664,9 @@ class MyTableWidget(QWidget):
 
         # create generate output push button
         self.tab2.output = QPushButton('Generate Output!', self)
+        self.tab2.stop = QPushButton('Stop Process', self)
         self.tab2.output.clicked.connect(self.confirmationFunction)
+        self.tab2.stop.clicked.connect(self.stopFunction)
 
         self.setDefaultParameters()
 
@@ -697,6 +703,7 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.plusFour, 13, 4)
         self.tab2.layout.addWidget(self.tab2.plusFive, 13, 5)
         self.tab2.layout.addWidget(self.tab2.output, 14, 5, 1, 2)
+        self.tab2.layout.addWidget(self.tab2.stop, 14, 3)
 
     def setDefaultParameters(self):
 

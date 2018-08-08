@@ -5,6 +5,7 @@ from TransPlaceholder import *
 import csv
 from MonoAminoAndMods import *
 import multiprocessing
+from multiprocessing import Queue
 import time
 import sys
 # import h5py
@@ -18,7 +19,6 @@ CIS = "Cis"
 
 logging.basicConfig(level = logging.DEBUG, format = '%(message)s')
 #logging.disable(logging.INFO)
-
 
 class Fasta:
 
@@ -92,7 +92,12 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
 
     # Used to lock write access to file
     lockVar = multiprocessing.Lock()
-    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, ))
+
+    toWriteQueue = multiprocessing.Queue()
+    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, toWriteQueue,))
+
+    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue,))
+    writerProcess.start()
 
     for key, value in seqDict.items():
 
@@ -102,9 +107,13 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
         pool.apply_async(genMassDict, args=(spliceType, key, value, mined, maxed, overlapFlag,
                                             csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfObj))
 
+
+
     pool.close()
     pool.join()
 
+    toWriteQueue.put('stop')
+    writerProcess.join()
     logging.info("All " + spliceType + " !joined")
 
 
@@ -133,7 +142,10 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
 
     # If there is an mgf file AND there is a charge selected
     if mgfObj is not None and True in chargeFlags:
-        fulfillPpmReq(mgfObj, massDict)
+        #fulfillPpmReq(mgfObj, massDict)
+        matchedPeptides = generateMGFList(mgfObj, massDict)
+        genMassDict.toWriteQueue.put(matchedPeptides)
+
 
     # If csv is selected, write to csv file
     if csvFlag:
@@ -147,6 +159,25 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     end = time.time()
 
     logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
+
+
+def writer(queue):
+    seenPeptides = []
+    with open("OutputMaster2.fasta", "w") as output_handle:
+        while True:
+            matchedPeptides = queue.get()
+            if matchedPeptides == 'stop':
+                logging.info("ALL LINEAR COMPUTED, STOP MESSAGE SENT")
+                break
+            start = time.time()
+            seenPeptides.extend(matchedPeptides)
+            end = time.time()
+            total = end-start
+            logging.info("Added matched in: " + str(total))
+
+        seenPeptides = set(seenPeptides)
+        logging.info("Writing to fasta")
+        SeqIO.write(createSeqObj(seenPeptides), output_handle, "fasta")
 
 
 def fulfillPpmReq(mgfObj, massDict):
@@ -170,10 +201,14 @@ def createSeqObj(matchedPeptides):
     Given the set of matchedPeptides, converts all of them into SeqRecord objects and passes back a generator
     """
     count = 1
+    seqRecords = []
     for sequence in matchedPeptides:
 
         yield SeqRecord(Seq(sequence), id=str(len(sequence)) + "|pep"+str(count), description="")
+
         count += 1
+
+    return seqRecords
 
 
 def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance):
@@ -616,7 +651,7 @@ def nth_replace(string, old, new, n=1, option='only nth'):
     return new.join(nth_split)
 
 
-def processLockInit(lockVar):
+def processLockInit(lockVar, toWriteQueue):
 
     """
     Designed to set up a global lock for a child processes (child per protein)
@@ -624,3 +659,5 @@ def processLockInit(lockVar):
 
     global lock
     lock = lockVar
+    genMassDict.toWriteQueue = toWriteQueue
+

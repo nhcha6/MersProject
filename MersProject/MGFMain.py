@@ -12,42 +12,12 @@ class MGF:
     Class to represent MGF input data
     """
 
-    def __init__(self, mgfDf):
+    def __init__(self, mgfDf, ppmVal, intensityThreshold):
         # mgfDf looks like: {'charge': [list of masses]}
         self.mgfDf = mgfDf
         self.mgfEntries = len(mgfDf)
-        self.ppmVal = None
-        self.toleranceLevel = None
-
-    def initValues(self, ppmVal, toleranceLevel):
-
-        """
-        Add extra info required such as the ppmValue!
-        """
         self.ppmVal = ppmVal
-        self.toleranceLevel = toleranceLevel
-
-    def removeChargeStates(self, chargeFlags):
-        """
-        Remove all charges that are irrelevant, which is given by the chargeFlags params
-        """
-        firstTrue = True
-        for i in range(0, len(chargeFlags)):
-            if not chargeFlags[i]:
-                # Comparing to i+1 because of charge state!
-
-                # Resolve the bug where would have to reattach the mgf file everytime charge state is changed.
-                if firstTrue:
-                    self.tempMgfDf = self.mgfDf.drop(self.mgfDf[self.mgfDf.CHARGE_STATE == i+1].index)
-                    firstTrue = False
-                else:
-                    self.tempMgfDf.drop(self.mgfDf[self.mgfDf.CHARGE_STATE == i + 1].index, inplace=True)
-
-        self.tempMgfDf.sort_values(by=['CHARGE_STATE', 'PEPMASS'], inplace = True)
-        groupedTempDf = self.tempMgfDf.groupby('CHARGE_STATE')
-        self.tempMgfDf = groupedTempDf['PEPMASS'].unique()
-        self.tempMgfDf = self.tempMgfDf.to_frame()
-        self.tempMgfDf.reset_index(inplace=True)
+        self.intensityThreshold = intensityThreshold
 
 
 def generateMGFList(mgfObj, massDict):
@@ -137,7 +107,7 @@ def sortMgfDf(mgfDf):
         masses.sort()
 
 #readMGF('C:/Users/Arpit/Desktop/UROP/InputData/600MB.mgf')
-mgfObj = MGF(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
+# mgfObj = MGF(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
 # print((1,mgfObj.mgfDf[1]))
 # print(2,(mgfObj.mgfDf[2]))
 # print((3,mgfObj.mgfDf[3]))

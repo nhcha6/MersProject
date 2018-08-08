@@ -154,6 +154,7 @@ class MyTableWidget(QWidget):
         # self.fasta will store the fasta class once initialised
         self.fasta = None
         self.mgf = None
+        self.mgfPath = None
 
         # Init threading
         self.threadpool = QThreadPool()
@@ -200,8 +201,9 @@ class MyTableWidget(QWidget):
         print("MGF FILE UPLOADED")
         QMessageBox.about(self, "Message", 'MGF file imported.')
 
-    def uploadMgf(self, input_path):
-        self.mgf = MGF(readMGF(input_path))
+    def uploadMgf(self, input_path, ppmVal, intensityThreshold):
+        self.mgf = MGF(readMGF(input_path), ppmVal, intensityThreshold)
+
 
 
     def uploadMgfPreStep(self):
@@ -213,11 +215,12 @@ class MyTableWidget(QWidget):
         mgfTest = fname[0][-3:]
 
         if mgfTest == 'mgf':
+            self.mgfPath = fname[0]
 
-            mgfGen = MGFImporter(self.uploadMgf, fname[0])
-
-            mgfGen.signals.finished.connect(self.importedMGF)
-            self.threadpool.start(mgfGen)
+            # mgfGen = MGFImporter(self.uploadMgf, fname[0])
+            #
+            # mgfGen.signals.finished.connect(self.importedMGF)
+            # self.threadpool.start(mgfGen)
 
 
         # Ensuring program does not crash if no file is selected
@@ -277,7 +280,7 @@ class MyTableWidget(QWidget):
         called which begins generating results
         """
 
-        ppmVal, toleranceLevel, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, \
+        ppmVal, intensityThreshold, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, \
         modList, outputFlag, chargeFlags \
             = self.getInputParams()
 
@@ -303,8 +306,14 @@ class MyTableWidget(QWidget):
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
             if reply == QMessageBox.Yes:
-                if self.mgf is not None:
-                    self.mgf.initValues(ppmVal, toleranceLevel)
+
+                print(self.mgfPath)
+                # UPLOAD MGF FILE HERE
+                mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, ppmVal, intensityThreshold)
+                mgfGen.signals.finished.connect(self.importedMGF)
+                self.threadpool.start(mgfGen)
+
+
                 if csvFlag:
                     outputPath = self.getOutputPath()
                     if outputPath is not False:
@@ -400,7 +409,10 @@ class MyTableWidget(QWidget):
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
 
-    
+        while self.mgf == None:
+            pass
+
+        print("ABOUT TO DO OUTPUT")
 
         self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                                   maxDistance, outputPath, chargeFlags, self.mgf)

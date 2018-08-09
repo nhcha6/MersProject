@@ -105,15 +105,20 @@ def readMGF(input_path):
     Creates a pandas dataframe based on mgf data
     """
     uniqueSpec = set()
-    colNames = ['CHARGE_STATE', 'PEPMASS']
+
     mgfDf = {}
+
     pepmassIonArray = {}
+
     with mgf.read(input_path) as mgfReader:
         for spectrum in mgfReader:
 
             if 'charge' in spectrum['params'].keys():
                 charge = spectrum['params']['charge'][0]
                 pepmass = spectrum['params']['pepmass'][0]
+
+                maxIntensity = max(spectrum['intensity array'])
+
                 chargePepmassTup = (charge, pepmass)
 
                 mzArray = spectrum['m/z array']
@@ -122,7 +127,7 @@ def readMGF(input_path):
                 # already exists, append the mzArray to the existing one as done below.
 
                 # Add it to the dataframe if they are not already in the set
-                if chargePepmassTup not in uniqueSpec:
+                if chargePepmassTup not in uniqueSpec and maxIntensity > 5000:
 
                     if charge in mgfDf:
                         mgfDf[charge].append(pepmass)
@@ -139,8 +144,6 @@ def readMGF(input_path):
 
                     # mgfDf.loc[len(mgfDf)] = [spectrum['params']['charge'][0],
                     #                          spectrum['params']['pepmass'][0]]
-
-
 
                 uniqueSpec.add(chargePepmassTup)
 
@@ -162,6 +165,11 @@ def sortPepmassIonArray(pepmassIonArray):
 # mgfDf, pepmassIonArray = readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf')
 # mgfObj = MGF(readMGF(mgfDf, pepmassIonArray))
 # print(2,(mgfObj.mgfDf[2][0][3]))
+
+# readMGF('C:/Users/Arpit/Desktop/UROP/InputData/600MB.mgf')
+# mgfObj = MGF(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
+# print((1,mgfObj.mgfDf[1]))
+# print(2,(mgfObj.mgfDf[2]))
 # print((3,mgfObj.mgfDf[3]))
 
 #readMGF('C:/Users/Administrator/Desktop/UROP/InputData/918MB.mgf')

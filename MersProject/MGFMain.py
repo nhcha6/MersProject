@@ -129,7 +129,7 @@ def readMGF(input_path):
                 # already exists, append the mzArray to the existing one as done below.
 
                 # Add it to the dataframe if they are not already in the set
-                if chargePepmassTup not in uniqueSpec and maxIntensity > 5000:
+                if chargePepmassTup not in uniqueSpec and maxIntensity > 0:
 
                     if charge in mgfDf:
                         mgfDf[charge].append(pepmass)

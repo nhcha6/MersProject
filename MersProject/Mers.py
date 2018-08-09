@@ -12,6 +12,7 @@ import sys
 import json
 import logging
 from MGFMain import *
+import atexit
 
 TRANS = "Trans"
 LINEAR = "Linear"
@@ -29,6 +30,7 @@ class Fasta:
     def __init__(self, seqDict):
         self.seqDict = seqDict
         self.entries = len(seqDict)
+        self.allProcessList = []
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                        maxDistance, outputPath, chargeFlags, mgfObj):
@@ -37,23 +39,24 @@ class Fasta:
         Function that literally combines everything to generate output
         """
 
-        allProcessList = []
+        self.allProcessList = []
 
         if transFlag:
             finalPeptide = combinePeptides(self.seqDict)
             transProcess = multiprocessing.Process(target=transOutput, args=(finalPeptide, mined, maxed, overlapFlag,
                                                                              modList, outputPath, chargeFlags))
-            transProcess.start()
-
             allProcessList.append(transProcess)
-
+            self.allProcessList.append(transProcess)
+            # combined = {'combined': combined}
+            # with open('output.txt', 'wb') as file:
+            # file.write(json.dumps(combined))  # use `json.loads` to do the reverse
 
         if cisFlag:
             cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.seqDict, CIS, mined, maxed,
                                                                                   overlapFlag, csvFlag, modList,
                                                                                   maxDistance,
                                                                                   outputPath, chargeFlags, mgfObj))
-            allProcessList.append(cisProcess)
+            self.allProcessList.append(cisProcess)
             cisProcess.start()
 
         if linearFlag:
@@ -62,10 +65,10 @@ class Fasta:
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      modList, maxDistance,
                                                                                      outputPath, chargeFlags, mgfObj))
-            allProcessList.append(linearProcess)
+            self.allProcessList.append(linearProcess)
             linearProcess.start()
 
-        for process in allProcessList:
+        for process in self.allProcessList:
             process.join()
 
 
@@ -660,4 +663,8 @@ def processLockInit(lockVar, toWriteQueue):
     global lock
     lock = lockVar
     genMassDict.toWriteQueue = toWriteQueue
+
+
+
+
 

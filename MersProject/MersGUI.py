@@ -136,6 +136,9 @@ class App(QMainWindow):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
+    def closeEvent(self, event):
+        print('closed')
+        sys.exit()
 
 class MyTableWidget(QWidget):
 
@@ -196,6 +199,8 @@ class MyTableWidget(QWidget):
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
 
+        atexit.register(self.stopFunction)
+
     def importedMGF(self):
         print("MGF FILE UPLOADED")
         QMessageBox.about(self, "Message", 'MGF file imported.')
@@ -203,7 +208,6 @@ class MyTableWidget(QWidget):
     def uploadMgf(self, input_path):
         mgfDf, pepmassIonArray = readMGF(input_path)
         self.mgf = MGF(mgfDf, pepmassIonArray)
-
 
     def uploadMgfPreStep(self):
         """
@@ -268,7 +272,9 @@ class MyTableWidget(QWidget):
         return outputPath
 
     def stopFunction(self):
-        sys.exit()
+        print('in stop function')
+        for process in self.fasta.allProcessList:
+            process.terminate()
 
     def confirmationFunction(self):
 
@@ -359,15 +365,15 @@ class MyTableWidget(QWidget):
         """
 
         self.tab2.progressLabel = QLabel('Collating Combinations. Please Wait: ')
-        self.tab2.layout.addWidget(self.tab2.progressLabel, 14, 3, 1, 2)
+        self.tab2.layout.addWidget(self.tab2.progressLabel, 15, 3, 1, 2)
         self.tab2.progressBar = QProgressBar(self)
-        self.tab2.layout.addWidget(self.tab2.progressBar, 15, 3, 1, 4)
+        self.tab2.layout.addWidget(self.tab2.progressBar, 16, 3, 1, 4)
 
-        outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag,
+        self.outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag,
                                     modList, maxDistance, outputPath, chargeFlags)
 
-        outputGen.signals.finished.connect(self.finished)
-        self.threadpool.start(outputGen)
+        self.outputGen.signals.finished.connect(self.finished)
+        self.threadpool.start(self.outputGen)
 
         self.progressBarUpdate = ProgressGenerator()
         self.progressBarUpdate.signals.updateProgBar.connect(self.updateProgressBar)
@@ -734,8 +740,13 @@ class MyTableWidget(QWidget):
             print(currentQTableWidgetItem.row(), currentQTableWidgetItem.column(), currentQTableWidgetItem.text())
 
 
+
 if __name__ == '__main__':
     multiprocessing.freeze_support()
     app = QApplication(sys.argv)
     ex = App()
     sys.exit(app.exec_())
+
+
+
+

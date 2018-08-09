@@ -51,29 +51,28 @@ def generateMGFList(mgfObj, massDict):
                 alphaKey = key
 
             # ion dict -> {'b/yion: mass'}
-            byIonDict = initIonMass(key)
-            byIonArray = sortBYDict(byIonDict)
+
             #print(byIonArray)
 
             for charge, chargeMass in value[2].items():
                 # Shift to outside for charge for loop
                 if alphaKey not in matchedPeptides:
 
-                    #chargeList = mgfObj.mgfDf[charge]
-
                     closest = takeClosest(mgfObj.mgfDf[charge], chargeMass)
                     if pepMatch(chargeMass, closest, mgfObj.ppmVal):
 
-                        mzArray = mgfObj.pepmassIonArray[(charge, closest)]
-                        #print(len(mzArray))
-                        simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
-                        print(simIons)
+                        #mzArray = mgfObj.pepmassIonArray[(charge, closest)]
+                        #simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
 
                         if mgfObj.byIonFlag == False:
                             matchedPeptides.add(alphaKey)
-                        elif simIons >= mgfObj.minSimBy:
-                            print('wooo')
-                            matchedPeptides.add(alphaKey)
+                        else:
+                            byIonDict = initIonMass(key)
+                            byIonArray = sortBYDict(byIonDict)
+                            mzArray = mgfObj.pepmassIonArray[(charge, closest)]
+                            simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
+                            if simIons >= mgfObj.minSimBy:
+                                matchedPeptides.add(alphaKey)
 
                         # count similar ions and add that to simComparisons. Note that mzArray have multiple lists
                         #matchedPeptides.add(alphaKey)
@@ -244,8 +243,6 @@ def sortBYDict(byIonDict):
 
 def findSimIons(mzArray, byIons, accuracy):
     simIonsArray = []
-    #print(byIons)
-    #print(mzArray)
     for array in mzArray:
         simTemp = 0
         for mass in byIons:
@@ -258,13 +255,6 @@ def findSimIons(mzArray, byIons, accuracy):
         simIons = max(simIonsArray)
     return simIons
 
-
-byIonDict = initIonMass('ARND')
-print(byIonDict)
-byIonArray = sortBYDict(byIonDict)
-print(byIonArray)
-testMz = [[72, 140, 248, 342, 356], [72, 248, 342, 404]]
-print(findSimIons(testMz, byIonArray, 1))
 
 # actualMass = 495.25851750000004
 # pepmass = 495.7115

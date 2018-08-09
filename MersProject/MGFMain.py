@@ -18,6 +18,9 @@ class MGF:
         self.mgfEntries = len(mgfDf)
         self.ppmVal = None
         self.toleranceLevel = None
+        self.byIonAccuracy = 0.1
+        self.minSimBy = 2
+        self.byIonFlag = True
 
     def initValues(self, ppmVal, toleranceLevel):
 
@@ -45,21 +48,32 @@ def generateMGFList(mgfObj, massDict):
                 alphaKey = key
 
             # ion dict -> {'b/yion: mass'}
-            #byIonDict = initIonMass(key)
-            #print(byIonDict)
+            byIonDict = initIonMass(key)
+            byIonArray = sortBYDict(byIonDict)
+            #print(byIonArray)
 
             for charge, chargeMass in value[2].items():
-                simComparisons = []
                 # Shift to outside for charge for loop
                 if alphaKey not in matchedPeptides:
 
-                    # chargeList = mgfObj.mgfDf[charge]
+                    #chargeList = mgfObj.mgfDf[charge]
+
                     closest = takeClosest(mgfObj.mgfDf[charge], chargeMass)
                     if pepMatch(chargeMass, closest, mgfObj.ppmVal):
-                        mzArray = mgfObj.pepmassIonArray((charge, closest))
+                        mzArray = mgfObj.pepmassIonArray[(charge, closest)]
+                        #print(len(mzArray))
+                        simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
+                        print(simIons)
+
+                        if mgfObj.byIonFlag == False:
+                            matchedPeptides.add(alphaKey)
+                        elif simIons >= mgfObj.minSimBy:
+                            print('wooo')
+                            matchedPeptides.add(alphaKey)
+
                         # count similar ions and add that to simComparisons. Note that mzArray have multiple lists
 
-                        matchedPeptides.add(alphaKey)
+                        #matchedPeptides.add(alphaKey)
                 else:
                     break
             # check it passes max simcomparisons and then add alphakey to matchedpeptides!
@@ -119,7 +133,7 @@ def readMGF(input_path):
 
                 if chargePepmassTup in pepmassIonArray:
                     pepmassIonArray[chargePepmassTup].append(mzArray)
-                    # print(pepmassIonArray[chargePepmassTup])
+                    #print(pepmassIonArray[chargePepmassTup])
                 else:
                     pepmassIonArray[chargePepmassTup] = [mzArray]
 
@@ -210,7 +224,37 @@ def initIonMass(peptide):
     dict = ionMassDict(blist, ylist)
     return dict
 
-print(initIonMass('ARND'))
+def sortBYDict(byIonDict):
+    byIonArray = []
+    for key, value in byIonDict.items():
+        byIonArray.append(value)
+    byIonArray.sort()
+    return byIonArray
+
+def findSimIons(mzArray, byIons, accuracy):
+    simIonsArray = []
+    #print(byIons)
+    #print(mzArray)
+    for array in mzArray:
+        simTemp = 0
+        for mass in byIons:
+            closest = takeClosest(array, mass)
+            upperThresh = mass + accuracy
+            lowerThresh = mass - accuracy
+            if lowerThresh < closest < upperThresh:
+                simTemp += 1
+            simIonsArray.append(simTemp)
+        simIons = max(simIonsArray)
+    return simIons
+
+
+byIonDict = initIonMass('ARND')
+print(byIonDict)
+byIonArray = sortBYDict(byIonDict)
+print(byIonArray)
+testMz = [[72, 140, 248, 342, 356], [72, 248, 342, 404]]
+print(findSimIons(testMz, byIonArray, 1))
+
 # actualMass = 495.25851750000004
 # pepmass = 495.7115
 # ppmVal = 90

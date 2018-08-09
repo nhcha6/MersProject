@@ -45,6 +45,8 @@ def generateMGFList(mgfObj, massDict):
                 alphaKey = key
 
             # ion dict -> {'b/yion: mass'}
+            #byIonDict = initIonMass(key)
+            #print(byIonDict)
 
             for charge, chargeMass in value[2].items():
                 simComparisons = []
@@ -110,10 +112,16 @@ def readMGF(input_path):
 
                     if charge in mgfDf:
                         mgfDf[charge].append(pepmass)
-                        pepmassIonArray[(charge,pepmass)] = mzArray
+                        #pepmassIonArray[(charge,pepmass)] = mzArray
                     else:
                         mgfDf[charge] = [pepmass]
-                        pepmassIonArray[(charge,pepmass)] = mzArray
+                        #pepmassIonArray[(charge,pepmass)] = mzArray
+
+                if chargePepmassTup in pepmassIonArray:
+                    pepmassIonArray[chargePepmassTup].append(mzArray)
+                    # print(pepmassIonArray[chargePepmassTup])
+                else:
+                    pepmassIonArray[chargePepmassTup] = [mzArray]
 
                     # mgfDf.loc[len(mgfDf)] = [spectrum['params']['charge'][0],
                     #                          spectrum['params']['pepmass'][0]]
@@ -122,14 +130,20 @@ def readMGF(input_path):
 
                 uniqueSpec.add(chargePepmassTup)
 
-    sortDictValues(mgfDf)
-    sortDictValues(pepmassIonArray)
+    sortMgfDFValues(mgfDf)
+    sortPepmassIonArray(pepmassIonArray)
     return mgfDf, pepmassIonArray
 
 
-def sortDictValues(mgfDf):
+def sortMgfDFValues(mgfDf):
     for charge, masses in mgfDf.items():
         masses.sort()
+
+def sortPepmassIonArray(pepmassIonArray):
+    for chargeMassTup, masses in pepmassIonArray.items():
+        for list in masses:
+            list.sort()
+
 # print(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
 # mgfDf, pepmassIonArray = readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf')
 # mgfObj = MGF(readMGF(mgfDf, pepmassIonArray))

@@ -308,7 +308,7 @@ class MyTableWidget(QWidget):
 
             if reply == QMessageBox.Yes:
                 if self.mgf is not None:
-                    self.mgf.initValues(ppmVal, toleranceLevel)
+                    self.mgf.initValues(ppmVal, toleranceLevel, minByIon, byIonAccuracy, byIonFlag)
                 if csvFlag:
                     outputPath = self.getOutputPath()
                     if outputPath is not False:
@@ -550,8 +550,8 @@ class MyTableWidget(QWidget):
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(),
                    self.tab2.mod3Combo.currentText()]
 
-        minByIon = self.tab1.minByIonCombo.currentText()
-        byIonAccuracy = self.tab1.byIonAccCombo.currentText()
+        minByIon = int(self.tab1.minByIonCombo.currentText())
+        byIonAccuracy = float(self.tab1.byIonAccCombo.currentText())
         byIonFlag = self.tab1.byIonFlag.isChecked()
 
         return ppmVal, toleranceLevel, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, \

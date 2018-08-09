@@ -18,17 +18,20 @@ class MGF:
         self.mgfEntries = len(mgfDf)
         self.ppmVal = None
         self.toleranceLevel = None
-        self.byIonAccuracy = 0.1
-        self.minSimBy = 2
-        self.byIonFlag = True
+        self.byIonAccuracy = None
+        self.minSimBy = None
+        self.byIonFlag = None
 
-    def initValues(self, ppmVal, toleranceLevel):
+    def initValues(self, ppmVal, toleranceLevel, minSimBy, byIonAccuracy, byIonFlag):
 
         """
         Add extra info required such as the ppmValue!
         """
         self.ppmVal = ppmVal
         self.toleranceLevel = toleranceLevel
+        self.byIonAccuracy = byIonAccuracy
+        self.minSimBy = minSimBy
+        self.byIonFlag = byIonFlag
 
 
 def generateMGFList(mgfObj, massDict):

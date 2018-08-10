@@ -202,7 +202,7 @@ class MyTableWidget(QWidget):
         QMessageBox.about(self, "Message", 'MGF file imported.')
 
     def uploadMgf(self, input_path, ppmVal, intensityThreshold):
-        self.mgf = MGF(readMGF(input_path), ppmVal, intensityThreshold)
+        self.mgf = MGF(readMGF(input_path, intensityThreshold), ppmVal, intensityThreshold)
 
 
 

@@ -69,7 +69,7 @@ def calcPpm(predictedMass, pepmass):
     return a
 
 
-def readMGF(input_path):
+def readMGF(input_path, intensityThreshold):
     """
     Creates a pandas dataframe based on mgf data
     """
@@ -89,18 +89,18 @@ def readMGF(input_path):
                 chargePepmassTup = (charge, pepmass)
 
                 # Add it to the dataframe if they are not already in the set
-                if chargePepmassTup not in uniqueSpec and maxIntensity > 5000:
+                if chargePepmassTup not in uniqueSpec and maxIntensity > intensityThreshold:
 
                     if charge in mgfDf:
                         mgfDf[charge].append(pepmass)
                     else:
                         mgfDf[charge] = [pepmass]
 
-
                 uniqueSpec.add(chargePepmassTup)
 
     sortMgfDf(mgfDf)
     return mgfDf
+
 
 def sortMgfDf(mgfDf):
     for charge, masses in mgfDf.items():

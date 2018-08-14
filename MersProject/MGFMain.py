@@ -210,6 +210,7 @@ def takeClosest(myList, myNumber):
 # print(takeClosest(pepList, actualMass))
 
 # ** added all function beyond here
+"""
 def createBYIons(peptide):
     blist = []
     ylist = []
@@ -240,9 +241,10 @@ def ionMassDict(blist,ylist):
         pepY = ylist[i]
         dict[pepB] = bMassCalc(pepB)
         dict[pepY] = yMassCalc(pepY)
-    return dict
+    return dict"""
 
-"""returns a dictionary holding the b and y ions and their correspondigg mass"""
+#returns a dictionary holding the b and y ions and their correspondigg mass
+"""
 def initIonMass(peptide):
     blist, ylist = createBYIons(peptide)
     dict = ionMassDict(blist, ylist)
@@ -268,3 +270,4 @@ def findSimIons(mzArray, byIons, accuracy):
             simIonsArray.append(simTemp)
         simIons = max(simIonsArray)
     return simIons
+"""

@@ -144,7 +144,6 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     if mgfObj is not None and True in chargeFlags:
         #fulfillPpmReq(mgfObj, massDict)
         matchedPeptides = generateMGFList(mgfObj, massDict)
-        #print(matchedPeptides)
         genMassDict.toWriteQueue.put(matchedPeptides)
 
 

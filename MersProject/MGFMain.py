@@ -11,7 +11,7 @@ class MGF:
     """
     Class to represent MGF input data
     """
-
+    # ** added pepmassIonArray
     def __init__(self, mgfDf, pepmassIonArray):
         # mgfDf looks like: {'charge': [list of masses]}
         self.mgfDf = mgfDf
@@ -50,7 +50,6 @@ class MGF:
         self.tempMgfDf = self.tempMgfDf.to_frame()
         self.tempMgfDf.reset_index(inplace=True)
 
-# **redid
 
 def generateMGFList(mgfObj, massDict):
     """
@@ -82,7 +81,6 @@ def generateMGFList(mgfObj, massDict):
         return matchedPeptides
 
 
-
 def modToPeptide(moddedPeptide):
     peptide = ''.join(filter(lambda x: x.isalpha(), moddedPeptide))
 
@@ -101,7 +99,7 @@ def calcPpm(predictedMass, pepmass):
     a = (abs(predictedMass - pepmass) / predictedMass)*1000000
     return a
 
-# ** redid
+# ** read MGF and sort functions changed
 def readMGF(input_path):
     """
     Creates a pandas dataframe based on mgf data
@@ -153,7 +151,6 @@ def readMGF(input_path):
     sortPepmassIonArray(pepmassIonArray)
     return mgfDf, pepmassIonArray
 
-# ** changed to two functions
 def sortMgfDFValues(mgfDf):
     for charge, masses in mgfDf.items():
         masses.sort()
@@ -164,7 +161,7 @@ def sortPepmassIonArray(pepmassIonArray):
             list.sort()
 
 #readMGF('C:/Users/Arpit/Desktop/UROP/InputData/600MB.mgf')
-#mgfObj = MGF(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
+# mgfObj = MGF(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
 # print((1,mgfObj.mgfDf[1]))
 # print(2,(mgfObj.mgfDf[2]))
 # print((3,mgfObj.mgfDf[3]))
@@ -209,65 +206,3 @@ def takeClosest(myList, myNumber):
 # actualMass = 894
 # print(takeClosest(pepList, actualMass))
 
-# ** added all function beyond here
-"""
-def createBYIons(peptide):
-    blist = []
-    ylist = []
-    for i in range (0,len(peptide)-1):
-        b = peptide[0:i+1]
-        y = peptide[i+1:]
-        blist.append(b)
-        ylist.append(y)
-    return blist, ylist
-
-
-def bMassCalc(peptide):
-    mass = 1
-    for char in peptide:
-        mass += monoAminoMass[char]
-    return mass
-
-def yMassCalc(peptide):
-    mass = H20_MASS + 1
-    for char in peptide:
-        mass += monoAminoMass[char]
-    return mass
-
-def ionMassDict(blist,ylist):
-    dict = {}
-    for i in range(0,len(blist)):
-        pepB = blist[i]
-        pepY = ylist[i]
-        dict[pepB] = bMassCalc(pepB)
-        dict[pepY] = yMassCalc(pepY)
-    return dict"""
-
-#returns a dictionary holding the b and y ions and their correspondigg mass
-"""
-def initIonMass(peptide):
-    blist, ylist = createBYIons(peptide)
-    dict = ionMassDict(blist, ylist)
-    return dict
-
-def sortBYDict(byIonDict):
-    byIonArray = []
-    for key, value in byIonDict.items():
-        byIonArray.append(value)
-    byIonArray.sort()
-    return byIonArray
-
-def findSimIons(mzArray, byIons, accuracy):
-    simIonsArray = []
-    for array in mzArray:
-        simTemp = 0
-        for mass in byIons:
-            closest = takeClosest(array, mass)
-            upperThresh = mass + accuracy
-            lowerThresh = mass - accuracy
-            if lowerThresh < closest < upperThresh:
-                simTemp += 1
-            simIonsArray.append(simTemp)
-        simIons = max(simIonsArray)
-    return simIons
-"""

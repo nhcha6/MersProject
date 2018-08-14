@@ -200,10 +200,10 @@ class MyTableWidget(QWidget):
         print("MGF FILE UPLOADED")
         QMessageBox.about(self, "Message", 'MGF file imported.')
 
+    # **
     def uploadMgf(self, input_path):
         mgfDf, pepmassIonArray = readMGF(input_path)
         self.mgf = MGF(mgfDf, pepmassIonArray)
-
 
     def uploadMgfPreStep(self):
         """
@@ -309,7 +309,6 @@ class MyTableWidget(QWidget):
                 if csvFlag:
                     outputPath = self.getOutputPath()
                     if outputPath is not False:
-
                         self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                                            maxDistance, outputPath, chargeFlags)
                 else:
@@ -401,8 +400,6 @@ class MyTableWidget(QWidget):
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
 
-    
-
         self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                                   maxDistance, outputPath, chargeFlags, self.mgf)
         end = time.time()
@@ -448,8 +445,8 @@ class MyTableWidget(QWidget):
 
         # Creates new values in max combo box which are greater than the min
         if minChanged:
-            for i in range(int(text)-1, 26):
-                comboChange.addItem(str(i+1))
+            for i in range(int(text) - 1, 26):
+                comboChange.addItem(str(i + 1))
             # Restores current value if it is greater than the min
             if value >= int(text):
                 indexMax = comboChange.findText(str(value))
@@ -546,14 +543,11 @@ class MyTableWidget(QWidget):
         # self.fasta = Fasta(addSequenceList('C:/Users/Administrator/Desktop/UROP/InputData/OneProtein.fasta'))
         # self.mgf = MGF(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/mgf.mgf'))
 
-
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(),
                    self.tab2.mod3Combo.currentText()]
 
         return ppmVal, toleranceLevel, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, \
                linearFlag, csvFlag, modList, outputFlag, chargeFlags
-
-
 
     def addMinMaxAndDist(self):
 
@@ -651,7 +645,6 @@ class MyTableWidget(QWidget):
         self.tab1.layout.addWidget(self.tab1.ppmCombo, 3, 3)
         self.tab1.layout.addWidget(self.tab1.toleranceLabel, 4, 2)
         self.tab1.layout.addWidget(self.tab1.toleranceCombo, 4, 3)
-
 
     def createTab2ParameterWidgets(self):
 

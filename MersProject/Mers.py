@@ -94,7 +94,7 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
     lockVar = multiprocessing.Lock()
 
     toWriteQueue = multiprocessing.Queue()
-    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, toWriteQueue,))
+    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, toWriteQueue, mgfObj))
 
     writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue,))
     writerProcess.start()
@@ -105,7 +105,7 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
 
         # Start the processes for each protein with the targe function being genMassDict
         pool.apply_async(genMassDict, args=(spliceType, key, value, mined, maxed, overlapFlag,
-                                            csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfObj))
+                                            csvFlag, modList, maxDistance, finalPath, chargeFlags))
 
 
 
@@ -118,7 +118,7 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
 
 
 def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList,
-                maxDistance, finalPath, chargeFlags, mgfObj):
+                maxDistance, finalPath, chargeFlags):
 
     """
     Compute the peptides for the given protein
@@ -651,7 +651,7 @@ def nth_replace(string, old, new, n=1, option='only nth'):
     return new.join(nth_split)
 
 
-def processLockInit(lockVar, toWriteQueue):
+def processLockInit(lockVar, toWriteQueue, mgfData):
 
     """
     Designed to set up a global lock for a child processes (child per protein)
@@ -660,4 +660,9 @@ def processLockInit(lockVar, toWriteQueue):
     global lock
     lock = lockVar
     genMassDict.toWriteQueue = toWriteQueue
+
+    global mgfObj
+    mgfObj = mgfData
+
+
 

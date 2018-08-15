@@ -53,6 +53,7 @@ def generateMGFList(mgfObj, massDict, modList):
     if mgfObj.mgfDf:
 
         matchedPeptides = set()
+        initialMatched = {}
         for key, value in massDict.items():
             # convert modified peptides to original form
             if not key.isalpha():
@@ -75,7 +76,14 @@ def generateMGFList(mgfObj, massDict, modList):
 
                         if mgfObj.byIonFlag == False:
                             matchedPeptides.add(alphaKey)
-                        # else:
+                        else:
+                            chargePepmassTup = (charge,closest)
+                            if chargePepmassTup in initialMatched:
+                                initialMatched[chargePepmassTup].append(alphaKey)
+                            else:
+                                initialMatched[chargePepmassTup] = [alphaKey]
+
+
                         #
                         #     byIonArray = initIonMass(key, modList)
                         #     mzArray = mgfObj.pepmassIonArray[(charge, closest)]
@@ -89,7 +97,11 @@ def generateMGFList(mgfObj, massDict, modList):
                     break
             # check it passes max simcomparisons and then add alphakey to matchedpeptides!
 
-        return matchedPeptides
+        if mgfObj.byIonFlag is False:
+            return matchedPeptides
+
+        return initialMatched
+
 
 
 def modToPeptide(moddedPeptide):
@@ -119,7 +131,7 @@ def readMGF(input_path):
 
     mgfDf = {}
 
-    pepmassIonArray = {}
+    pepmassIonDict = {}
 
     with mgf.read(input_path) as mgfReader:
         for spectrum in mgfReader:
@@ -147,11 +159,11 @@ def readMGF(input_path):
                         mgfDf[charge] = [pepmass]
 
 
-                if chargePepmassTup in pepmassIonArray:
-                    pepmassIonArray[chargePepmassTup].append(mzArray)
+                if chargePepmassTup in pepmassIonDict:
+                    pepmassIonDict[chargePepmassTup].append(mzArray)
                     #print(pepmassIonArray[chargePepmassTup])
                 else:
-                    pepmassIonArray[chargePepmassTup] = [mzArray]
+                    pepmassIonDict[chargePepmassTup] = [mzArray]
 
 
                     # mgfDf.loc[len(mgfDf)] = [spectrum['params']['charge'][0],
@@ -161,7 +173,7 @@ def readMGF(input_path):
 
     sortMgfDFValues(mgfDf)
 
-    return mgfDf, pepmassIonArray
+    return mgfDf, pepmassIonDict
 
 
 

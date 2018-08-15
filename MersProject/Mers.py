@@ -102,10 +102,16 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
     lockVar = multiprocessing.Lock()
 
     toWriteQueue = multiprocessing.Queue()
-    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, toWriteQueue,))
+    matchQueue = multiprocessing.Queue()
 
-    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue,pepmassObj))
+    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, toWriteQueue,
+                                                                                              matchQueue))
+
+    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue,))
     writerProcess.start()
+
+    matchedByProcess = multiprocessing.Process(target=byIon, args=(matchQueue, pepmassObj,))
+    matchedByProcess.start()
 
     for key, value in seqDict.items():
 
@@ -115,13 +121,17 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
         pool.apply_async(genMassDict, args=(spliceType, key, value, mined, maxed, overlapFlag,
                                             csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfObj))
 
-
+        break
 
     pool.close()
     pool.join()
 
+    matchQueue.put('stop')
+    matchedByProcess.join()
+
     toWriteQueue.put('stop')
     writerProcess.join()
+
     logging.info("All " + spliceType + " !joined")
 
 
@@ -152,7 +162,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     if mgfObj is not None and True in chargeFlags:
         #fulfillPpmReq(mgfObj, massDict)
         matchedPeptides = generateMGFList(mgfObj, massDict, modList)
-        genMassDict.toWriteQueue.put(matchedPeptides)
+        genMassDict.matchQueue.put(matchedPeptides)
 
 
     # If csv is selected, write to csv file
@@ -170,29 +180,41 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
 
 
 def byIon(queue, pepmassObj):
-    pool = multiprocessing.Pool()
+    num_workers = multiprocessing.cpu_count()
+    pool = multiprocessing.Pool(processes=num_workers)
 
 
     while True:
         matchedPeptides = queue.get()
         if matchedPeptides == 'stop':
-            logging.info("ALL LINEAR COMPUTED, STOP MESSAGE SENT")
+            logging.info("All matchedByIon complete for linear")
             break
 
-        # key is (charge, clsoest), value is peptide
-        for chargeClose, initialMatched  in matchedPeptides.items():
-            #peptideList = value
-            #mzArray = pepmassObj.pepmassArray[key]
-            pool.apply_async(compByIons, args=(pepmassObj.pepmassArray[chargeClose], initialMatched,
-                                               pepmassObj.minSimBy, pepmassObj.byIonAccuracy))
 
+        if type(matchedPeptides) is set:
+           byIon.toWriteQueue.put(matchedPeptides)
+
+        #print(pepmassObj.pepmassIonArray)
+
+
+
+        # key is (charge, clsoest), value is peptide
+        # for chargeClose, initialMatched  in matchedPeptides.items():
+        #     #peptideList = value
+        #     #mzArray = pepmassObj.pepmassArray[key]
+        #     pool.apply_async(compByIons, args=(pepmassObj.pepmassArray[chargeClose], initialMatched,
+        #                                        pepmassObj.minSimBy, pepmassObj.byIonAccuracy))
+    pool.close()
+    pool.join()
+def printPep(matchedPeptides, nume):
+    print(nume)
 
 def compByIons(mzArray, initialMatched, minSimBy, byIonAccuracy):
     print(minSimBy)
 
 
 
-def writer(queue, pepmassObj):
+def writer(queue):
 
     seenPeptides = []
     with open("OutputMaster3.fasta", "w") as output_handle:
@@ -207,7 +229,6 @@ def writer(queue, pepmassObj):
             total = end-start
             logging.info("Added matched in: " + str(total))
 
-        #print(pepmassObj.pepmassIonArray)
         seenPeptides = set(seenPeptides)
         logging.info("Writing to fasta")
         SeqIO.write(createSeqObj(seenPeptides), output_handle, "fasta")
@@ -684,7 +705,7 @@ def nth_replace(string, old, new, n=1, option='only nth'):
     return new.join(nth_split)
 
 
-def processLockInit(lockVar, toWriteQueue):
+def processLockInit(lockVar, toWriteQueue, matchQueue):
 
     """
     Designed to set up a global lock for a child processes (child per protein)
@@ -692,7 +713,9 @@ def processLockInit(lockVar, toWriteQueue):
 
     global lock
     lock = lockVar
-    genMassDict.toWriteQueue = toWriteQueue
+    genMassDict.matchQueue = matchQueue
+    compByIons.toWriteQueue = toWriteQueue
+    byIon.toWriteQueue = toWriteQueue
 
 
 

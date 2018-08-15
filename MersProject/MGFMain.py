@@ -65,8 +65,8 @@ def generateMGFList(mgfObj, massDict, modList):
                         if mgfObj.byIonFlag == False:
                             matchedPeptides.add(alphaKey)
                         else:
-                            byIonDict = initIonMass(key, modList)
-                            byIonArray = sortBYDict(byIonDict)
+
+                            byIonArray = initIonMass(key, modList)
                             mzArray = mgfObj.pepmassIonArray[(charge, closest)]
                             simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
                             if simIons >= mgfObj.minSimBy:
@@ -77,6 +77,7 @@ def generateMGFList(mgfObj, massDict, modList):
                 else:
                     break
             # check it passes max simcomparisons and then add alphakey to matchedpeptides!
+
         return matchedPeptides
 
 
@@ -275,7 +276,7 @@ def initIonMass(peptide, modList):
     else:
         blist, ylist = createBYIonsMod(peptide)
         dict = ionMassDictMod(blist, ylist, modList)
-    return dict
+    return sorted(dict.values())
 
 def sortBYDict(byIonDict):
     byIonArray = []

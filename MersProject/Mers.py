@@ -164,6 +164,33 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
 
 
+def byIon(queue, pepmassObj):
+    pool = multiprocessing.Pool()
+
+
+    while True:
+        matchedPeptides = queue.get()
+        if matchedPeptides == 'stop':
+            logging.info("ALL LINEAR COMPUTED, STOP MESSAGE SENT")
+            break
+        start = time.time()
+        end = time.time()
+        total = end - start
+
+
+
+        # key is (charge, clsoest), value is peptide
+        for key, value in matchedPeptides.items():
+            peptideList = value
+            mzArray = pepmassObj.pepmassArray[key]
+            pool.apply_async(compByIons, args=())
+
+
+def compByIons(mzArray, initialMatched, minSim, byIonAccuracy):
+    print("IM IN COMP BY IOns")
+
+
+
 def writer(queue):
     seenPeptides = []
     with open("OutputMaster3.fasta", "w") as output_handle:

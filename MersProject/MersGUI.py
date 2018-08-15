@@ -199,9 +199,12 @@ class MyTableWidget(QWidget):
         print("MGF FILE UPLOADED")
         QMessageBox.about(self, "Message", 'MGF file imported.')
 
+    # **
     def uploadMgf(self, input_path):
         mgfDf, pepmassIonArray = readMGF(input_path)
-        self.mgf = MGF(mgfDf, pepmassIonArray)
+
+        self.mgf = MGF(mgfDf)
+        self.pepmassObj = PepmassIons(pepmassIonArray)
 
     def uploadMgfPreStep(self):
         """
@@ -405,7 +408,7 @@ class MyTableWidget(QWidget):
             maxDistance = int(maxDistance)
 
         self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                                  maxDistance, outputPath, chargeFlags, self.mgf)
+                                  maxDistance, outputPath, chargeFlags, self.mgf, self.pepmassObj)
         end = time.time()
 
         print(end - start)
@@ -550,12 +553,14 @@ class MyTableWidget(QWidget):
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(),
                    self.tab2.mod3Combo.currentText()]
 
+
         minByIon = int(self.tab1.minByIonCombo.currentText())
         byIonAccuracy = float(self.tab1.byIonAccCombo.currentText())
         byIonFlag = self.tab1.byIonFlag.isChecked()
 
         return ppmVal, toleranceLevel, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, \
                linearFlag, csvFlag, modList, outputFlag, chargeFlags, minByIon, byIonAccuracy, byIonFlag
+
 
     def addMinMaxAndDist(self):
 
@@ -668,11 +673,13 @@ class MyTableWidget(QWidget):
         self.tab1.layout.addWidget(self.tab1.ppmCombo, 3, 3)
         self.tab1.layout.addWidget(self.tab1.toleranceLabel, 4, 2)
         self.tab1.layout.addWidget(self.tab1.toleranceCombo, 4, 3)
+
         self.tab1.layout.addWidget(self.tab1.minByIonLabel, 5, 2)
         self.tab1.layout.addWidget(self.tab1.minByIonCombo, 5, 3)
         self.tab1.layout.addWidget(self.tab1.byIonAccLabel, 6, 2)
         self.tab1.layout.addWidget(self.tab1.byIonAccCombo, 6, 3)
         self.tab1.layout.addWidget(self.tab1.byIonFlag, 7, 2)
+
 
     def createTab2ParameterWidgets(self):
 

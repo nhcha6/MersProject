@@ -5,16 +5,23 @@ import math
 from bisect import bisect_left
 from MonoAminoAndMods import *
 
+
+class PepmassIons:
+    def __init__(self, pepmassIonArray):
+        self.pepmassIonArray = pepmassIonArray
+
+
 class MGF:
 
     """
     Class to represent MGF input data
     """
-
-    def __init__(self, mgfDf, pepmassIonArray):
+    # ** added pepmassIonArray
+    def __init__(self, mgfDf):
         # mgfDf looks like: {'charge': [list of masses]}
         self.mgfDf = mgfDf
-        self.pepmassIonArray = pepmassIonArray
+        #self.pepmassIonArray = pepmassIonArray
+
         self.mgfEntries = len(mgfDf)
         self.ppmVal = None
         self.toleranceLevel = None
@@ -39,6 +46,7 @@ def generateMGFList(mgfObj, massDict, modList):
 
     Generates the list of unique peptides that have masses that match within the specified
     """
+
     if mgfObj.mgfDf:
 
         matchedPeptides = set()
@@ -99,7 +107,7 @@ def calcPpm(predictedMass, pepmass):
     a = (abs(predictedMass - pepmass) / predictedMass)*1000000
     return a
 
-
+# ** read MGF and sort functions changed
 def readMGF(input_path):
     """
     Creates a pandas dataframe based on mgf data
@@ -134,7 +142,7 @@ def readMGF(input_path):
                         #pepmassIonArray[(charge,pepmass)] = mzArray
                     else:
                         mgfDf[charge] = [pepmass]
-                        #pepmassIonArray[(charge,pepmass)] = mzArray
+
 
                 if chargePepmassTup in pepmassIonArray:
                     pepmassIonArray[chargePepmassTup].append(mzArray)
@@ -142,24 +150,21 @@ def readMGF(input_path):
                 else:
                     pepmassIonArray[chargePepmassTup] = [mzArray]
 
+
                     # mgfDf.loc[len(mgfDf)] = [spectrum['params']['charge'][0],
                     #                          spectrum['params']['pepmass'][0]]
 
                 uniqueSpec.add(chargePepmassTup)
 
     sortMgfDFValues(mgfDf)
-    sortPepmassIonArray(pepmassIonArray)
+
     return mgfDf, pepmassIonArray
+
 
 
 def sortMgfDFValues(mgfDf):
     for charge, masses in mgfDf.items():
         masses.sort()
-
-def sortPepmassIonArray(pepmassIonArray):
-    for chargeMassTup, masses in pepmassIonArray.items():
-        for list in masses:
-            list.sort()
 
 # print(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
 # mgfDf, pepmassIonArray = readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf')
@@ -167,6 +172,9 @@ def sortPepmassIonArray(pepmassIonArray):
 # print(2,(mgfObj.mgfDf[2][0][3]))
 
 # readMGF('C:/Users/Arpit/Desktop/UROP/InputData/600MB.mgf')
+
+#readMGF('C:/Users/Arpit/Desktop/UROP/InputData/600MB.mgf')
+
 # mgfObj = MGF(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
 # print((1,mgfObj.mgfDf[1]))
 # print(2,(mgfObj.mgfDf[2]))

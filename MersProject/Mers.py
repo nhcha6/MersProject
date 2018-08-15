@@ -19,6 +19,7 @@ LINEAR = "Linear"
 CIS = "Cis"
 
 logging.basicConfig(level = logging.DEBUG, format = '%(message)s')
+
 #logging.disable(logging.INFO)
 
 class Fasta:
@@ -33,7 +34,7 @@ class Fasta:
         self.allProcessList = []
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                       maxDistance, outputPath, chargeFlags, mgfObj):
+                       maxDistance, outputPath, chargeFlags, mgfObj, pepmassObj):
 
         """
         Function that literally combines everything to generate output
@@ -45,7 +46,7 @@ class Fasta:
             finalPeptide = combinePeptides(self.seqDict)
             transProcess = multiprocessing.Process(target=transOutput, args=(finalPeptide, mined, maxed, overlapFlag,
                                                                              modList, outputPath, chargeFlags))
-            allProcessList.append(transProcess)
+
             self.allProcessList.append(transProcess)
             # combined = {'combined': combined}
             # with open('output.txt', 'wb') as file:
@@ -64,8 +65,12 @@ class Fasta:
             linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.seqDict, LINEAR, mined,
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      modList, maxDistance,
-                                                                                     outputPath, chargeFlags, mgfObj))
+                                                                                     outputPath, chargeFlags, mgfObj,
+                                                                                     pepmassObj))
+
             self.allProcessList.append(linearProcess)
+
+
             linearProcess.start()
 
         for process in self.allProcessList:
@@ -73,7 +78,7 @@ class Fasta:
 
 
 def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
-                       modList, maxDistance, outputPath, chargeFlags, mgfObj):
+                       modList, maxDistance, outputPath, chargeFlags, mgfObj, pepmassObj):
 
     """
     Process that is in charge for dealing with cis and linear. Creates sub processes for every protein to compute
@@ -99,7 +104,7 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
     toWriteQueue = multiprocessing.Queue()
     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, toWriteQueue,))
 
-    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue,))
+    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue,pepmassObj))
     writerProcess.start()
 
     for key, value in seqDict.items():
@@ -191,7 +196,8 @@ def compByIons(mzArray, initialMatched, minSim, byIonAccuracy):
 
 
 
-def writer(queue):
+def writer(queue, pepmassObj):
+
     seenPeptides = []
     with open("OutputMaster3.fasta", "w") as output_handle:
         while True:
@@ -205,6 +211,7 @@ def writer(queue):
             total = end-start
             logging.info("Added matched in: " + str(total))
 
+        #print(pepmassObj.pepmassIonArray)
         seenPeptides = set(seenPeptides)
         logging.info("Writing to fasta")
         SeqIO.write(createSeqObj(seenPeptides), output_handle, "fasta")

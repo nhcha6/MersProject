@@ -282,7 +282,7 @@ class MyTableWidget(QWidget):
         """
 
         ppmVal, toleranceLevel, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, \
-        modList, outputFlag, chargeFlags, minByIon, byIonAccuracy, byIonFlag \
+        modList, outputFlag, chargeFlags, minSimBy, byIonAccuracy, byIonFlag \
             = self.getInputParams()
 
         if self.fasta is None:
@@ -304,14 +304,15 @@ class MyTableWidget(QWidget):
                                          'CSV Flag: ' + str(csvFlag) + '\n' +
                                          'Charge States: ' + str(chargeFlags) + '\n' +
                                          'PPM Value: ' + str(ppmVal) + '\n' +
-                                         'Min b/y Ion: ' + str(minByIon) + '\n' +
+                                         'Min b/y Ion: ' + str(minSimBy) + '\n' +
                                          'b/y Ion Accuracy: ' + str(byIonAccuracy) + '\n' +
                                          'b/y Ion Flag: ' + str(byIonFlag),
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
             if reply == QMessageBox.Yes:
                 if self.mgf is not None:
-                    self.mgf.initValues(ppmVal, toleranceLevel, minByIon, byIonAccuracy, byIonFlag)
+                    self.mgf.initValues(ppmVal, toleranceLevel, byIonFlag)
+                    self.pepmassObj.initValues(minSimBy, byIonAccuracy)
                 if csvFlag:
                     outputPath = self.getOutputPath()
                     if outputPath is not False:

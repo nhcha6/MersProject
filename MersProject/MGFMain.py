@@ -9,6 +9,10 @@ from MonoAminoAndMods import *
 class PepmassIons:
     def __init__(self, pepmassIonArray):
         self.pepmassIonArray = pepmassIonArray
+    def initValues(self, minSimBy, byIonAccuracy):
+        self.byIonAccuracy = byIonAccuracy
+        self.minSimBy = minSimBy
+
 
 
 class MGF:
@@ -29,15 +33,14 @@ class MGF:
         self.minSimBy = None
         self.byIonFlag = None
 
-    def initValues(self, ppmVal, toleranceLevel, minSimBy, byIonAccuracy, byIonFlag):
+    def initValues(self, ppmVal, toleranceLevel, byIonFlag):
 
         """
         Add extra info required such as the ppmValue!
         """
         self.ppmVal = ppmVal
         self.toleranceLevel = toleranceLevel
-        self.byIonAccuracy = byIonAccuracy
-        self.minSimBy = minSimBy
+
         self.byIonFlag = byIonFlag
 
 
@@ -72,13 +75,13 @@ def generateMGFList(mgfObj, massDict, modList):
 
                         if mgfObj.byIonFlag == False:
                             matchedPeptides.add(alphaKey)
-                        else:
-
-                            byIonArray = initIonMass(key, modList)
-                            mzArray = mgfObj.pepmassIonArray[(charge, closest)]
-                            simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
-                            if simIons >= mgfObj.minSimBy:
-                                matchedPeptides.add(alphaKey)
+                        # else:
+                        #
+                        #     byIonArray = initIonMass(key, modList)
+                        #     mzArray = mgfObj.pepmassIonArray[(charge, closest)]
+                        #     simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
+                        #     if simIons >= mgfObj.minSimBy:
+                        #         matchedPeptides.add(alphaKey)
 
                         # count similar ions and add that to simComparisons. Note that mzArray have multiple lists
                         #matchedPeptides.add(alphaKey)

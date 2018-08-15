@@ -178,21 +178,17 @@ def byIon(queue, pepmassObj):
         if matchedPeptides == 'stop':
             logging.info("ALL LINEAR COMPUTED, STOP MESSAGE SENT")
             break
-        start = time.time()
-        end = time.time()
-        total = end - start
-
-
 
         # key is (charge, clsoest), value is peptide
-        for key, value in matchedPeptides.items():
-            peptideList = value
-            mzArray = pepmassObj.pepmassArray[key]
-            pool.apply_async(compByIons, args=())
+        for chargeClose, initialMatched  in matchedPeptides.items():
+            #peptideList = value
+            #mzArray = pepmassObj.pepmassArray[key]
+            pool.apply_async(compByIons, args=(pepmassObj.pepmassArray[chargeClose], initialMatched,
+                                               pepmassObj.minSimBy, pepmassObj.byIonAccuracy))
 
 
-def compByIons(mzArray, initialMatched, minSim, byIonAccuracy):
-    print("IM IN COMP BY IOns")
+def compByIons(mzArray, initialMatched, minSimBy, byIonAccuracy):
+    print(minSimBy)
 
 
 

@@ -5,6 +5,9 @@ import math
 from bisect import bisect_left
 from MonoAminoAndMods import *
 
+class PepmassIons:
+    def __init__(self, pepmassIonArray):
+        self.pepmassIonArray = pepmassIonArray
 
 class MGF:
 
@@ -12,10 +15,10 @@ class MGF:
     Class to represent MGF input data
     """
     # ** added pepmassIonArray
-    def __init__(self, mgfDf, pepmassIonArray):
+    def __init__(self, mgfDf):
         # mgfDf looks like: {'charge': [list of masses]}
         self.mgfDf = mgfDf
-        self.pepmassIonArray = pepmassIonArray
+        #self.pepmassIonArray = pepmassIonArray
         self.mgfEntries = len(mgfDf)
         self.ppmVal = None
         self.toleranceLevel = None
@@ -56,6 +59,7 @@ def generateMGFList(mgfObj, massDict):
 
     Generates the list of unique peptides that have masses that match within the specified
     """
+
     if mgfObj.mgfDf:
 
         matchedPeptides = set()

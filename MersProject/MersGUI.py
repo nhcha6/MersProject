@@ -203,7 +203,8 @@ class MyTableWidget(QWidget):
     # **
     def uploadMgf(self, input_path):
         mgfDf, pepmassIonArray = readMGF(input_path)
-        self.mgf = MGF(mgfDf, pepmassIonArray)
+        self.mgf = MGF(mgfDf)
+        self.pepmassObj = PepmassIons(pepmassIonArray)
 
     def uploadMgfPreStep(self):
         """
@@ -401,7 +402,7 @@ class MyTableWidget(QWidget):
             maxDistance = int(maxDistance)
 
         self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                                  maxDistance, outputPath, chargeFlags, self.mgf)
+                                  maxDistance, outputPath, chargeFlags, self.mgf, self.pepmassObj)
         end = time.time()
 
         print(end - start)

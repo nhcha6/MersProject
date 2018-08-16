@@ -109,7 +109,7 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
     #writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue,))
     #writerProcess.start()
 
-    matchedByProcess = multiprocessing.Process(target=byIon, args=(matchQueue, pepmassObj,))
+    matchedByProcess = multiprocessing.Process(target=byIon, args=(matchQueue, pepmassObj, modList))
     matchedByProcess.start()
     #pool.apply_async(byIon, args = (matchQueue, pepmassObj))
 
@@ -179,7 +179,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
 
 
-def byIon(queue, pepmassObj):
+def byIon(queue, pepmassObj, modList):
 
     num_workers = multiprocessing.cpu_count()
     toWriteQueue = multiprocessing.Queue()
@@ -201,16 +201,7 @@ def byIon(queue, pepmassObj):
                 # #peptideList = value
                 # #mzArray = pepmassObj.pepmassArray[key]
                 pool.apply_async(compByIons, args=(pepmassObj.pepmassIonArray[chargeCloseTup], initialMatched,
-                                                   pepmassObj.minSimBy, pepmassObj.byIonAccuracy))
-                break
-
-
-
-
-        #print(pepmassObj.pepmassIonArray)
-
-
-
+                                                   pepmassObj.minSimBy, pepmassObj.byIonAccuracy, modList))
 
     pool.close()
     pool.join()
@@ -218,11 +209,21 @@ def byIon(queue, pepmassObj):
 def initWriteQueue(toWriteQueue):
     compByIons.toWriteQueue = toWriteQueue
 
-def compByIons(mzArray, initialMatched, minSimBy, byIonAccuracy):
-    print(mzArray)
+def compByIons(mzArray, initialMatched, minSimBy, byIonAccuracy, modList):
+    # print(mzArray)
     print(initialMatched)
-    print(minSimBy)
-    print(byIonAccuracy)
+    # print(minSimBy)
+    # print(byIonAccuracy)
+    byIonPeps = []
+    for peptide in initialMatched:
+        byIonArray = initIonMass(peptide, modList)
+        print(byIonArray)
+        noSim = findSimIons(mzArray, byIonArray, byIonAccuracy)
+        print(noSim)
+        if noSim >= minSimBy:
+            byIonPeps.append(peptide)
+    compByIons.toWriteQueue.put(byIonPeps)
+
 
 def writer(queue):
 

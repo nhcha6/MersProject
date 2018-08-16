@@ -146,7 +146,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     # If there is an mgf file AND there is a charge selected
     if mgfObj is not None and True in chargeFlags:
         #fulfillPpmReq(mgfObj, massDict)
-        matchedPeptides = generateMGFList(mgfObj, massDict)
+        matchedPeptides = generateMGFList(mgfObj, massDict, modList)
         genMassDict.toWriteQueue.put(matchedPeptides)
 
 
@@ -166,7 +166,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
 
 def writer(queue):
     seenPeptides = []
-    with open("OutputMaster2.fasta", "w") as output_handle:
+    with open("OutputMaster3.fasta", "w") as output_handle:
         while True:
             matchedPeptides = queue.get()
             if matchedPeptides == 'stop':

@@ -34,7 +34,7 @@ class MGF:
         self.byIonFlag = byIonFlag
 
 
-def generateMGFList(mgfObj, massDict):
+def generateMGFList(mgfObj, massDict, modList):
     """
 
     Generates the list of unique peptides that have masses that match within the specified
@@ -43,7 +43,6 @@ def generateMGFList(mgfObj, massDict):
 
         matchedPeptides = set()
         for key, value in massDict.items():
-
             # convert modified peptides to original form
             if not key.isalpha():
                 alphaKey = modToPeptide(key)
@@ -57,7 +56,6 @@ def generateMGFList(mgfObj, massDict):
             for charge, chargeMass in value[2].items():
                 # Shift to outside for charge for loop
                 if alphaKey not in matchedPeptides:
-
                     closest = takeClosest(mgfObj.mgfDf[charge], chargeMass)
                     if pepMatch(chargeMass, closest, mgfObj.ppmVal):
 
@@ -67,7 +65,7 @@ def generateMGFList(mgfObj, massDict):
                         if mgfObj.byIonFlag == False:
                             matchedPeptides.add(alphaKey)
                         else:
-                            byIonDict = initIonMass(key)
+                            byIonDict = initIonMass(key, modList)
                             byIonArray = sortBYDict(byIonDict)
                             mzArray = mgfObj.pepmassIonArray[(charge, closest)]
                             simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
@@ -79,7 +77,6 @@ def generateMGFList(mgfObj, massDict):
                 else:
                     break
             # check it passes max simcomparisons and then add alphakey to matchedpeptides!
-
         return matchedPeptides
 
 
@@ -206,17 +203,50 @@ def createBYIons(peptide):
         ylist.append(y)
     return blist, ylist
 
+def createBYIonsMod(peptide):
+    blist = []
+    ylist = []
 
-def bMassCalc(peptide):
+    if peptide[-1].isalpha():
+        endNo = 1
+    else:
+        endNo = 2
+
+    for i in range(0,len(peptide)-endNo):
+        if peptide[i].islower():
+            b = peptide[0:i+2]
+            y = peptide[i+2:]
+            blist.append(b)
+            ylist.append(y)
+        elif not peptide[i].isalpha():
+            continue
+        else:
+            b = peptide[0:i + 1]
+            y = peptide[i + 1:]
+            blist.append(b)
+            ylist.append(y)
+    return blist, ylist
+
+def bMassCalc(peptide, modlist = None):
     mass = 1
     for char in peptide:
-        mass += monoAminoMass[char]
+        if char.isalpha():
+            char = char.upper()
+            mass += monoAminoMass[char]
+        else:
+            mod = modlist[int(char)-1]
+            mass += modTable[mod][-1]
     return mass
 
-def yMassCalc(peptide):
+def yMassCalc(peptide, modlist = None):
     mass = H20_MASS + 1
     for char in peptide:
-        mass += monoAminoMass[char]
+        if char.isalpha():
+            char = char.upper()
+            mass += monoAminoMass[char]
+        else:
+            mod = modlist[int(char)-1]
+            mass += modTable[mod][-1]
     return mass
 
 def ionMassDict(blist,ylist):
@@ -228,10 +258,23 @@ def ionMassDict(blist,ylist):
         dict[pepY] = yMassCalc(pepY)
     return dict
 
+def ionMassDictMod(blist,ylist,modlist):
+    dict = {}
+    for i in range(0,len(blist)):
+        pepB = blist[i]
+        pepY = ylist[i]
+        dict[pepB] = bMassCalc(pepB, modlist)
+        dict[pepY] = yMassCalc(pepY, modlist)
+    return dict
+
 """returns a dictionary holding the b and y ions and their correspondigg mass"""
-def initIonMass(peptide):
-    blist, ylist = createBYIons(peptide)
-    dict = ionMassDict(blist, ylist)
+def initIonMass(peptide, modList):
+    if peptide.isalpha():
+        blist, ylist = createBYIons(peptide)
+        dict = ionMassDict(blist, ylist)
+    else:
+        blist, ylist = createBYIonsMod(peptide)
+        dict = ionMassDictMod(blist, ylist, modList)
     return dict
 
 def sortBYDict(byIonDict):
@@ -273,4 +316,3 @@ def findSimIons(mzArray, byIons, accuracy):
 # print(pepList)
 # actualMass = 894
 # print(takeClosest(pepList, actualMass))
-

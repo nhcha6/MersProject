@@ -214,14 +214,18 @@ def compByIons(mzArray, initialMatched, minSimBy, byIonAccuracy, modList):
     print(initialMatched)
     # print(minSimBy)
     # print(byIonAccuracy)
-    byIonPeps = []
+    byIonPeps = set()
     for peptide in initialMatched:
         byIonArray = initIonMass(peptide, modList)
         print(byIonArray)
         noSim = findSimIons(mzArray, byIonArray, byIonAccuracy)
         print(noSim)
         if noSim >= minSimBy:
-            byIonPeps.append(peptide)
+            if not peptide.isalpha():
+                alphaPep = modToPeptide(peptide)
+                byIonPeps.add(alphaPep)
+            else:
+                byIonPeps.add(peptide)
     compByIons.toWriteQueue.put(byIonPeps)
 
 

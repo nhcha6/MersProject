@@ -196,6 +196,14 @@ def byIon(queue, pepmassObj):
             break
         if type(matchedPeptides) is set:
             toWriteQueue.put(matchedPeptides)
+        else:
+            for chargeCloseTup, initialMatched in matchedPeptides.items():
+                # #peptideList = value
+                # #mzArray = pepmassObj.pepmassArray[key]
+                pool.apply_async(compByIons, args=(pepmassObj.pepmassIonArray[chargeCloseTup], initialMatched,
+                                                   pepmassObj.minSimBy, pepmassObj.byIonAccuracy))
+                break
+
 
 
 
@@ -203,30 +211,18 @@ def byIon(queue, pepmassObj):
 
 
 
-        # key is (charge, clsoest), value is peptide
-        # for chargeClose, initialMatched  in matchedPeptides.items():
-        #     #peptideList = value
-        #     #mzArray = pepmassObj.pepmassArray[key]
-        #     pool.apply_async(compByIons, args=(pepmassObj.pepmassArray[chargeClose], initialMatched,
-        #                                        pepmassObj.minSimBy, pepmassObj.byIonAccuracy))
+
     pool.close()
     pool.join()
 
 def initWriteQueue(toWriteQueue):
     compByIons.toWriteQueue = toWriteQueue
 
-
-#def compByIons(mzArray, initialMatched, minSimBy, byIonAccuracy):
-def compByIons():
-    compByIons.toWriteQueue.put('hi')
-    compByIons.toWriteQueue.put('stop')
-
-def test(queue):
-    while True:
-        toPrint = queue.get()
-        if toPrint == 'stop':
-            break
-        print(toPrint)
+def compByIons(mzArray, initialMatched, minSimBy, byIonAccuracy):
+    print(mzArray)
+    print(initialMatched)
+    print(minSimBy)
+    print(byIonAccuracy)
 
 def writer(queue):
 

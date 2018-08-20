@@ -21,6 +21,8 @@ CIS = "Cis"
 logging.basicConfig(level = logging.DEBUG, format = '%(message)s')
 #logging.disable(logging.INFO)
 
+mgfData = None
+
 class Fasta:
 
     """

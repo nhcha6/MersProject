@@ -198,16 +198,11 @@ class MyTableWidget(QWidget):
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
 
-    def importedMGF(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                    maxDistance, outputPath, chargeFlags):
 
-        print("MGF FILE UPLOADED")
-
-
-        # self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-        #                    maxDistance, outputPath, chargeFlags)
 
     def uploadMgf(self, input_path, ppmVal, intensityThreshold):
+        print("UPLOADING MGF")
+
         self.mgf = MGF(readMGF(input_path, intensityThreshold), ppmVal, intensityThreshold)
 
 
@@ -329,11 +324,23 @@ class MyTableWidget(QWidget):
                 else:
 
                     outputPath = None
-                    mgfGen.signals.finished.connect(functools.partial(self.importedMGF, mined, maxed, overlapFlag,
-                                                                      transFlag, cisFlag, linearFlag, csvFlag, modList,
-                                                                      maxDistance, outputPath, chargeFlags))
+                    mgfGen.signals.finished.connect(self.onlyImportMGF)
+                    # mgfGen.signals.finished.connect(functools.partial(self.importedMGF, mined, maxed, overlapFlag,
+                    #                                                   transFlag, cisFlag, linearFlag, csvFlag, modList,
+                    #                                                   maxDistance, outputPath, chargeFlags))
                     self.threadpool.start(mgfGen)
 
+    def onlyImportMGF(self):
+        print("MGF FILE Uploaded")
+
+    def importedMGF(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
+                    maxDistance, outputPath, chargeFlags):
+
+        print("MGF FILE UPLOADED")
+
+
+        # self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
+        #                    maxDistance, outputPath, chargeFlags)
 
     def finished(self):
 

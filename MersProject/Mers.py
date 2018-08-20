@@ -123,6 +123,7 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
 
 
 
+
     pool.close()
     pool.join()
 
@@ -192,7 +193,7 @@ def byIon(queue, pepmassObj, modList):
         matchedPeptides = queue.get()
         if matchedPeptides == 'stop':
             logging.info("All matchedByIon complete for linear")
-            toWriteQueue.put('stop')
+
             break
         if type(matchedPeptides) is set:
             toWriteQueue.put(matchedPeptides)
@@ -205,6 +206,7 @@ def byIon(queue, pepmassObj, modList):
 
     pool.close()
     pool.join()
+    toWriteQueue.put('stop')
     writerProcess.join()
 
 def initWriteQueue(toWriteQueue):
@@ -212,15 +214,15 @@ def initWriteQueue(toWriteQueue):
 
 def compByIons(mzArray, initialMatched, minSimBy, byIonAccuracy, modList):
     # print(mzArray)
-    print(initialMatched)
+    # print(initialMatched)
     # print(minSimBy)
     # print(byIonAccuracy)
     byIonPeps = set()
     for peptide in initialMatched:
         byIonArray = initIonMass(peptide, modList)
-        print(byIonArray)
+        #print(byIonArray)
         noSim = findSimIons(mzArray, byIonArray, byIonAccuracy)
-        print(noSim)
+        #print(noSim)
         if noSim >= minSimBy:
             if not peptide.isalpha():
                 alphaPep = modToPeptide(peptide)
@@ -243,7 +245,7 @@ def writer(queue):
             seenPeptides.extend(matchedPeptides)
             end = time.time()
             total = end-start
-            logging.info("Added matched in: " + str(total))
+
 
         seenPeptides = set(seenPeptides)
         logging.info("Writing to fasta")

@@ -9,6 +9,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtCore import pyqtSlot
 from Mers import *
 from MGFMain import *
+import functools
 
 
 class WorkerSignals(QObject):
@@ -197,9 +198,14 @@ class MyTableWidget(QWidget):
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
 
-    def importedMGF(self):
+    def importedMGF(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
+                    maxDistance, outputPath, chargeFlags):
+
         print("MGF FILE UPLOADED")
-        QMessageBox.about(self, "Message", 'MGF file imported.')
+
+
+        # self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
+        #                    maxDistance, outputPath, chargeFlags)
 
     def uploadMgf(self, input_path, ppmVal, intensityThreshold):
         self.mgf = MGF(readMGF(input_path, intensityThreshold), ppmVal, intensityThreshold)
@@ -310,8 +316,8 @@ class MyTableWidget(QWidget):
                 print(self.mgfPath)
                 # UPLOAD MGF FILE HERE
                 mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, ppmVal, intensityThreshold)
-                mgfGen.signals.finished.connect(self.importedMGF)
-                self.threadpool.start(mgfGen)
+
+
 
 
                 if csvFlag:
@@ -323,9 +329,11 @@ class MyTableWidget(QWidget):
                 else:
 
                     outputPath = None
+                    mgfGen.signals.finished.connect(functools.partial(self.importedMGF, mined, maxed, overlapFlag,
+                                                                      transFlag, cisFlag, linearFlag, csvFlag, modList,
+                                                                      maxDistance, outputPath, chargeFlags))
+                    self.threadpool.start(mgfGen)
 
-                    self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                                       maxDistance, outputPath, chargeFlags)
 
     def finished(self):
 
@@ -408,9 +416,6 @@ class MyTableWidget(QWidget):
 
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
-
-        while self.mgf == None:
-            pass
 
         print("ABOUT TO DO OUTPUT")
 

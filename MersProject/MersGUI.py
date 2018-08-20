@@ -160,7 +160,7 @@ class MyTableWidget(QWidget):
         self.minDefault = '8'
         self.maxDefault = '12'
         self.maxDistDefault = '25'
-        self.minByIonDefault = '2'
+        self.minByIonDefault = '50'
         self.byIonAccDefault = '0.1'
 
         # Initialisation of two tabs
@@ -310,7 +310,7 @@ class MyTableWidget(QWidget):
                                          'Charge States: ' + str(chargeFlags) + '\n' +
                                          'PPM Value: ' + str(ppmVal) + '\n' +
                                          'Intensity Threshold' + str(intensityThreshold) + '\n'
-                                         'Min b/y Ion: ' + str(minSimBy) + '\n' +
+                                         'Min b/y Ion (%): ' + str(minSimBy) + '\n' +
                                          'b/y Ion Accuracy: ' + str(byIonAccuracy) + '\n' +
                                          'b/y Ion Flag: ' + str(byIonFlag),
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
@@ -664,7 +664,7 @@ class MyTableWidget(QWidget):
         self.tab1.toleranceLabel = QLabel('Intensity Threshold: ')
         self.tab1.toleranceCombo = QComboBox(self)
 
-        self.tab1.minByIonLabel = QLabel('Minimum b/y Ion Matches: ')
+        self.tab1.minByIonLabel = QLabel('Minimum b/y Ion Matches(%): ')
         self.tab1.minByIonCombo = QComboBox(self)
 
         self.tab1.byIonAccLabel = QLabel('b/y Ion Accuracy: ')
@@ -679,7 +679,7 @@ class MyTableWidget(QWidget):
         for intensity in intensities:
             self.tab1.toleranceCombo.addItem(str(intensity))
 
-        for i in range(1, 10):
+        for i in range(10, 100, 10):
             self.tab1.minByIonCombo.addItem(str(i))
 
         ionAccuracies = [0.4, 0.2, 0.1, 0.05, 0.02, 0.01]

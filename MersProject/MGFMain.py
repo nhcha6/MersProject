@@ -11,26 +11,19 @@ class MGF:
     Class to represent MGF input data
     """
 
-    def __init__(self, mgfDf, pepmassIonArray):
+
+    def __init__(self, mgfDf, pepmassIonArray, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag):
+
         # mgfDf looks like: {'charge': [list of masses]}
         self.mgfDf = mgfDf
         self.pepmassIonArray = pepmassIonArray
         self.mgfEntries = len(mgfDf)
-        self.ppmVal = None
-        self.toleranceLevel = None
-        self.byIonAccuracy = None
-        self.minSimBy = None
-        self.byIonFlag = None
 
-    def initValues(self, ppmVal, toleranceLevel, minSimBy, byIonAccuracy, byIonFlag):
-
-        """
-        Add extra info required such as the ppmValue!
-        """
         self.ppmVal = ppmVal
-        self.toleranceLevel = toleranceLevel
-        self.byIonAccuracy = byIonAccuracy
+        self.intensityThreshold = intensityThreshold
         self.minSimBy = minSimBy
+
+        self.byIonAccuracy = byIonAccuracy
         self.byIonFlag = byIonFlag
 
 
@@ -99,7 +92,7 @@ def calcPpm(predictedMass, pepmass):
     return a
 
 
-def readMGF(input_path):
+def readMGF(input_path, intensityThreshold):
     """
     Creates a pandas dataframe based on mgf data
     """
@@ -126,7 +119,9 @@ def readMGF(input_path):
                 # already exists, append the mzArray to the existing one as done below.
 
                 # Add it to the dataframe if they are not already in the set
-                if chargePepmassTup not in uniqueSpec and maxIntensity > 0:
+
+                if chargePepmassTup not in uniqueSpec and maxIntensity > intensityThreshold:
+
 
                     if charge in mgfDf:
                         mgfDf[charge].append(pepmass)
@@ -141,13 +136,16 @@ def readMGF(input_path):
                 else:
                     pepmassIonArray[chargePepmassTup] = [mzArray]
 
+
                     # mgfDf.loc[len(mgfDf)] = [spectrum['params']['charge'][0],
                     #                          spectrum['params']['pepmass'][0]]
+
+
 
                 uniqueSpec.add(chargePepmassTup)
 
     sortMgfDFValues(mgfDf)
-    sortPepmassIonArray(pepmassIonArray)
+
     return mgfDf, pepmassIonArray
 
 
@@ -155,10 +153,6 @@ def sortMgfDFValues(mgfDf):
     for charge, masses in mgfDf.items():
         masses.sort()
 
-def sortPepmassIonArray(pepmassIonArray):
-    for chargeMassTup, masses in pepmassIonArray.items():
-        for list in masses:
-            list.sort()
 
 # print(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
 # mgfDf, pepmassIonArray = readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf')
@@ -166,6 +160,14 @@ def sortPepmassIonArray(pepmassIonArray):
 # print(2,(mgfObj.mgfDf[2][0][3]))
 
 # readMGF('C:/Users/Arpit/Desktop/UROP/InputData/600MB.mgf')
+
+
+def sortMgfDf(mgfDf):
+    for charge, masses in mgfDf.items():
+        masses.sort()
+
+#readMGF('C:/Users/Arpit/Desktop/UROP/InputData/600MB.mgf')
+
 # mgfObj = MGF(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
 # print((1,mgfObj.mgfDf[1]))
 # print(2,(mgfObj.mgfDf[2]))

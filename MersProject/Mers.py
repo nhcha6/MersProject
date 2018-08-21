@@ -205,6 +205,7 @@ def byIon(queue, pepmassObj, modList):
 
     pool.close()
     pool.join()
+    writerProcess.join()
 
 def initWriteQueue(toWriteQueue):
     compByIons.toWriteQueue = toWriteQueue

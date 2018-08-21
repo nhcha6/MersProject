@@ -191,6 +191,7 @@ def byIon(queue, pepmassObj, modList):
 
     while True:
         matchedPeptides = queue.get()
+        print('matched queue got')
         if matchedPeptides == 'stop':
             logging.info("All matchedByIon complete for linear")
 
@@ -232,12 +233,14 @@ def compByIons(mzArray, initialMatched, minSimBy, byIonAccuracy, modList):
     compByIons.toWriteQueue.put(byIonPeps)
 
 
+
 def writer(queue):
 
     seenPeptides = []
     with open("OutputMaster3.fasta", "w") as output_handle:
         while True:
             matchedPeptides = queue.get()
+            print('writer queue got')
             if matchedPeptides == 'stop':
                 logging.info("ALL LINEAR COMPUTED, STOP MESSAGE SENT")
                 break

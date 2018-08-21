@@ -5,13 +5,12 @@ import math
 from bisect import bisect_left
 from MonoAminoAndMods import *
 
-
 class MGF:
 
     """
     Class to represent MGF input data
     """
-    # ** added pepmassIonArray
+
     def __init__(self, mgfDf, pepmassIonArray):
         # mgfDf looks like: {'charge': [list of masses]}
         self.mgfDf = mgfDf
@@ -19,39 +18,23 @@ class MGF:
         self.mgfEntries = len(mgfDf)
         self.ppmVal = None
         self.toleranceLevel = None
+        self.byIonAccuracy = None
+        self.minSimBy = None
+        self.byIonFlag = None
 
-    def initValues(self, ppmVal, toleranceLevel):
+    def initValues(self, ppmVal, toleranceLevel, minSimBy, byIonAccuracy, byIonFlag):
 
         """
         Add extra info required such as the ppmValue!
         """
         self.ppmVal = ppmVal
         self.toleranceLevel = toleranceLevel
-
-    def removeChargeStates(self, chargeFlags):
-        """
-        Remove all charges that are irrelevant, which is given by the chargeFlags params
-        """
-        firstTrue = True
-        for i in range(0, len(chargeFlags)):
-            if not chargeFlags[i]:
-                # Comparing to i+1 because of charge state!
-
-                # Resolve the bug where would have to reattach the mgf file everytime charge state is changed.
-                if firstTrue:
-                    self.tempMgfDf = self.mgfDf.drop(self.mgfDf[self.mgfDf.CHARGE_STATE == i+1].index)
-                    firstTrue = False
-                else:
-                    self.tempMgfDf.drop(self.mgfDf[self.mgfDf.CHARGE_STATE == i + 1].index, inplace=True)
-
-        self.tempMgfDf.sort_values(by=['CHARGE_STATE', 'PEPMASS'], inplace = True)
-        groupedTempDf = self.tempMgfDf.groupby('CHARGE_STATE')
-        self.tempMgfDf = groupedTempDf['PEPMASS'].unique()
-        self.tempMgfDf = self.tempMgfDf.to_frame()
-        self.tempMgfDf.reset_index(inplace=True)
+        self.byIonAccuracy = byIonAccuracy
+        self.minSimBy = minSimBy
+        self.byIonFlag = byIonFlag
 
 
-def generateMGFList(mgfObj, massDict):
+def generateMGFList(mgfObj, massDict, modList):
     """
 
     Generates the list of unique peptides that have masses that match within the specified
@@ -60,24 +43,40 @@ def generateMGFList(mgfObj, massDict):
 
         matchedPeptides = set()
         for key, value in massDict.items():
-
             # convert modified peptides to original form
             if not key.isalpha():
                 alphaKey = modToPeptide(key)
             else:
                 alphaKey = key
 
-            for charge, chargeMass in value[2].items():
-                if alphaKey not in matchedPeptides:
+            # ion dict -> {'b/yion: mass'}
 
-                    # chargeList = mgfObj.mgfDf[charge]
+            #print(byIonArray)
+
+            for charge, chargeMass in value[2].items():
+                # Shift to outside for charge for loop
+                if alphaKey not in matchedPeptides:
                     closest = takeClosest(mgfObj.mgfDf[charge], chargeMass)
                     if pepMatch(chargeMass, closest, mgfObj.ppmVal):
 
-                        matchedPeptides.add(alphaKey)
+                        #mzArray = mgfObj.pepmassIonArray[(charge, closest)]
+                        #simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
+
+                        if mgfObj.byIonFlag == False:
+                            matchedPeptides.add(alphaKey)
+                        else:
+                            byIonDict = initIonMass(key, modList)
+                            byIonArray = sortBYDict(byIonDict)
+                            mzArray = mgfObj.pepmassIonArray[(charge, closest)]
+                            simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
+                            if simIons >= mgfObj.minSimBy:
+                                matchedPeptides.add(alphaKey)
+
+                        # count similar ions and add that to simComparisons. Note that mzArray have multiple lists
+                        #matchedPeptides.add(alphaKey)
                 else:
                     break
-
+            # check it passes max simcomparisons and then add alphakey to matchedpeptides!
         return matchedPeptides
 
 
@@ -148,8 +147,9 @@ def readMGF(input_path):
                 uniqueSpec.add(chargePepmassTup)
 
     sortMgfDFValues(mgfDf)
-    sortPepmassIonArray(pepmassIonArray)
+
     return mgfDf, pepmassIonArray
+
 
 def sortMgfDFValues(mgfDf):
     for charge, masses in mgfDf.items():
@@ -160,7 +160,14 @@ def sortPepmassIonArray(pepmassIonArray):
         for list in masses:
             list.sort()
 
-#readMGF('C:/Users/Arpit/Desktop/UROP/InputData/600MB.mgf')
+
+#readMGF('C:/Users/Arpit/Desktop/UROP/InputData/600MB.mgf
+#  print(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
+# mgfDf, pepmassIonArray = readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf')
+# mgfObj = MGF(readMGF(mgfDf, pepmassIonArray))
+# print(2,(mgfObj.mgfDf[2][0][3]))
+
+# readMGF('C:/Users/Arpit/Desktop/UROP/InputData/600MB.mgf')
 # mgfObj = MGF(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
 # print((1,mgfObj.mgfDf[1]))
 # print(2,(mgfObj.mgfDf[2]))
@@ -188,6 +195,112 @@ def takeClosest(myList, myNumber):
     else:
        return before
 
+def createBYIons(peptide):
+    blist = []
+    ylist = []
+    for i in range (0,len(peptide)-1):
+        b = peptide[0:i+1]
+        y = peptide[i+1:]
+        blist.append(b)
+        ylist.append(y)
+    return blist, ylist
+
+def createBYIonsMod(peptide):
+    blist = []
+    ylist = []
+
+    if peptide[-1].isalpha():
+        endNo = 1
+    else:
+        endNo = 2
+
+    for i in range(0,len(peptide)-endNo):
+        if peptide[i].islower():
+            b = peptide[0:i+2]
+            y = peptide[i+2:]
+            blist.append(b)
+            ylist.append(y)
+        elif not peptide[i].isalpha():
+            continue
+        else:
+            b = peptide[0:i + 1]
+            y = peptide[i + 1:]
+            blist.append(b)
+            ylist.append(y)
+    return blist, ylist
+
+def bMassCalc(peptide, modlist = None):
+    mass = 1
+    for char in peptide:
+        if char.isalpha():
+            char = char.upper()
+            mass += monoAminoMass[char]
+        else:
+            mod = modlist[int(char)-1]
+            mass += modTable[mod][-1]
+    return mass
+
+def yMassCalc(peptide, modlist = None):
+    mass = H20_MASS + 1
+    for char in peptide:
+        if char.isalpha():
+            char = char.upper()
+            mass += monoAminoMass[char]
+        else:
+            mod = modlist[int(char)-1]
+            mass += modTable[mod][-1]
+    return mass
+
+def ionMassDict(blist,ylist):
+    dict = {}
+    for i in range(0,len(blist)):
+        pepB = blist[i]
+        pepY = ylist[i]
+        dict[pepB] = bMassCalc(pepB)
+        dict[pepY] = yMassCalc(pepY)
+    return dict
+
+def ionMassDictMod(blist,ylist,modlist):
+    dict = {}
+    for i in range(0,len(blist)):
+        pepB = blist[i]
+        pepY = ylist[i]
+        dict[pepB] = bMassCalc(pepB, modlist)
+        dict[pepY] = yMassCalc(pepY, modlist)
+    return dict
+
+"""returns a dictionary holding the b and y ions and their correspondigg mass"""
+def initIonMass(peptide, modList):
+    if peptide.isalpha():
+        blist, ylist = createBYIons(peptide)
+        dict = ionMassDict(blist, ylist)
+    else:
+        blist, ylist = createBYIonsMod(peptide)
+        dict = ionMassDictMod(blist, ylist, modList)
+    return dict
+
+def sortBYDict(byIonDict):
+    byIonArray = []
+    for key, value in byIonDict.items():
+        byIonArray.append(value)
+    byIonArray.sort()
+    return byIonArray
+
+def findSimIons(mzArray, byIons, accuracy):
+    simIonsArray = []
+    for array in mzArray:
+        simTemp = 0
+        for mass in byIons:
+            closest = takeClosest(array, mass)
+            upperThresh = mass + accuracy
+            lowerThresh = mass - accuracy
+            if lowerThresh < closest < upperThresh:
+                simTemp += 1
+            simIonsArray.append(simTemp)
+        simIons = max(simIonsArray)
+    return simIons
+
+
 # actualMass = 495.25851750000004
 # pepmass = 495.7115
 # ppmVal = 90
@@ -205,4 +318,3 @@ def takeClosest(myList, myNumber):
 # print(pepList)
 # actualMass = 894
 # print(takeClosest(pepList, actualMass))
-

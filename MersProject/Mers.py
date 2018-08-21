@@ -12,6 +12,7 @@ import sys
 import json
 import logging
 from MGFMain import *
+import atexit
 
 TRANS = "Trans"
 LINEAR = "Linear"
@@ -29,6 +30,7 @@ class Fasta:
     def __init__(self, seqDict):
         self.seqDict = seqDict
         self.entries = len(seqDict)
+        self.allProcessList = []
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                        maxDistance, outputPath, chargeFlags, mgfObj):
@@ -37,23 +39,24 @@ class Fasta:
         Function that literally combines everything to generate output
         """
 
-        allProcessList = []
+        self.allProcessList = []
 
         if transFlag:
             finalPeptide = combinePeptides(self.seqDict)
             transProcess = multiprocessing.Process(target=transOutput, args=(finalPeptide, mined, maxed, overlapFlag,
                                                                              modList, outputPath, chargeFlags))
-            transProcess.start()
-
-            allProcessList.append(transProcess)
-
+            #allProcessList.append(transProcess)
+            self.allProcessList.append(transProcess)
+            # combined = {'combined': combined}
+            # with open('output.txt', 'wb') as file:
+            # file.write(json.dumps(combined))  # use `json.loads` to do the reverse
 
         if cisFlag:
             cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.seqDict, CIS, mined, maxed,
                                                                                   overlapFlag, csvFlag, modList,
                                                                                   maxDistance,
                                                                                   outputPath, chargeFlags, mgfObj))
-            allProcessList.append(cisProcess)
+            self.allProcessList.append(cisProcess)
             cisProcess.start()
 
         if linearFlag:
@@ -62,10 +65,10 @@ class Fasta:
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      modList, maxDistance,
                                                                                      outputPath, chargeFlags, mgfObj))
-            allProcessList.append(linearProcess)
+            self.allProcessList.append(linearProcess)
             linearProcess.start()
 
-        for process in allProcessList:
+        for process in self.allProcessList:
             process.join()
 
 
@@ -141,9 +144,9 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     massDict = editRefMassDict(massDict)
 
     # If there is an mgf file AND there is a charge selected
-    if mgfObj is not None and True in chargeFlags:
+    if mgfData is not None and True in chargeFlags:
         #fulfillPpmReq(mgfObj, massDict)
-        matchedPeptides = generateMGFList(mgfObj, massDict)
+        matchedPeptides = generateMGFList(mgfData, massDict, modList)
         genMassDict.toWriteQueue.put(matchedPeptides)
 
 
@@ -163,7 +166,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
 
 def writer(queue):
     seenPeptides = []
-    with open("OutputMaster2.fasta", "w") as output_handle:
+    with open("OutputMaster3.fasta", "w") as output_handle:
         while True:
             matchedPeptides = queue.get()
             if matchedPeptides == 'stop':
@@ -651,7 +654,7 @@ def nth_replace(string, old, new, n=1, option='only nth'):
     return new.join(nth_split)
 
 
-def processLockInit(lockVar, toWriteQueue, mgfData):
+def processLockInit(lockVar, toWriteQueue, mgfObj):
 
     """
     Designed to set up a global lock for a child processes (child per protein)
@@ -659,10 +662,10 @@ def processLockInit(lockVar, toWriteQueue, mgfData):
 
     global lock
     lock = lockVar
+    global mgfData
+    mgfData = mgfObj
     genMassDict.toWriteQueue = toWriteQueue
 
-    global mgfObj
-    mgfObj = mgfData
 
 
 

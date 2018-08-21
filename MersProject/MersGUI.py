@@ -3,8 +3,8 @@
 import sys
 import subprocess
 from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTabWidget, QVBoxLayout, \
-                            QFileDialog, QGridLayout, QLabel, QComboBox, QCheckBox, QMessageBox, QDesktopWidget, \
-                            QProgressBar
+    QFileDialog, QGridLayout, QLabel, QComboBox, QCheckBox, QMessageBox, QDesktopWidget, \
+    QProgressBar
 from PyQt5.QtCore import *
 from PyQt5.QtCore import pyqtSlot
 from Mers import *
@@ -12,7 +12,6 @@ from MGFMain import *
 
 
 class WorkerSignals(QObject):
-
     """
     Signals class that is used for the GUI when emitting custom signals
     """
@@ -23,13 +22,11 @@ class WorkerSignals(QObject):
 
 
 class ProgressGenerator(QRunnable):
-
     """
     Progress Bar that shows up under the charge states once the peptide slicing begins
     """
 
     def __init__(self, *args, **kwargs):
-
         super(ProgressGenerator, self).__init__()
         # Store constructor arguments (re-used for processing)
         self.args = args
@@ -42,7 +39,6 @@ class ProgressGenerator(QRunnable):
 
     @pyqtSlot()
     def run(self):
-
         self.signals.disableButtons.emit()
         while self.flag:
             self.signals.updateProgBar.emit(0)
@@ -59,10 +55,10 @@ class ProgressGenerator(QRunnable):
 
 
 class OutputGenerator(QRunnable):
-
     """
 
     """
+
     def __init__(self, fn, *args, **kwargs):
         super(OutputGenerator, self).__init__()
         # Store constructor arguments (re-used for processing)
@@ -73,7 +69,6 @@ class OutputGenerator(QRunnable):
 
     @pyqtSlot()
     def run(self):
-
         self.fn(*self.args)
         self.signals.finished.emit()
 
@@ -82,6 +77,7 @@ class MGFImporter(QRunnable):
     """
 
     """
+
     def __init__(self, fn, *args, **kwargs):
         super(MGFImporter, self).__init__()
         # Store constructor arguments (re-used for processing)
@@ -96,17 +92,15 @@ class MGFImporter(QRunnable):
         self.fn(*self.args)
         self.signals.finished.emit()
         end = time.time()
-        print("Uploading mgf took: " + str(end-start))
+        print("Uploading mgf took: " + str(end - start))
 
 
 class App(QMainWindow):
-
     """
     App serves as the parent class for the embedded MyTableWidget
     """
 
     def __init__(self):
-
         """
          Initialisation of main window class
         """
@@ -126,7 +120,6 @@ class App(QMainWindow):
         self.show()
 
     def center(self):
-
         """
         center function is called to centre the main window on the screen
         """
@@ -136,9 +129,12 @@ class App(QMainWindow):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
+    def closeEvent(self, event):
+        print('closed')
+        sys.exit()
+
 
 class MyTableWidget(QWidget):
-
     """
     MyTableWidget class is the child of the App class. It holds the tabs where most of the GUI functionality occurs
     """
@@ -162,6 +158,8 @@ class MyTableWidget(QWidget):
         self.minDefault = '8'
         self.maxDefault = '12'
         self.maxDistDefault = '25'
+        self.minByIonDefault = '2'
+        self.byIonAccDefault = '0.1'
 
         # Initialisation of two tabs
         self.tabs = QTabWidget()
@@ -179,7 +177,6 @@ class MyTableWidget(QWidget):
         self.createTab1ParameterWidgets()
         self.addTab1ParameterWidgets()
 
-
         self.tab1.setLayout(self.tab1.layout)
 
         # Create second tab layout and widgets within each tab
@@ -195,6 +192,8 @@ class MyTableWidget(QWidget):
         # Add tabs to widget
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
+
+        atexit.register(self.stopFunction)
 
     def importedMGF(self):
         print("MGF FILE UPLOADED")
@@ -268,7 +267,9 @@ class MyTableWidget(QWidget):
         return outputPath
 
     def stopFunction(self):
-        sys.exit()
+        print('in stop function')
+        for process in self.fasta.allProcessList:
+            process.terminate()
 
     def confirmationFunction(self):
 
@@ -279,7 +280,7 @@ class MyTableWidget(QWidget):
         """
 
         ppmVal, toleranceLevel, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, \
-        modList, outputFlag, chargeFlags \
+        modList, outputFlag, chargeFlags, minByIon, byIonAccuracy, byIonFlag \
             = self.getInputParams()
 
         if self.fasta is None:
@@ -300,12 +301,15 @@ class MyTableWidget(QWidget):
                                          'Trans Flag: ' + str(transFlag) + '\n' +
                                          'CSV Flag: ' + str(csvFlag) + '\n' +
                                          'Charge States: ' + str(chargeFlags) + '\n' +
-                                         'PPM Value: ' + str(ppmVal),
+                                         'PPM Value: ' + str(ppmVal) + '\n' +
+                                         'Min b/y Ion: ' + str(minByIon) + '\n' +
+                                         'b/y Ion Accuracy: ' + str(byIonAccuracy) + '\n' +
+                                         'b/y Ion Flag: ' + str(byIonFlag),
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
             if reply == QMessageBox.Yes:
                 if self.mgf is not None:
-                    self.mgf.initValues(ppmVal, toleranceLevel)
+                    self.mgf.initValues(ppmVal, toleranceLevel, minByIon, byIonAccuracy, byIonFlag)
                 if csvFlag:
                     outputPath = self.getOutputPath()
                     if outputPath is not False:
@@ -358,15 +362,16 @@ class MyTableWidget(QWidget):
         """
 
         self.tab2.progressLabel = QLabel('Collating Combinations. Please Wait: ')
-        self.tab2.layout.addWidget(self.tab2.progressLabel, 14, 3, 1, 2)
+        self.tab2.layout.addWidget(self.tab2.progressLabel, 15, 3, 1, 2)
         self.tab2.progressBar = QProgressBar(self)
-        self.tab2.layout.addWidget(self.tab2.progressBar, 15, 3, 1, 4)
+        self.tab2.layout.addWidget(self.tab2.progressBar, 16, 3, 1, 4)
 
-        outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag,
-                                    modList, maxDistance, outputPath, chargeFlags)
+        self.outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag,
+                                         csvFlag,
+                                         modList, maxDistance, outputPath, chargeFlags)
 
-        outputGen.signals.finished.connect(self.finished)
-        self.threadpool.start(outputGen)
+        self.outputGen.signals.finished.connect(self.finished)
+        self.threadpool.start(self.outputGen)
 
         self.progressBarUpdate = ProgressGenerator()
         self.progressBarUpdate.signals.updateProgBar.connect(self.updateProgressBar)
@@ -546,8 +551,13 @@ class MyTableWidget(QWidget):
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(),
                    self.tab2.mod3Combo.currentText()]
 
+
+        minByIon = int(self.tab1.minByIonCombo.currentText())
+        byIonAccuracy = float(self.tab1.byIonAccCombo.currentText())
+        byIonFlag = self.tab1.byIonFlag.isChecked()
+
         return ppmVal, toleranceLevel, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, \
-               linearFlag, csvFlag, modList, outputFlag, chargeFlags
+               linearFlag, csvFlag, modList, outputFlag, chargeFlags, minByIon, byIonAccuracy, byIonFlag
 
     def addMinMaxAndDist(self):
 
@@ -627,12 +637,27 @@ class MyTableWidget(QWidget):
         self.tab1.toleranceLabel = QLabel('Intensity Threshold: ')
         self.tab1.toleranceCombo = QComboBox(self)
 
+        self.tab1.minByIonLabel = QLabel('Minimum b/y Ion Matches: ')
+        self.tab1.minByIonCombo = QComboBox(self)
+
+        self.tab1.byIonAccLabel = QLabel('b/y Ion Accuracy: ')
+        self.tab1.byIonAccCombo = QComboBox(self)
+
+        self.tab1.byIonFlag = QCheckBox('Apply b/y Ion Comparison: ')
+
         for i in range(10, 110, 10):
             self.tab1.ppmCombo.addItem(str(i))
 
         intensities = [0, 10, 50, 100, 500, 1000, 5000, 10000]
         for intensity in intensities:
             self.tab1.toleranceCombo.addItem(str(intensity))
+
+        for i in range(1, 10):
+            self.tab1.minByIonCombo.addItem(str(i))
+
+        ionAccuracies = [0.4, 0.2, 0.1, 0.05, 0.02, 0.01]
+        for accuracy in ionAccuracies:
+            self.tab1.byIonAccCombo.addItem(str(accuracy))
 
     def addTab1ParameterWidgets(self):
         self.tab1.layout.setColumnStretch(0, 1)
@@ -645,6 +670,12 @@ class MyTableWidget(QWidget):
         self.tab1.layout.addWidget(self.tab1.ppmCombo, 3, 3)
         self.tab1.layout.addWidget(self.tab1.toleranceLabel, 4, 2)
         self.tab1.layout.addWidget(self.tab1.toleranceCombo, 4, 3)
+
+        self.tab1.layout.addWidget(self.tab1.minByIonLabel, 5, 2)
+        self.tab1.layout.addWidget(self.tab1.minByIonCombo, 5, 3)
+        self.tab1.layout.addWidget(self.tab1.byIonAccLabel, 6, 2)
+        self.tab1.layout.addWidget(self.tab1.byIonAccCombo, 6, 3)
+        self.tab1.layout.addWidget(self.tab1.byIonFlag, 7, 2)
 
     def createTab2ParameterWidgets(self):
 
@@ -720,6 +751,14 @@ class MyTableWidget(QWidget):
         self.tab2.trans.setEnabled(False)
         self.tab2.plusTwo.setChecked(True)
 
+        minByIonIndex = self.tab1.minByIonCombo.findText(self.minByIonDefault)
+        self.tab1.minByIonCombo.setCurrentIndex(minByIonIndex)
+
+        byIonAccIndex = self.tab1.byIonAccCombo.findText(self.byIonAccDefault)
+        self.tab1.byIonAccCombo.setCurrentIndex(byIonAccIndex)
+
+        self.tab1.byIonFlag.setChecked(True)
+
     @pyqtSlot()
     def on_click(self):
         print("\n")
@@ -732,3 +771,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = App()
     sys.exit(app.exec_())
+
+
+
+

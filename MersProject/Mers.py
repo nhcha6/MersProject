@@ -168,7 +168,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
 
 def writer(queue):
     seenPeptides = []
-    with open("OutputMaster3.fasta", "w") as output_handle:
+    with open("NewOutput.fasta", "w") as output_handle:
         while True:
             matchedPeptides = queue.get()
             if matchedPeptides == 'stop':

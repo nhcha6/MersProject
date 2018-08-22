@@ -27,14 +27,14 @@ class MGF:
         self.byIonFlag = byIonFlag
 
 
-def generateMGFList(mgfObj, massDict, modList):
+def generateMGFList(protId, mgfObj, massDict, modList):
     """
 
     Generates the list of unique peptides that have masses that match within the specified
     """
     if mgfObj.mgfDf:
 
-        matchedPeptides = set()
+        matchedPeptides = {}
         for key, value in massDict.items():
             # convert modified peptides to original form
             if not key.isalpha():
@@ -48,7 +48,7 @@ def generateMGFList(mgfObj, massDict, modList):
 
             for charge, chargeMass in value[2].items():
                 # Shift to outside for charge for loop
-                if alphaKey not in matchedPeptides:
+                if alphaKey not in matchedPeptides.keys():
                     closest = takeClosest(mgfObj.mgfDf[charge], chargeMass)
                     if pepMatch(chargeMass, closest, mgfObj.ppmVal):
 
@@ -56,7 +56,7 @@ def generateMGFList(mgfObj, massDict, modList):
                         #simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
 
                         if mgfObj.byIonFlag == False:
-                            matchedPeptides.add(alphaKey)
+                            matchedPeptides[alphaKey] = protId
                         else:
                             byIonDict = initIonMass(key, modList)
                             byIonArray = sortBYDict(byIonDict)
@@ -64,7 +64,7 @@ def generateMGFList(mgfObj, massDict, modList):
                             simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
                             if simIons >= mgfObj.minSimBy:
 
-                                matchedPeptides.add(alphaKey)
+                                matchedPeptides[alphaKey] = protId
 
                         # count similar ions and add that to simComparisons. Note that mzArray have multiple lists
                         #matchedPeptides.add(alphaKey)

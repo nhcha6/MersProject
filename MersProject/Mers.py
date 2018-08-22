@@ -113,7 +113,6 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
                                             csvFlag, modList, maxDistance, finalPath, chargeFlags))
 
 
-
     pool.close()
     pool.join()
 
@@ -148,7 +147,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     # If there is an mgf file AND there is a charge selected
     if mgfData is not None and True in chargeFlags:
         #fulfillPpmReq(mgfObj, massDict)
-        matchedPeptides = generateMGFList(mgfData, massDict, modList)
+        matchedPeptides = generateMGFList(protId, mgfData, massDict, modList)
         genMassDict.toWriteQueue.put(matchedPeptides)
 
 
@@ -167,20 +166,29 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
 
 
 def writer(queue):
-    seenPeptides = []
+    seenPeptides = {}
     with open("NewOutput.fasta", "w") as output_handle:
         while True:
             matchedPeptides = queue.get()
+
+
+
             if matchedPeptides == 'stop':
                 logging.info("ALL LINEAR COMPUTED, STOP MESSAGE SENT")
                 break
             start = time.time()
-            seenPeptides.extend(matchedPeptides)
+
+            for key, value in matchedPeptides.items():
+                if key not in seenPeptides.keys():
+                    seenPeptides[key] = [value]
+                else:
+                    seenPeptides[key].append(value)
+
             end = time.time()
             total = end-start
             logging.info("Added matched in: " + str(total))
 
-        seenPeptides = set(seenPeptides)
+
         logging.info("Writing to fasta")
         SeqIO.write(createSeqObj(seenPeptides), output_handle, "fasta")
 
@@ -207,9 +215,14 @@ def createSeqObj(matchedPeptides):
     """
     count = 1
     seqRecords = []
-    for sequence in matchedPeptides:
+    for sequence, value in matchedPeptides.items():
+        currComma = 0
+        finalId = "ipd|" + str(len(sequence)) + "|pep"+str(count)
 
-        yield SeqRecord(Seq(sequence), id=str(len(sequence)) + "|pep"+str(count), description="")
+        for protein in value:
+            finalId+=protein
+
+        yield SeqRecord(Seq(sequence), id=finalId, description="")
 
         count += 1
 
@@ -545,6 +558,7 @@ def addSequenceList(input_file):
     sequenceDictionary = {}
     for fasta in fasta_sequences:
         name, sequence = fasta.id, str(fasta.seq)
+        name = name[2:]
         sequenceDictionary[name] = sequence
     return sequenceDictionary
 

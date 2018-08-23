@@ -414,6 +414,14 @@ class MyTableWidget(QWidget):
         self.progressBarUpdate.signals.disableButtons.connect(self.disableButtons)
         self.threadpool.start(self.progressBarUpdate)
 
+    def disableByInputs(self, state):
+        if state == Qt.Checked:
+            self.tab1.byIonAccText.setEnabled(True)
+            self.tab1.minByIonCombo.setEnabled(True)
+        else:
+            self.tab1.byIonAccText.setEnabled(False)
+            self.tab1.minByIonCombo.setEnabled(False)
+
     def disableMaxDist(self, state):
         """
         Called when trans is selected, it disables the use of the max distance function
@@ -705,6 +713,7 @@ class MyTableWidget(QWidget):
         self.tab1.byIonAccStatus = QLabel("")
 
         self.tab1.byIonFlag = QCheckBox('Apply b/y Ion Comparison: ')
+        self.tab1.byIonFlag.stateChanged.connect(self.disableByInputs)
 
         # for i in range(10, 110, 10):
         #     self.tab1.ppmCombo.addItem(str(i))

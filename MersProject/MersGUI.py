@@ -287,7 +287,7 @@ class MyTableWidget(QWidget):
         called which begins generating results
         """
 
-        if self.tab1.byIonAccStatus.text() == "Invalid" or self.tab1.ppmStatus.text() == "Invalid":
+        if self.tab1.byIonAccStatus.text() in ["Invalid", ""] or self.tab1.ppmStatus.text() in ["Invalid",""]:
             QMessageBox.about(self, "Message", 'Please check that valid PPM and B/Y Ion Accuracy '
                                                'values have been selected')
         else:
@@ -662,7 +662,10 @@ class MyTableWidget(QWidget):
             ppmVal = float(input)
             self.tab1.ppmStatus.setText("Valid")
         except ValueError:
-            self.tab1.ppmStatus.setText("Invalid")
+            if input == "":
+                self.tab1.ppmStatus.setText("")
+            else:
+                self.tab1.ppmStatus.setText("Invalid")
 
 
     def byIonAccChanged(self, input):
@@ -670,7 +673,10 @@ class MyTableWidget(QWidget):
             byIonAcc = float(input)
             self.tab1.byIonAccStatus.setText("Valid")
         except ValueError:
-            self.tab1.byIonAccStatus.setText("Invalid")
+            if input == "":
+                self.tab1.byIonAccStatus.setText("")
+            else:
+                self.tab1.byIonAccStatus.setText("Invalid")
 
     def createTab1ParameterWidgets(self):
         self.pushButton1 = QPushButton("Select Fasta File")
@@ -681,7 +687,7 @@ class MyTableWidget(QWidget):
         self.tab1.ppmLabel = QLabel('PPM (decimal number): ')
         self.tab1.ppmText = QLineEdit(self)
         self.tab1.ppmText.textChanged[str].connect(self.ppmChanged)
-        self.tab1.ppmStatus = QLabel("Invalid")
+        self.tab1.ppmStatus = QLabel("")
 
         self.tab1.toleranceLabel = QLabel('Intensity Threshold: ')
         self.tab1.toleranceCombo = QComboBox(self)
@@ -692,7 +698,7 @@ class MyTableWidget(QWidget):
         self.tab1.byIonAccLabel = QLabel('b/y Ion Accuracy (decimal number): ')
         self.tab1.byIonAccText = QLineEdit(self)
         self.tab1.byIonAccText.textChanged[str].connect(self.byIonAccChanged)
-        self.tab1.byIonAccStatus = QLabel("Invalid")
+        self.tab1.byIonAccStatus = QLabel("")
 
         self.tab1.byIonFlag = QCheckBox('Apply b/y Ion Comparison: ')
 

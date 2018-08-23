@@ -225,11 +225,12 @@ class MyTableWidget(QWidget):
 
         if mgfTest == 'mgf':
             self.mgfPath = fname[0]
-
+            mgfPlot = MGFImporter(plot, fname[0])
+            mgfPlot.signals.finished.connect(self.importedMGF)
             # mgfGen = MGFImporter(self.uploadMgf, fname[0])
             #
             # mgfGen.signals.finished.connect(self.importedMGF)
-            # self.threadpool.start(mgfGen)
+            self.threadpool.start(mgfPlot)
 
 
         # Ensuring program does not crash if no file is selected

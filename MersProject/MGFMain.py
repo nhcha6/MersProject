@@ -4,6 +4,10 @@ from pyteomics import mgf
 import math
 from bisect import bisect_left
 from MonoAminoAndMods import *
+import matplotlib as mpl
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 class MGF:
 
@@ -168,24 +172,25 @@ def readMgfInit(input_path):
     return sorted(maxIntensityArray)
 
 def changeIntToPoints(maxIntensityArray):
-    ms2Thresh = [1,5,10,20,50,60,70,80,90,100,200,300,400,500,600,700, 800,
+    ms2Thresh = [0,1,5,10,20,50,60,70,80,90,100,200,300,400,500,600,700, 800,
                  900,1000,5000,10000,20000,30000]
 
-    intensityPoints = {}
     maxIntLen = len(maxIntensityArray)
+    intensityPoints = []
+
 
     for point in ms2Thresh:
         closest = findLargeIndex(maxIntensityArray, point)
         numAbove = maxIntLen - closest
 
         numAbove = (numAbove*100)/maxIntLen
-        intensityPoints[point] = numAbove
-    return intensityPoints
+        intensityPoints.append(numAbove)
+    return ms2Thresh, intensityPoints
 
 def findLargeIndex(arr,x):
 
     closest = takeClosest(arr, x, True)
-    print('Closest is ' + str(closest))
+
     if closest == len(arr)-1 or closest == -1:
 
         if arr[-1] < x:
@@ -199,6 +204,17 @@ def findLargeIndex(arr,x):
         if arr[i] > x:
             return i
 
+
+def plot(input_path):
+    maxIntensityArray = readMgfInit(input_path)
+    ms2Thresh, intenistyPoints = changeIntToPoints(maxIntensityArray)
+    plt.figure()
+    plt.xlim([0, ms2Thresh[-1]])
+    plt.ylim([0, 100])
+    plt.xlabel("Max Intensity Threshold")
+    plt.ylabel("Percentage (%)")
+    plt.plot(ms2Thresh, intenistyPoints)
+    plt.show()
 
 
 def takeClosest(myList, myNumber, indexBool = False):
@@ -232,16 +248,13 @@ def takeClosest(myList, myNumber, indexBool = False):
             return pos - 1
         return before
 
-arr = [10, 20, 30, 40, 50,54]
-num = findLargeIndex(arr, 12)
-print(num)
-print(len(arr) - num)
+
 def sortMgfDFValues(mgfDf):
     for charge, masses in mgfDf.items():
         masses.sort()
 
 
-
+#plot('C:/Users/Arpit/Desktop/UROP2/InputData/600MB.mgf')
 #readMGF('C:/Users/Arpit/Desktop/UROP/InputData/600MB.mgf
 #  print(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
 # mgfDf, pepmassIonArray = readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf')

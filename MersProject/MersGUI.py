@@ -8,6 +8,10 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTa
 from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtCore import *
 from PyQt5.QtCore import pyqtSlot
+import matplotlib as mpl
+
+import matplotlib.pyplot as plt
+import numpy as np
 from Mers import *
 from MGFMain import *
 import functools

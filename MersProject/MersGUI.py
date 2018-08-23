@@ -287,14 +287,18 @@ class MyTableWidget(QWidget):
         called which begins generating results
         """
 
-
-        ppmVal, intensityThreshold, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, \
-        modList, outputFlag, chargeFlags, minSimBy, byIonAccuracy, byIonFlag = self.getInputParams()
+        if self.tab1.byIonAccStatus.text() == "Invalid" or self.tab1.ppmStatus.text() == "Invalid":
+            QMessageBox.about(self, "Message", 'Please check that valid PPM and B/Y Ion Accuracy '
+                                               'values have been selected')
+        else:
+            ppmVal, intensityThreshold, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, \
+            modList, outputFlag, chargeFlags, minSimBy, byIonAccuracy, byIonFlag = self.getInputParams()
 
         if self.fasta is None:
 
             QMessageBox.about(self, "Message", 'Please check that a valid Fasta file and output '
                                                'file location have been selected')
+
         elif not outputFlag:
             QMessageBox.about(self, "Message", 'Please select at least one output type; either trans, cis or linear')
         else:
@@ -677,7 +681,7 @@ class MyTableWidget(QWidget):
         self.tab1.ppmLabel = QLabel('PPM (decimal number): ')
         self.tab1.ppmText = QLineEdit(self)
         self.tab1.ppmText.textChanged[str].connect(self.ppmChanged)
-        self.tab1.ppmStatus = QLabel(self)
+        self.tab1.ppmStatus = QLabel("Invalid")
 
         self.tab1.toleranceLabel = QLabel('Intensity Threshold: ')
         self.tab1.toleranceCombo = QComboBox(self)
@@ -688,7 +692,7 @@ class MyTableWidget(QWidget):
         self.tab1.byIonAccLabel = QLabel('b/y Ion Accuracy (decimal number): ')
         self.tab1.byIonAccText = QLineEdit(self)
         self.tab1.byIonAccText.textChanged[str].connect(self.byIonAccChanged)
-        self.tab1.byIonAccStatus = QLabel(self)
+        self.tab1.byIonAccStatus = QLabel("Invalid")
 
         self.tab1.byIonFlag = QCheckBox('Apply b/y Ion Comparison: ')
 

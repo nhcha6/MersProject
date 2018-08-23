@@ -672,7 +672,10 @@ class MyTableWidget(QWidget):
     def ppmChanged(self, input):
         try:
             ppmVal = float(input)
-            self.tab1.ppmStatus.setText("Valid")
+            if 0.1 <= float(input) and 1000 >= float(input):
+                self.tab1.ppmStatus.setText("Valid")
+            else:
+                self.tab1.ppmStatus.setText("Invalid")
         except ValueError:
             if input == "":
                 self.tab1.ppmStatus.setText("")
@@ -683,7 +686,10 @@ class MyTableWidget(QWidget):
     def byIonAccChanged(self, input):
         try:
             byIonAcc = float(input)
-            self.tab1.byIonAccStatus.setText("Valid")
+            if 0.01 <= float(input) and 0.2 >= float(input):
+                self.tab1.byIonAccStatus.setText("Valid")
+            else:
+                self.tab1.byIonAccStatus.setText("Invalid")
         except ValueError:
             if input == "":
                 self.tab1.byIonAccStatus.setText("")
@@ -696,7 +702,7 @@ class MyTableWidget(QWidget):
         self.mgfButton = QPushButton("Select MGF File")
         self.mgfButton.clicked.connect(self.uploadMgfPreStep)
 
-        self.tab1.ppmLabel = QLabel('PPM (decimal number): ')
+        self.tab1.ppmLabel = QLabel('PPM (0.1 - 1000): ')
         self.tab1.ppmText = QLineEdit(self)
         self.tab1.ppmText.textChanged[str].connect(self.ppmChanged)
         self.tab1.ppmStatus = QLabel("")
@@ -707,7 +713,7 @@ class MyTableWidget(QWidget):
         self.tab1.minByIonLabel = QLabel('Minimum b/y Ion Matches(%): ')
         self.tab1.minByIonCombo = QComboBox(self)
 
-        self.tab1.byIonAccLabel = QLabel('b/y Ion Accuracy (decimal number): ')
+        self.tab1.byIonAccLabel = QLabel('b/y Ion Accuracy (0.01 - 0.2): ')
         self.tab1.byIonAccText = QLineEdit(self)
         self.tab1.byIonAccText.textChanged[str].connect(self.byIonAccChanged)
         self.tab1.byIonAccStatus = QLabel("")

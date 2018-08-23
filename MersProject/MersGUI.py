@@ -9,7 +9,7 @@ from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtCore import *
 from PyQt5.QtCore import pyqtSlot
 import matplotlib as mpl
-
+mpl.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 from Mers import *

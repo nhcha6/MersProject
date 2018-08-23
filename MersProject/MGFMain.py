@@ -4,6 +4,10 @@ from pyteomics import mgf
 import math
 from bisect import bisect_left
 from MonoAminoAndMods import *
+import matplotlib as mpl
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 class MGF:
 
@@ -27,14 +31,14 @@ class MGF:
         self.byIonFlag = byIonFlag
 
 
-def generateMGFList(mgfObj, massDict, modList):
+def generateMGFList(protId, mgfObj, massDict, modList):
     """
 
     Generates the list of unique peptides that have masses that match within the specified
     """
     if mgfObj.mgfDf:
 
-        matchedPeptides = set()
+        matchedPeptides = {}
         for key, value in massDict.items():
             # convert modified peptides to original form
             if not key.isalpha():
@@ -48,7 +52,7 @@ def generateMGFList(mgfObj, massDict, modList):
 
             for charge, chargeMass in value[2].items():
                 # Shift to outside for charge for loop
-                if alphaKey not in matchedPeptides:
+                if alphaKey not in matchedPeptides.keys():
                     closest = takeClosest(mgfObj.mgfDf[charge], chargeMass)
                     if pepMatch(chargeMass, closest, mgfObj.ppmVal):
 
@@ -56,7 +60,7 @@ def generateMGFList(mgfObj, massDict, modList):
                         #simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
 
                         if mgfObj.byIonFlag == False:
-                            matchedPeptides.add(alphaKey)
+                            matchedPeptides[alphaKey] = protId
                         else:
                             byIonDict = initIonMass(key, modList)
                             byIonArray = sortBYDict(byIonDict)
@@ -64,7 +68,7 @@ def generateMGFList(mgfObj, massDict, modList):
                             simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
                             if simIons >= mgfObj.minSimBy:
 
-                                matchedPeptides.add(alphaKey)
+                                matchedPeptides[alphaKey] = protId
 
                         # count similar ions and add that to simComparisons. Note that mzArray have multiple lists
                         #matchedPeptides.add(alphaKey)
@@ -151,13 +155,106 @@ def readMGF(input_path, intensityThreshold):
 
     return mgfDf, pepmassIonArray
 
+def readMgfInit(input_path):
+
+    maxIntensityArray = []
+
+    with mgf.read(input_path) as mgfReader:
+        for spectrum in mgfReader:
+
+            if 'charge' in spectrum['params'].keys():
+
+
+                maxIntensity = max(spectrum['intensity array'])
+                maxIntensityArray.append(maxIntensity)
+
+
+    return sorted(maxIntensityArray)
+
+def changeIntToPoints(maxIntensityArray):
+    ms2Thresh = [0,1,5,10,20,50,60,70,80,90,100,200,300,400,500,600,700, 800,
+                 900,1000,5000,10000,20000,30000]
+
+    maxIntLen = len(maxIntensityArray)
+    intensityPoints = []
+
+
+    for point in ms2Thresh:
+        closest = findLargeIndex(maxIntensityArray, point)
+        numAbove = maxIntLen - closest
+
+        numAbove = (numAbove*100)/maxIntLen
+        intensityPoints.append(numAbove)
+    return ms2Thresh, intensityPoints
+
+def findLargeIndex(arr,x):
+
+    closest = takeClosest(arr, x, True)
+
+    if closest == len(arr)-1 or closest == -1:
+
+        if arr[-1] < x:
+
+            return len(arr)
+        else:
+            return len(arr)-1
+
+
+    for i in range(closest, len(arr)-1):
+        if arr[i] > x:
+            return i
+
+
+def plot(input_path):
+    maxIntensityArray = readMgfInit(input_path)
+    ms2Thresh, intenistyPoints = changeIntToPoints(maxIntensityArray)
+    plt.figure()
+    plt.xlim([0, ms2Thresh[-1]])
+    plt.ylim([0, 100])
+    plt.xlabel("Max Intensity Threshold")
+    plt.ylabel("Percentage (%)")
+    plt.plot(ms2Thresh, intenistyPoints)
+    plt.show()
+
+
+def takeClosest(myList, myNumber, indexBool = False):
+    """
+    Assumes myList is sorted. Returns closest value to myNumber via index.
+
+    If two numbers are equally close, return the smallest number.
+    """
+    pos = bisect_left(myList, myNumber)
+    if pos == 0:
+        if indexBool:
+            return 0
+
+        return myList[0]
+    if pos == len(myList):
+
+        if indexBool:
+            return -1
+
+        return myList[-1]
+
+    before = myList[pos - 1]
+    after = myList[pos]
+    if after - myNumber < myNumber - before:
+        if indexBool:
+            return pos
+        return after
+
+    else:
+        if indexBool:
+            return pos - 1
+        return before
+
 
 def sortMgfDFValues(mgfDf):
     for charge, masses in mgfDf.items():
         masses.sort()
 
 
-
+#plot('C:/Users/Arpit/Desktop/UROP2/InputData/600MB.mgf')
 #readMGF('C:/Users/Arpit/Desktop/UROP/InputData/600MB.mgf
 #  print(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
 # mgfDf, pepmassIonArray = readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf')
@@ -181,24 +278,6 @@ def sortMgfDf(mgfDf):
 #readMGF('C:/Users/Administrator/Desktop/UROP/InputData/918MB.mgf')
 # readMGF('C:/Users/Administrator/Desktop/UROP/InputData/MgfExample.mgf')
 
-
-def takeClosest(myList, myNumber):
-    """
-    Assumes myList is sorted. Returns closest value to myNumber via index.
-
-    If two numbers are equally close, return the smallest number.
-    """
-    pos = bisect_left(myList, myNumber)
-    if pos == 0:
-        return myList[0]
-    if pos == len(myList):
-        return myList[-1]
-    before = myList[pos - 1]
-    after = myList[pos]
-    if after - myNumber < myNumber - before:
-       return after
-    else:
-       return before
 
 def createBYIons(peptide):
     blist = []

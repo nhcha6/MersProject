@@ -216,11 +216,11 @@ def createSeqObj(matchedPeptides):
     count = 1
     seqRecords = []
     for sequence, value in matchedPeptides.items():
-        currComma = 0
-        finalId = "ipd|" + str(len(sequence)) + "|pep"+str(count)
+
+        finalId = "ipd|pep"+str(count)+';'
 
         for protein in value:
-            finalId+=protein
+            finalId+=protein+';'
 
         yield SeqRecord(Seq(sequence), id=finalId, description="")
 
@@ -558,7 +558,10 @@ def addSequenceList(input_file):
     sequenceDictionary = {}
     for fasta in fasta_sequences:
         name, sequence = fasta.id, str(fasta.seq)
-        name = name[2:]
+
+
+        name = name.split('|')[1]
+
         sequenceDictionary[name] = sequence
     return sequenceDictionary
 

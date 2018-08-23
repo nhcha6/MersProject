@@ -4,7 +4,8 @@ import sys
 import subprocess
 from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTabWidget, QVBoxLayout, \
     QFileDialog, QGridLayout, QLabel, QComboBox, QCheckBox, QMessageBox, QDesktopWidget, \
-    QProgressBar
+    QProgressBar, QLineEdit
+from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtCore import *
 from PyQt5.QtCore import pyqtSlot
 from Mers import *
@@ -546,7 +547,7 @@ class MyTableWidget(QWidget):
 
     def getInputParams(self):
 
-        ppmVal = int(self.tab1.ppmCombo.currentText())
+        ppmVal = int(self.tab1.ppmText.text())
         toleranceLevel = float(self.tab1.toleranceCombo.currentText())
 
         mined = int(self.tab2.minimumCombo.currentText())
@@ -580,7 +581,7 @@ class MyTableWidget(QWidget):
 
 
         minByIon = int(self.tab1.minByIonCombo.currentText())
-        byIonAccuracy = float(self.tab1.byIonAccCombo.currentText())
+        byIonAccuracy = float(self.tab1.byIonAccText.text())
         byIonFlag = self.tab1.byIonFlag.isChecked()
 
         return ppmVal, toleranceLevel, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, \
@@ -652,14 +653,31 @@ class MyTableWidget(QWidget):
             self.tab2.mod2Combo.addItem(modification)
             self.tab2.mod3Combo.addItem(modification)
 
+    def ppmChanged(self, input):
+        try:
+            ppmVal = float(input)
+            self.tab1.ppmStatus.setText("Valid")
+        except ValueError:
+            self.tab1.ppmStatus.setText("Invalid")
+
+
+    def byIonAccChanged(self, input):
+        try:
+            byIonAcc = float(input)
+            self.tab1.byIonAccStatus.setText("Valid")
+        except ValueError:
+            self.tab1.byIonAccStatus.setText("Invalid")
+
     def createTab1ParameterWidgets(self):
         self.pushButton1 = QPushButton("Select Fasta File")
         self.pushButton1.clicked.connect(self.uploadFasta)
         self.mgfButton = QPushButton("Select MGF File")
         self.mgfButton.clicked.connect(self.uploadMgfPreStep)
 
-        self.tab1.ppmLabel = QLabel('PPM: ')
-        self.tab1.ppmCombo = QComboBox(self)
+        self.tab1.ppmLabel = QLabel('PPM (decimal number): ')
+        self.tab1.ppmText = QLineEdit(self)
+        self.tab1.ppmText.textChanged[str].connect(self.ppmChanged)
+        self.tab1.ppmStatus = QLabel(self)
 
         self.tab1.toleranceLabel = QLabel('Intensity Threshold: ')
         self.tab1.toleranceCombo = QComboBox(self)
@@ -667,13 +685,15 @@ class MyTableWidget(QWidget):
         self.tab1.minByIonLabel = QLabel('Minimum b/y Ion Matches(%): ')
         self.tab1.minByIonCombo = QComboBox(self)
 
-        self.tab1.byIonAccLabel = QLabel('b/y Ion Accuracy: ')
-        self.tab1.byIonAccCombo = QComboBox(self)
+        self.tab1.byIonAccLabel = QLabel('b/y Ion Accuracy (decimal number): ')
+        self.tab1.byIonAccText = QLineEdit(self)
+        self.tab1.byIonAccText.textChanged[str].connect(self.byIonAccChanged)
+        self.tab1.byIonAccStatus = QLabel(self)
 
         self.tab1.byIonFlag = QCheckBox('Apply b/y Ion Comparison: ')
 
-        for i in range(10, 110, 10):
-            self.tab1.ppmCombo.addItem(str(i))
+        # for i in range(10, 110, 10):
+        #     self.tab1.ppmCombo.addItem(str(i))
 
         intensities = [0, 10, 50, 100, 500, 1000, 5000, 10000]
         for intensity in intensities:
@@ -682,9 +702,9 @@ class MyTableWidget(QWidget):
         for i in range(10, 100, 10):
             self.tab1.minByIonCombo.addItem(str(i))
 
-        ionAccuracies = [0.4, 0.2, 0.1, 0.05, 0.02, 0.01]
-        for accuracy in ionAccuracies:
-            self.tab1.byIonAccCombo.addItem(str(accuracy))
+        # ionAccuracies = [0.4, 0.2, 0.1, 0.05, 0.02, 0.01]
+        # for accuracy in ionAccuracies:
+        #     self.tab1.byIonAccCombo.addItem(str(accuracy))
 
     def addTab1ParameterWidgets(self):
         self.tab1.layout.setColumnStretch(0, 1)
@@ -694,14 +714,16 @@ class MyTableWidget(QWidget):
         self.tab1.layout.addWidget(self.pushButton1, 1, 2, 1, 2)
         self.tab1.layout.addWidget(self.mgfButton, 2, 2, 1, 2)
         self.tab1.layout.addWidget(self.tab1.ppmLabel, 3, 2)
-        self.tab1.layout.addWidget(self.tab1.ppmCombo, 3, 3)
+        self.tab1.layout.addWidget(self.tab1.ppmText, 3, 3)
+        self.tab1.layout.addWidget(self.tab1.ppmStatus, 3, 4)
         self.tab1.layout.addWidget(self.tab1.toleranceLabel, 4, 2)
         self.tab1.layout.addWidget(self.tab1.toleranceCombo, 4, 3)
 
         self.tab1.layout.addWidget(self.tab1.minByIonLabel, 5, 2)
         self.tab1.layout.addWidget(self.tab1.minByIonCombo, 5, 3)
         self.tab1.layout.addWidget(self.tab1.byIonAccLabel, 6, 2)
-        self.tab1.layout.addWidget(self.tab1.byIonAccCombo, 6, 3)
+        self.tab1.layout.addWidget(self.tab1.byIonAccText, 6, 3)
+        self.tab1.layout.addWidget(self.tab1.byIonAccStatus, 6, 4)
         self.tab1.layout.addWidget(self.tab1.byIonFlag, 7, 2)
 
     def createTab2ParameterWidgets(self):
@@ -781,8 +803,8 @@ class MyTableWidget(QWidget):
         minByIonIndex = self.tab1.minByIonCombo.findText(self.minByIonDefault)
         self.tab1.minByIonCombo.setCurrentIndex(minByIonIndex)
 
-        byIonAccIndex = self.tab1.byIonAccCombo.findText(self.byIonAccDefault)
-        self.tab1.byIonAccCombo.setCurrentIndex(byIonAccIndex)
+        # byIonAccIndex = self.tab1.byIonAccCombo.findText(self.byIonAccDefault)
+        # self.tab1.byIonAccCombo.setCurrentIndex(byIonAccIndex)
 
         self.tab1.byIonFlag.setChecked(True)
 

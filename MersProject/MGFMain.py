@@ -151,8 +151,91 @@ def readMGF(input_path, intensityThreshold):
 
     return mgfDf, pepmassIonArray
 
+def readMgfInit(input_path):
+
+    maxIntensityArray = []
+
+    with mgf.read(input_path) as mgfReader:
+        for spectrum in mgfReader:
+
+            if 'charge' in spectrum['params'].keys():
 
 
+                maxIntensity = max(spectrum['intensity array'])
+                maxIntensityArray.append(maxIntensity)
+
+
+    return sorted(maxIntensityArray)
+
+def changeIntToPoints(maxIntensityArray):
+    ms2Thresh = [1,5,10,20,50,60,70,80,90,100,200,300,400,500,600,700, 800,
+                 900,1000,5000,10000,20000,30000]
+
+    intensityPoints = {}
+    maxIntLen = len(maxIntensityArray)
+
+    for point in ms2Thresh:
+        closest = findLargeIndex(maxIntensityArray, point)
+        numAbove = maxIntLen - closest
+
+        numAbove = (numAbove*100)/maxIntLen
+        intensityPoints[point] = numAbove
+    return intensityPoints
+
+def findLargeIndex(arr,x):
+
+    closest = takeClosest(arr, x, True)
+    print('Closest is ' + str(closest))
+    if closest == len(arr)-1 or closest == -1:
+
+        if arr[-1] < x:
+
+            return len(arr)
+        else:
+            return len(arr)-1
+
+
+    for i in range(closest, len(arr)-1):
+        if arr[i] > x:
+            return i
+
+
+
+def takeClosest(myList, myNumber, indexBool = False):
+    """
+    Assumes myList is sorted. Returns closest value to myNumber via index.
+
+    If two numbers are equally close, return the smallest number.
+    """
+    pos = bisect_left(myList, myNumber)
+    if pos == 0:
+        if indexBool:
+            return 0
+
+        return myList[0]
+    if pos == len(myList):
+
+        if indexBool:
+            return -1
+
+        return myList[-1]
+
+    before = myList[pos - 1]
+    after = myList[pos]
+    if after - myNumber < myNumber - before:
+        if indexBool:
+            return pos
+        return after
+
+    else:
+        if indexBool:
+            return pos - 1
+        return before
+
+arr = [10, 20, 30, 40, 50,54]
+num = findLargeIndex(arr, 12)
+print(num)
+print(len(arr) - num)
 def sortMgfDFValues(mgfDf):
     for charge, masses in mgfDf.items():
         masses.sort()
@@ -182,24 +265,6 @@ def sortMgfDf(mgfDf):
 #readMGF('C:/Users/Administrator/Desktop/UROP/InputData/918MB.mgf')
 # readMGF('C:/Users/Administrator/Desktop/UROP/InputData/MgfExample.mgf')
 
-
-def takeClosest(myList, myNumber):
-    """
-    Assumes myList is sorted. Returns closest value to myNumber via index.
-
-    If two numbers are equally close, return the smallest number.
-    """
-    pos = bisect_left(myList, myNumber)
-    if pos == 0:
-        return myList[0]
-    if pos == len(myList):
-        return myList[-1]
-    before = myList[pos - 1]
-    after = myList[pos]
-    if after - myNumber < myNumber - before:
-       return after
-    else:
-       return before
 
 def createBYIons(peptide):
     blist = []

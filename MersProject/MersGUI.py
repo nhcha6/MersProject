@@ -252,10 +252,10 @@ class MyTableWidget(QWidget):
 
         if mgfTest == 'mgf':
             self.mgfPath = fname[0]
-            self.mgfPlot = MGFPlotter(plotData, fname[0])
-            self.mgfPlot.signals.plot.connect(self.onlyImportMGF)
-
-            self.threadpool.start(self.mgfPlot)
+            if self.mgfPlotFlag.isChecked():
+                self.mgfPlot = MGFPlotter(plotData, fname[0])
+                self.mgfPlot.signals.plot.connect(self.onlyImportMGF)
+                self.threadpool.start(self.mgfPlot)
 
 
         # Ensuring program does not crash if no file is selected
@@ -320,6 +320,7 @@ class MyTableWidget(QWidget):
         if self.tab1.byIonAccStatus.text() in ["Invalid", ""] or self.tab1.ppmStatus.text() in ["Invalid",""]:
             QMessageBox.about(self, "Message", 'Please check that valid PPM and B/Y Ion Accuracy '
                                                'values have been selected')
+            return
         else:
             ppmVal, intensityThreshold, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, \
             modList, outputFlag, chargeFlags, minSimBy, byIonAccuracy, byIonFlag = self.getInputParams()
@@ -727,6 +728,7 @@ class MyTableWidget(QWidget):
         self.pushButton1.clicked.connect(self.uploadFasta)
         self.mgfButton = QPushButton("Select MGF File")
         self.mgfButton.clicked.connect(self.uploadMgfPreStep)
+        self.mgfPlotFlag = QCheckBox('Produce Intensity Plot')
 
         self.tab1.ppmLabel = QLabel('PPM (0.1 - 1000): ')
         self.tab1.ppmText = QLineEdit(self)
@@ -767,7 +769,8 @@ class MyTableWidget(QWidget):
         self.tab1.layout.setRowStretch(0, 1)
         self.tab1.layout.setRowStretch(5, 1)
         self.tab1.layout.addWidget(self.pushButton1, 1, 2, 1, 2)
-        self.tab1.layout.addWidget(self.mgfButton, 2, 2, 1, 2)
+        self.tab1.layout.addWidget(self.mgfButton, 2, 2)
+        self.tab1.layout.addWidget(self.mgfPlotFlag, 2, 3)
         self.tab1.layout.addWidget(self.tab1.ppmLabel, 3, 2)
         self.tab1.layout.addWidget(self.tab1.ppmText, 3, 3)
         self.tab1.layout.addWidget(self.tab1.ppmStatus, 3, 4)

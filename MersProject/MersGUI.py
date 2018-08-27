@@ -25,6 +25,7 @@ class WorkerSignals(QObject):
     finished = pyqtSignal()
     updateProgBar = pyqtSignal(int)
     disableButtons = pyqtSignal()
+    plot = pyqtSignal(list, list)
 
 
 class ProgressGenerator(QRunnable):
@@ -99,6 +100,28 @@ class MGFImporter(QRunnable):
         self.signals.finished.emit()
         end = time.time()
         print("Uploading mgf took: " + str(end - start))
+
+class MGFPlotter(QRunnable):
+    """
+
+    """
+
+    def __init__(self, fn, *args, **kwargs):
+        super(MGFPlotter, self).__init__()
+        # Store constructor arguments (re-used for processing)
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        self.signals = WorkerSignals()
+
+    @pyqtSlot()
+    def run(self):
+        start = time.time()
+        ms2Thresh, intensityPoints = self.fn(*self.args)
+
+        self.signals.plot.emit(ms2Thresh, intensityPoints)
+        end = time.time()
+        print("Getting plot data took: " + str(end - start))
 
 
 class App(QMainWindow):
@@ -214,6 +237,10 @@ class MyTableWidget(QWidget):
 
         self.mgf = MGF(mgfDf, pepmassIonArray, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag)
 
+    def onlyImportMGF(self, ms2Thresh, intensityPoints):
+      
+        plot(ms2Thresh, intensityPoints)
+
 
     def uploadMgfPreStep(self):
         """
@@ -225,12 +252,10 @@ class MyTableWidget(QWidget):
 
         if mgfTest == 'mgf':
             self.mgfPath = fname[0]
-            #mgfPlot = MGFImporter(plot, fname[0])
-            #mgfPlot.signals.finished.connect(self.importedMGF)
-            # mgfGen = MGFImporter(self.uploadMgf, fname[0])
-            #
-            # mgfGen.signals.finished.connect(self.importedMGF)
-            #self.threadpool.start(mgfPlot)
+            self.mgfPlot = MGFPlotter(plotData, fname[0])
+            self.mgfPlot.signals.plot.connect(self.onlyImportMGF)
+
+            self.threadpool.start(self.mgfPlot)
 
 
         # Ensuring program does not crash if no file is selected
@@ -346,8 +371,8 @@ class MyTableWidget(QWidget):
                                                                       maxDistance, outputPath, chargeFlags))
                     self.threadpool.start(mgfGen)
 
-    def onlyImportMGF(self):
-        print("MGF FILE Uploaded")
+
+
 
     def importedMGF(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                     maxDistance, outputPath, chargeFlags):

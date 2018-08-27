@@ -203,18 +203,20 @@ def findLargeIndex(arr,x):
     for i in range(closest, len(arr)-1):
         if arr[i] > x:
             return i
-
-
-def plot(input_path):
+def plotData(input_path):
     maxIntensityArray = readMgfInit(input_path)
     ms2Thresh, intenistyPoints = changeIntToPoints(maxIntensityArray)
+    return ms2Thresh, intenistyPoints
+
+def plot(ms2Thresh, intensityPoints):
+    #ms2Thresh, intensityPoints = plotData(input_path)
     plt.figure()
     #plt.xlim([0, ms2Thresh[-1]])
     plt.ylim([0, 110])
     plt.xscale('log')
     plt.xlabel("Max Intensity Threshold")
     plt.ylabel("Percentage (%)")
-    plt.plot(ms2Thresh, intenistyPoints)
+    plt.plot(ms2Thresh, intensityPoints)
     plt.show()
 
 

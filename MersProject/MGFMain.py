@@ -209,8 +209,9 @@ def plot(input_path):
     maxIntensityArray = readMgfInit(input_path)
     ms2Thresh, intenistyPoints = changeIntToPoints(maxIntensityArray)
     plt.figure()
-    plt.xlim([0, ms2Thresh[-1]])
-    plt.ylim([0, 100])
+    #plt.xlim([0, ms2Thresh[-1]])
+    plt.ylim([0, 110])
+    plt.xscale('log')
     plt.xlabel("Max Intensity Threshold")
     plt.ylabel("Percentage (%)")
     plt.plot(ms2Thresh, intenistyPoints)
@@ -254,7 +255,7 @@ def sortMgfDFValues(mgfDf):
         masses.sort()
 
 
-#plot('C:/Users/Arpit/Desktop/UROP2/InputData/600MB.mgf')
+#plot('C:/Users/Arpit/Desktop/UROP2/InputData/MgfExample.mgf')
 #readMGF('C:/Users/Arpit/Desktop/UROP/InputData/600MB.mgf
 #  print(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf'))
 # mgfDf, pepmassIonArray = readMGF('C:/Users/Arpit/Desktop/UROP/InputData/MgfExample.mgf')

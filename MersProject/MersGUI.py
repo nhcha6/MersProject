@@ -9,7 +9,7 @@ from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtCore import *
 from PyQt5.QtCore import pyqtSlot
 import matplotlib as mpl
-
+mpl.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 from Mers import *
@@ -292,7 +292,7 @@ class MyTableWidget(QWidget):
         called which begins generating results
         """
 
-        if self.tab1.byIonAccStatus.text() == "Invalid" or self.tab1.ppmStatus.text() == "Invalid":
+        if self.tab1.byIonAccStatus.text() in ["Invalid", ""] or self.tab1.ppmStatus.text() in ["Invalid",""]:
             QMessageBox.about(self, "Message", 'Please check that valid PPM and B/Y Ion Accuracy '
                                                'values have been selected')
         else:
@@ -414,6 +414,14 @@ class MyTableWidget(QWidget):
         self.progressBarUpdate.signals.finished.connect(self.deleteProgressBar)
         self.progressBarUpdate.signals.disableButtons.connect(self.disableButtons)
         self.threadpool.start(self.progressBarUpdate)
+
+    def disableByInputs(self, state):
+        if state == Qt.Checked:
+            self.tab1.byIonAccText.setEnabled(True)
+            self.tab1.minByIonCombo.setEnabled(True)
+        else:
+            self.tab1.byIonAccText.setEnabled(False)
+            self.tab1.minByIonCombo.setEnabled(False)
 
     def disableMaxDist(self, state):
         """
@@ -665,17 +673,29 @@ class MyTableWidget(QWidget):
     def ppmChanged(self, input):
         try:
             ppmVal = float(input)
-            self.tab1.ppmStatus.setText("Valid")
+            if 0.1 <= float(input) and 1000 >= float(input):
+                self.tab1.ppmStatus.setText("Valid")
+            else:
+                self.tab1.ppmStatus.setText("Invalid")
         except ValueError:
-            self.tab1.ppmStatus.setText("Invalid")
+            if input == "":
+                self.tab1.ppmStatus.setText("")
+            else:
+                self.tab1.ppmStatus.setText("Invalid")
 
 
     def byIonAccChanged(self, input):
         try:
             byIonAcc = float(input)
-            self.tab1.byIonAccStatus.setText("Valid")
+            if 0.01 <= float(input) and 0.2 >= float(input):
+                self.tab1.byIonAccStatus.setText("Valid")
+            else:
+                self.tab1.byIonAccStatus.setText("Invalid")
         except ValueError:
-            self.tab1.byIonAccStatus.setText("Invalid")
+            if input == "":
+                self.tab1.byIonAccStatus.setText("")
+            else:
+                self.tab1.byIonAccStatus.setText("Invalid")
 
     def createTab1ParameterWidgets(self):
         self.pushButton1 = QPushButton("Select Fasta File")
@@ -683,10 +703,10 @@ class MyTableWidget(QWidget):
         self.mgfButton = QPushButton("Select MGF File")
         self.mgfButton.clicked.connect(self.uploadMgfPreStep)
 
-        self.tab1.ppmLabel = QLabel('PPM (decimal number): ')
+        self.tab1.ppmLabel = QLabel('PPM (0.1 - 1000): ')
         self.tab1.ppmText = QLineEdit(self)
         self.tab1.ppmText.textChanged[str].connect(self.ppmChanged)
-        self.tab1.ppmStatus = QLabel("Invalid")
+        self.tab1.ppmStatus = QLabel("")
 
         self.tab1.toleranceLabel = QLabel('Intensity Threshold: ')
         self.tab1.toleranceCombo = QComboBox(self)
@@ -694,12 +714,13 @@ class MyTableWidget(QWidget):
         self.tab1.minByIonLabel = QLabel('Minimum b/y Ion Matches(%): ')
         self.tab1.minByIonCombo = QComboBox(self)
 
-        self.tab1.byIonAccLabel = QLabel('b/y Ion Accuracy (decimal number): ')
+        self.tab1.byIonAccLabel = QLabel('b/y Ion Accuracy (0.01 - 0.2): ')
         self.tab1.byIonAccText = QLineEdit(self)
         self.tab1.byIonAccText.textChanged[str].connect(self.byIonAccChanged)
-        self.tab1.byIonAccStatus = QLabel("Invalid")
+        self.tab1.byIonAccStatus = QLabel("")
 
         self.tab1.byIonFlag = QCheckBox('Apply b/y Ion Comparison: ')
+        self.tab1.byIonFlag.stateChanged.connect(self.disableByInputs)
 
         # for i in range(10, 110, 10):
         #     self.tab1.ppmCombo.addItem(str(i))

@@ -263,8 +263,7 @@ class MyTableWidget(QWidget):
                 self.progressBarUpdate = ProgressGenerator()
                 self.progressBarUpdate.signals.updateProgBar.connect(self.updateProgressBar)
                 self.progressBarUpdate.signals.finished.connect(self.deleteTab1ProgressBar)
-
-                self.progressBarUpdate.signals.disableButtons.connect(self.disableButtons)
+                self.progressBarUpdate.signals.disableButtons.connect(self.disableWidgets)
                 self.threadpool.start(self.progressBarUpdate)
 
                 self.mgfPlot = MGFPlotter(plotData, fname[0])
@@ -450,14 +449,16 @@ class MyTableWidget(QWidget):
         print("IT'S DONE")
 
         self.progressBarUpdate.changeFlag()
-        self.tab2.output.setEnabled(True)
-        self.pushButton1.setEnabled(True)
+        self.enableAllWidgets()
         QMessageBox.about(self, "Message", 'Output Complete')
 
     def intensityPlotFin(self):
         self.progressBarUpdate.changeFlag()
-        self.tab2.output.setEnabled(True)
+        self.enableTab2Widgets()
         self.pushButton1.setEnabled(True)
+        self.mgfButton.setEnabled(True)
+        self.mgfPlotFlag.setEnabled(True)
+        self.enableControl()
 
     def updateProgressBar(self, value):
         self.progressBar.setValue(value)
@@ -480,12 +481,70 @@ class MyTableWidget(QWidget):
         self.progressBar.deleteLater()
         self.progressBar = None
 
-    def disableButtons(self):
+    def disableWidgets(self):
         """
         These buttons should not be being used when an output is being generated.
         """
-        self.tab2.output.setEnabled(False)
+        self.tab2.minimumCombo.setEnabled(False)
+        self.tab2.maximumCombo.setEnabled(False)
+        self.tab2.maxDistCombo.setEnabled(False)
+        self.tab2.overlap.setEnabled(False)
+        self.tab2.trans.setEnabled(False)
+        self.tab2.cis.setEnabled(False)
+        self.tab2.linear.setEnabled(False)
+        self.tab2.plusOne.setEnabled(False)
+        self.tab2.plusTwo.setEnabled(False)
+        self.tab2.plusThree.setEnabled(False)
+        self.tab2.plusFour.setEnabled(False)
+        self.tab2.plusFive.setEnabled(False)
+        self.tab2.mod1Combo.setEnabled(False)
+        self.tab2.mod2Combo.setEnabled(False)
+        self.tab2.mod3Combo.setEnabled(False)
         self.pushButton1.setEnabled(False)
+        self.mgfButton.setEnabled(False)
+        self.mgfPlotFlag.setEnabled(False)
+        self.nextTab.setEnabled(False)
+        self.tab1.ppmText.setEnabled(False)
+        self.tab1.toleranceText.setEnabled(False)
+        self.tab1.minByIonText.setEnabled(False)
+        self.tab1.byIonAccText.setEnabled(False)
+        self.tab1.byIonFlag.setEnabled(False)
+        self.tab2.csv.setEnabled(False)
+        self.tab2.output.setEnabled(False)
+
+    def enableAllWidgets(self):
+        self.enableTab1Widgets()
+        self.enableTab2Widgets()
+
+    def enableTab1Widgets(self):
+        self.pushButton1.setEnabled(True)
+        self.mgfButton.setEnabled(True)
+        self.mgfPlotFlag.setEnabled(True)
+        self.nextTab.setEnabled(True)
+        self.tab1.ppmText.setEnabled(True)
+        self.tab1.toleranceText.setEnabled(True)
+        self.tab1.minByIonText.setEnabled(True)
+        self.tab1.byIonAccText.setEnabled(True)
+        self.tab1.byIonFlag.setEnabled(True)
+
+    def enableTab2Widgets(self):
+        self.tab2.minimumCombo.setEnabled(True)
+        self.tab2.maximumCombo.setEnabled(True)
+        self.tab2.maxDistCombo.setEnabled(True)
+        self.tab2.overlap.setEnabled(True)
+        self.tab2.trans.setEnabled(True)
+        self.tab2.cis.setEnabled(True)
+        self.tab2.linear.setEnabled(True)
+        self.tab2.plusOne.setEnabled(True)
+        self.tab2.plusTwo.setEnabled(True)
+        self.tab2.plusThree.setEnabled(True)
+        self.tab2.plusFour.setEnabled(True)
+        self.tab2.plusFive.setEnabled(True)
+        self.tab2.mod1Combo.setEnabled(True)
+        self.tab2.mod2Combo.setEnabled(True)
+        self.tab2.mod3Combo.setEnabled(True)
+        self.tab2.csv.setEnabled(True)
+        self.tab2.output.setEnabled(True)
 
     def outputPreStep(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList, maxDistance,
                       outputPath, chargeFlags):
@@ -510,16 +569,8 @@ class MyTableWidget(QWidget):
         self.progressBarUpdate = ProgressGenerator()
         self.progressBarUpdate.signals.updateProgBar.connect(self.updateProgressBar)
         self.progressBarUpdate.signals.finished.connect(self.deleteTab2ProgressBar)
-        self.progressBarUpdate.signals.disableButtons.connect(self.disableButtons)
+        self.progressBarUpdate.signals.disableButtons.connect(self.disableWidgets)
         self.threadpool.start(self.progressBarUpdate)
-
-    def disableByInputs(self, state):
-        if state == Qt.Checked and self.fasta is not None and self.mgfPath is not None:
-            self.tab1.byIonAccText.setEnabled(True)
-            self.tab1.minByIonText.setEnabled(True)
-        else:
-            self.tab1.byIonAccText.setEnabled(False)
-            self.tab1.minByIonText.setEnabled(False)
 
     def disableMaxDist(self, state):
         """

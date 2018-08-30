@@ -188,8 +188,8 @@ class MyTableWidget(QWidget):
         self.minDefault = '8'
         self.maxDefault = '12'
         self.maxDistDefault = '25'
-        self.minByIonDefault = '50'
-        self.byIonAccDefault = '0.1'
+        #self.minByIonDefault = '50'
+        #self.byIonAccDefault = '0.1'
 
         # Initialisation of two tabs
         self.tabs = QTabWidget()
@@ -444,10 +444,10 @@ class MyTableWidget(QWidget):
     def disableByInputs(self, state):
         if state == Qt.Checked:
             self.tab1.byIonAccText.setEnabled(True)
-            self.tab1.minByIonCombo.setEnabled(True)
+            self.tab1.minByIonText.setEnabled(True)
         else:
             self.tab1.byIonAccText.setEnabled(False)
-            self.tab1.minByIonCombo.setEnabled(False)
+            self.tab1.minByIonText.setEnabled(False)
 
     def disableMaxDist(self, state):
         """
@@ -591,7 +591,7 @@ class MyTableWidget(QWidget):
     def getInputParams(self):
 
         ppmVal = int(self.tab1.ppmText.text())
-        toleranceLevel = float(self.tab1.toleranceCombo.currentText())
+        toleranceLevel = float(self.tab1.toleranceText.text())
 
         mined = int(self.tab2.minimumCombo.currentText())
         maxed = int(self.tab2.maximumCombo.currentText())
@@ -623,7 +623,7 @@ class MyTableWidget(QWidget):
                    self.tab2.mod3Combo.currentText()]
 
 
-        minByIon = int(self.tab1.minByIonCombo.currentText())
+        minByIon = int(self.tab1.minByIonText.text())
         byIonAccuracy = float(self.tab1.byIonAccText.text())
         byIonFlag = self.tab1.byIonFlag.isChecked()
 
@@ -696,32 +696,38 @@ class MyTableWidget(QWidget):
             self.tab2.mod2Combo.addItem(modification)
             self.tab2.mod3Combo.addItem(modification)
 
-    def ppmChanged(self, input):
-        try:
-            ppmVal = float(input)
-            if 0.1 <= float(input) and 1000 >= float(input):
-                self.tab1.ppmStatus.setText("Valid")
-            else:
-                self.tab1.ppmStatus.setText("Invalid")
-        except ValueError:
-            if input == "":
-                self.tab1.ppmStatus.setText("")
-            else:
-                self.tab1.ppmStatus.setText("Invalid")
+    def textBoxSender(self, sender):
+        if sender == self.tab1.byIonAccText:
+            label = self.tab1.byIonAccStatus
+            min = 0.01
+            max = 0.2
+        elif sender == self.tab1.ppmText:
+            label = self.tab1.ppmStatus
+            min = 0.1
+            max = 1000
+        elif sender == self.tab1.toleranceText:
+            label = self.tab1.toleranceStatus
+            min = 0
+            max = 10000
+        elif sender == self.tab1.minByIonText:
+            label = self.tab1.minByIonStatus
+            min = 0
+            max = 100
+        return label, min, max
 
-
-    def byIonAccChanged(self, input):
+    def textBoxChanged(self, input):
+        label, min, max = self.textBoxSender(self.sender())
         try:
             byIonAcc = float(input)
-            if 0.01 <= float(input) and 0.2 >= float(input):
-                self.tab1.byIonAccStatus.setText("Valid")
+            if min <= float(input) and max >= float(input):
+                label.setText("Valid")
             else:
-                self.tab1.byIonAccStatus.setText("Invalid")
+                label.setText("Invalid")
         except ValueError:
             if input == "":
-                self.tab1.byIonAccStatus.setText("")
+                label.setText("")
             else:
-                self.tab1.byIonAccStatus.setText("Invalid")
+                label.setText("Invalid")
 
     def createTab1ParameterWidgets(self):
         self.pushButton1 = QPushButton("Select Fasta File")
@@ -732,18 +738,23 @@ class MyTableWidget(QWidget):
 
         self.tab1.ppmLabel = QLabel('PPM (0.1 - 1000): ')
         self.tab1.ppmText = QLineEdit(self)
-        self.tab1.ppmText.textChanged[str].connect(self.ppmChanged)
+        self.tab1.ppmText.textChanged[str].connect(self.textBoxChanged)
         self.tab1.ppmStatus = QLabel("")
 
         self.tab1.toleranceLabel = QLabel('Intensity Threshold: ')
-        self.tab1.toleranceCombo = QComboBox(self)
+        self.tab1.toleranceText = QLineEdit(self)
+        self.tab1.toleranceText.textChanged[str].connect(self.textBoxChanged)
+        self.tab1.toleranceStatus = QLabel("")
 
         self.tab1.minByIonLabel = QLabel('Minimum b/y Ion Matches(%): ')
-        self.tab1.minByIonCombo = QComboBox(self)
+        self.tab1.minByIonText = QLineEdit(self)
+        self.tab1.minByIonText.textChanged[str].connect(self.textBoxChanged)
+        self.tab1.minByIonStatus = QLabel("")
+
 
         self.tab1.byIonAccLabel = QLabel('b/y Ion Accuracy (0.01 - 0.2): ')
         self.tab1.byIonAccText = QLineEdit(self)
-        self.tab1.byIonAccText.textChanged[str].connect(self.byIonAccChanged)
+        self.tab1.byIonAccText.textChanged[str].connect(self.textBoxChanged)
         self.tab1.byIonAccStatus = QLabel("")
 
         self.tab1.byIonFlag = QCheckBox('Apply b/y Ion Comparison: ')
@@ -752,12 +763,12 @@ class MyTableWidget(QWidget):
         # for i in range(10, 110, 10):
         #     self.tab1.ppmCombo.addItem(str(i))
 
-        intensities = [0, 10, 50, 100, 500, 1000, 5000, 10000]
-        for intensity in intensities:
-            self.tab1.toleranceCombo.addItem(str(intensity))
+        # intensities = [0, 10, 50, 100, 500, 1000, 5000, 10000]
+        # for intensity in intensities:
+        #     self.tab1.toleranceCombo.addItem(str(intensity))
 
-        for i in range(10, 100, 10):
-            self.tab1.minByIonCombo.addItem(str(i))
+        # for i in range(10, 100, 10):
+        #     self.tab1.minByIonCombo.addItem(str(i))
 
         # ionAccuracies = [0.4, 0.2, 0.1, 0.05, 0.02, 0.01]
         # for accuracy in ionAccuracies:
@@ -775,10 +786,12 @@ class MyTableWidget(QWidget):
         self.tab1.layout.addWidget(self.tab1.ppmText, 3, 3)
         self.tab1.layout.addWidget(self.tab1.ppmStatus, 3, 4)
         self.tab1.layout.addWidget(self.tab1.toleranceLabel, 4, 2)
-        self.tab1.layout.addWidget(self.tab1.toleranceCombo, 4, 3)
+        self.tab1.layout.addWidget(self.tab1.toleranceText, 4, 3)
+        self.tab1.layout.addWidget(self.tab1.toleranceStatus, 4, 4)
 
         self.tab1.layout.addWidget(self.tab1.minByIonLabel, 5, 2)
-        self.tab1.layout.addWidget(self.tab1.minByIonCombo, 5, 3)
+        self.tab1.layout.addWidget(self.tab1.minByIonText, 5, 3)
+        self.tab1.layout.addWidget(self.tab1.minByIonStatus, 5, 4)
         self.tab1.layout.addWidget(self.tab1.byIonAccLabel, 6, 2)
         self.tab1.layout.addWidget(self.tab1.byIonAccText, 6, 3)
         self.tab1.layout.addWidget(self.tab1.byIonAccStatus, 6, 4)
@@ -858,8 +871,8 @@ class MyTableWidget(QWidget):
         self.tab2.trans.setEnabled(False)
         self.tab2.plusTwo.setChecked(True)
 
-        minByIonIndex = self.tab1.minByIonCombo.findText(self.minByIonDefault)
-        self.tab1.minByIonCombo.setCurrentIndex(minByIonIndex)
+        # minByIonIndex = self.tab1.minByIonCombo.findText(self.minByIonDefault)
+        # self.tab1.minByIonCombo.setCurrentIndex(minByIonIndex)
 
         # byIonAccIndex = self.tab1.byIonAccCombo.findText(self.byIonAccDefault)
         # self.tab1.byIonAccCombo.setCurrentIndex(byIonAccIndex)

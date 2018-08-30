@@ -272,6 +272,7 @@ class MyTableWidget(QWidget):
                 self.mgfPlot.signals.finished.connect(self.intensityPlotFin)
                 self.threadpool.start(self.mgfPlot)
             self.enableControl()
+            QMessageBox.about(self, "Message", 'MGF file successfully selected!')
 
         # Ensuring program does not crash if no file is selected
         elif fname[0] == '':
@@ -386,60 +387,48 @@ class MyTableWidget(QWidget):
         called which begins generating results
         """
 
-        if self.tab1.byIonAccStatus.text() in ["Invalid", ""] or self.tab1.ppmStatus.text() in ["Invalid",""]:
-            QMessageBox.about(self, "Message", 'Please check that valid PPM and B/Y Ion Accuracy '
-                                               'values have been selected')
-            return
-        else:
-            ppmVal, intensityThreshold, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, \
-            modList, outputFlag, chargeFlags, minSimBy, byIonAccuracy, byIonFlag = self.getInputParams()
+        ppmVal, intensityThreshold, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, \
+        modList, outputFlag, chargeFlags, minSimBy, byIonAccuracy, byIonFlag = self.getInputParams()
 
-        if self.fasta is None:
 
-            QMessageBox.about(self, "Message", 'Please check that a valid Fasta file and output '
-                                               'file location have been selected')
-
-        elif not outputFlag:
-            QMessageBox.about(self, "Message", 'Please select at least one output type; either trans, cis or linear')
-        else:
-            reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' +
+        reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' +
                                          'Minimum Peptide Length: ' + str(mined) + '\n' +
                                          'Maximum Peptide Length: ' + str(maxed) + '\n' +
                                          'Maximum Distance: ' + str(maxDistance) + '\n' +
-                                         'Mod List: ' + str(modList) + '\n' +
-                                         'Overlap Flag: ' + str(overlapFlag) + '\n' +
-                                         'Linear Flag: ' + str(linearFlag) + '\n' +
-                                         'Cis Flag: ' + str(cisFlag) + '\n' +
-                                         'Trans Flag: ' + str(transFlag) + '\n' +
-                                         'CSV Flag: ' + str(csvFlag) + '\n' +
+                                         'Modifications: ' + str(modList) + '\n' +
+                                         'No Overlap: ' + str(overlapFlag) + '\n' +
+                                         'Linear Splicing: ' + str(linearFlag) + '\n' +
+                                         'Cis Splicing: ' + str(cisFlag) + '\n' +
+                                         'Trans Splicing: ' + str(transFlag) + '\n' +
+                                         'Print intial combinations: ' + str(csvFlag) + '\n' +
                                          'Charge States: ' + str(chargeFlags) + '\n' +
                                          'PPM Value: ' + str(ppmVal) + '\n' +
-                                         'Intensity Threshold' + str(intensityThreshold) + '\n'
+                                         'Intensity Threshold: ' + str(intensityThreshold) + '\n'
                                          'Min b/y Ion (%): ' + str(minSimBy) + '\n' +
                                          'b/y Ion Accuracy: ' + str(byIonAccuracy) + '\n' +
                                          'b/y Ion Flag: ' + str(byIonFlag),
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
-            if reply == QMessageBox.Yes:
+        if reply == QMessageBox.Yes:
 
-                print(self.mgfPath)
-                # UPLOAD MGF FILE HERE
-                mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, ppmVal, intensityThreshold, minSimBy,
-                                     byIonAccuracy, byIonFlag)
+            print(self.mgfPath)
+            # UPLOAD MGF FILE HERE
+            mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, ppmVal, intensityThreshold, minSimBy,
+                                byIonAccuracy, byIonFlag)
 
-                if csvFlag:
-                    outputPath = self.getOutputPath()
-                    if outputPath is not False:
-                        self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                                           maxDistance, outputPath, chargeFlags)
-                else:
+            if csvFlag:
+                outputPath = self.getOutputPath()
+                if outputPath is not False:
+                    self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
+                                        maxDistance, outputPath, chargeFlags)
+            else:
 
-                    outputPath = None
-                    #mgfGen.signals.finished.connect(self.onlyImportMGF)
-                    mgfGen.signals.finished.connect(functools.partial(self.importedMGF, mined, maxed, overlapFlag,
+                outputPath = None
+                #mgfGen.signals.finished.connect(self.onlyImportMGF)
+                mgfGen.signals.finished.connect(functools.partial(self.importedMGF, mined, maxed, overlapFlag,
                                                                       transFlag, cisFlag, linearFlag, csvFlag, modList,
                                                                       maxDistance, outputPath, chargeFlags))
-                    self.threadpool.start(mgfGen)
+                self.threadpool.start(mgfGen)
 
 
 

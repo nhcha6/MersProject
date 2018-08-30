@@ -201,6 +201,7 @@ class MyTableWidget(QWidget):
         # Add tabs to table class (self)
         self.tabs.addTab(self.tab1, "Select File and Path")
         self.tabs.addTab(self.tab2, "Input Parameters")
+        self.tabs.setTabEnabled(1, False)
 
         # Creation of tab layout and widgets within tab
         self.tab1.layout = QGridLayout(self)
@@ -262,13 +263,15 @@ class MyTableWidget(QWidget):
                 self.progressBarUpdate = ProgressGenerator()
                 self.progressBarUpdate.signals.updateProgBar.connect(self.updateProgressBar)
                 self.progressBarUpdate.signals.finished.connect(self.deleteTab1ProgressBar)
+
                 self.progressBarUpdate.signals.disableButtons.connect(self.disableButtons)
                 self.threadpool.start(self.progressBarUpdate)
-                
+
                 self.mgfPlot = MGFPlotter(plotData, fname[0])
                 self.mgfPlot.signals.plot.connect(self.onlyImportMGF)
                 self.mgfPlot.signals.finished.connect(self.intensityPlotFin)
                 self.threadpool.start(self.mgfPlot)
+            self.enableControl()
 
         # Ensuring program does not crash if no file is selected
         elif fname[0] == '':
@@ -291,7 +294,7 @@ class MyTableWidget(QWidget):
         # Ensure opening fasta extension file by checking last five chars
         if fastaTest == 'fasta':
             self.fasta = Fasta(addSequenceList(fname[0]))
-
+            self.enableControl()
             QMessageBox.about(self, "Message", 'Fasta file imported.'
                                                'There are ' + str(self.fasta.entries) + ' proteins in this file!')
 
@@ -320,6 +323,35 @@ class MyTableWidget(QWidget):
         print('in stop function')
         for process in self.fasta.allProcessList:
             process.terminate()
+
+    def nextTabFunc(self):
+        self.tabs.setCurrentIndex(1)
+
+    def firstTabValid(self):
+        if self.tab1.byIonAccStatus.text() not in ["Invalid", ""] and \
+            self.tab1.ppmStatus.text() not in ["Invalid", ""] and \
+            self.tab1.toleranceStatus.text() not in ["Invalid", ""] and \
+            self.tab1.minByIonStatus.text() not in ["Invalid", ""]:
+            return True
+        return False
+
+    def enableControl(self):
+        if self.fasta is not None and self.mgfPath is not None:
+            self.tab1.minByIonText.setEnabled(True)
+            self.tab1.ppmText.setEnabled(True)
+            self.tab1.byIonAccText.setEnabled(True)
+            self.tab1.toleranceText.setEnabled(True)
+            statusList = [self.tab1.byIonAccStatus.text(), self.tab1.ppmStatus.text(), \
+                          self.tab1.toleranceStatus.text(), self.tab1.minByIonStatus.text()]
+            if self.firstTabValid():
+                self.tabs.setTabEnabled(1, True)
+                self.nextTab.setEnabled(True)
+            else:
+                self.tabs.setTabEnabled(1, False)
+                self.nextTab.setEnabled(False)
+
+
+
 
     def confirmationFunction(self):
 
@@ -468,7 +500,7 @@ class MyTableWidget(QWidget):
         self.threadpool.start(self.progressBarUpdate)
 
     def disableByInputs(self, state):
-        if state == Qt.Checked:
+        if state == Qt.Checked and self.fasta is not None and self.mgfPath is not None:
             self.tab1.byIonAccText.setEnabled(True)
             self.tab1.minByIonText.setEnabled(True)
         else:
@@ -761,30 +793,40 @@ class MyTableWidget(QWidget):
         self.mgfButton = QPushButton("Select MGF File")
         self.mgfButton.clicked.connect(self.uploadMgfPreStep)
         self.mgfPlotFlag = QCheckBox('Produce Intensity Plot')
+        self.nextTab = QPushButton("Next Tab")
+        self.nextTab.clicked.connect(self.nextTabFunc)
+        self.nextTab.setEnabled(False)
 
         self.tab1.ppmLabel = QLabel('PPM (0.1 - 1000): ')
         self.tab1.ppmText = QLineEdit(self)
+        self.tab1.ppmText.setEnabled(False)
         self.tab1.ppmText.textChanged[str].connect(self.textBoxChanged)
         self.tab1.ppmStatus = QLabel("")
 
         self.tab1.toleranceLabel = QLabel('Intensity Threshold: ')
         self.tab1.toleranceText = QLineEdit(self)
+        self.tab1.toleranceText.setEnabled(False)
         self.tab1.toleranceText.textChanged[str].connect(self.textBoxChanged)
         self.tab1.toleranceStatus = QLabel("")
 
         self.tab1.minByIonLabel = QLabel('Minimum b/y Ion Matches(%): ')
         self.tab1.minByIonText = QLineEdit(self)
+        self.tab1.minByIonText.setEnabled(False)
         self.tab1.minByIonText.textChanged[str].connect(self.textBoxChanged)
         self.tab1.minByIonStatus = QLabel("")
 
 
         self.tab1.byIonAccLabel = QLabel('b/y Ion Accuracy (0.01 - 0.2): ')
         self.tab1.byIonAccText = QLineEdit(self)
+        self.tab1.byIonAccText.setEnabled(False)
         self.tab1.byIonAccText.textChanged[str].connect(self.textBoxChanged)
+        self.tab1.byIonAccText.textChanged[str].connect(self.enableControl)
         self.tab1.byIonAccStatus = QLabel("")
 
         self.tab1.byIonFlag = QCheckBox('Apply b/y Ion Comparison: ')
         self.tab1.byIonFlag.stateChanged.connect(self.disableByInputs)
+
+
 
         # for i in range(10, 110, 10):
         #     self.tab1.ppmCombo.addItem(str(i))
@@ -822,6 +864,7 @@ class MyTableWidget(QWidget):
         self.tab1.layout.addWidget(self.tab1.byIonAccText, 6, 3)
         self.tab1.layout.addWidget(self.tab1.byIonAccStatus, 6, 4)
         self.tab1.layout.addWidget(self.tab1.byIonFlag, 7, 2)
+        self.tab1.layout.addWidget(self.nextTab, 7, 3)
 
     def createTab2ParameterWidgets(self):
 

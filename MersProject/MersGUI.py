@@ -122,6 +122,7 @@ class MGFPlotter(QRunnable):
         self.signals.plot.emit(ms2Thresh, intensityPoints)
         end = time.time()
         print("Getting plot data took: " + str(end - start))
+        self.signals.finished.emit()
 
 
 class App(QMainWindow):
@@ -253,10 +254,21 @@ class MyTableWidget(QWidget):
         if mgfTest == 'mgf':
             self.mgfPath = fname[0]
             if self.mgfPlotFlag.isChecked():
+                self.progressLabel = QLabel('Creating Intensity Plot. Please Wait: ')
+                self.tab1.layout.addWidget(self.progressLabel, 8, 2, 1, 2)
+                self.progressBar = QProgressBar(self)
+                self.tab1.layout.addWidget(self.progressBar, 9, 2, 1, 4)
+
+                self.progressBarUpdate = ProgressGenerator()
+                self.progressBarUpdate.signals.updateProgBar.connect(self.updateProgressBar)
+                self.progressBarUpdate.signals.finished.connect(self.deleteTab1ProgressBar)
+                self.progressBarUpdate.signals.disableButtons.connect(self.disableButtons)
+                self.threadpool.start(self.progressBarUpdate)
+                
                 self.mgfPlot = MGFPlotter(plotData, fname[0])
                 self.mgfPlot.signals.plot.connect(self.onlyImportMGF)
+                self.mgfPlot.signals.finished.connect(self.intensityPlotFin)
                 self.threadpool.start(self.mgfPlot)
-
 
         # Ensuring program does not crash if no file is selected
         elif fname[0] == '':
@@ -384,7 +396,7 @@ class MyTableWidget(QWidget):
         self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                            maxDistance, outputPath, chargeFlags)
 
-    def finished(self):
+    def outputFinished(self):
 
         """
         Alerts when done!
@@ -396,17 +408,31 @@ class MyTableWidget(QWidget):
         self.pushButton1.setEnabled(True)
         QMessageBox.about(self, "Message", 'Output Complete')
 
-    def updateProgressBar(self, value):
-        self.tab2.progressBar.setValue(value)
+    def intensityPlotFin(self):
+        self.progressBarUpdate.changeFlag()
+        self.tab2.output.setEnabled(True)
+        self.pushButton1.setEnabled(True)
 
-    def deleteProgressBar(self):
+    def updateProgressBar(self, value):
+        self.progressBar.setValue(value)
+
+    def deleteTab2ProgressBar(self):
         # Delete progress label and progress bar
-        self.tab2.layout.removeWidget(self.tab2.progressLabel)
-        self.tab2.progressLabel.deleteLater()
-        self.tab2.progressLabel = None
-        self.tab2.layout.removeWidget(self.tab2.progressBar)
-        self.tab2.progressBar.deleteLater()
-        self.tab2.progressBar = None
+        self.tab1.layout.removeWidget(self.progressLabel)
+        self.progressLabel.deleteLater()
+        self.progressLabel = None
+        self.tab1.layout.removeWidget(self.progressBar)
+        self.progressBar.deleteLater()
+        self.progressBar = None
+
+    def deleteTab1ProgressBar(self):
+        # Delete progress label and progress bar
+        self.tab1.layout.removeWidget(self.progressLabel)
+        self.progressLabel.deleteLater()
+        self.progressLabel = None
+        self.tab1.layout.removeWidget(self.progressBar)
+        self.progressBar.deleteLater()
+        self.progressBar = None
 
     def disableButtons(self):
         """
@@ -423,21 +449,21 @@ class MyTableWidget(QWidget):
         calls the actual output function to generate output
         """
 
-        self.tab2.progressLabel = QLabel('Collating Combinations. Please Wait: ')
-        self.tab2.layout.addWidget(self.tab2.progressLabel, 15, 3, 1, 2)
-        self.tab2.progressBar = QProgressBar(self)
-        self.tab2.layout.addWidget(self.tab2.progressBar, 16, 3, 1, 4)
+        self.progressLabel = QLabel('Collating Combinations. Please Wait: ')
+        self.tab2.layout.addWidget(self.progressLabel, 15, 3, 1, 2)
+        self.progressBar = QProgressBar(self)
+        self.tab2.layout.addWidget(self.progressBar, 16, 3, 1, 4)
 
         self.outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag,
                                          csvFlag,
                                          modList, maxDistance, outputPath, chargeFlags)
 
-        self.outputGen.signals.finished.connect(self.finished)
+        self.outputGen.signals.finished.connect(self.outputFinished)
         self.threadpool.start(self.outputGen)
 
         self.progressBarUpdate = ProgressGenerator()
         self.progressBarUpdate.signals.updateProgBar.connect(self.updateProgressBar)
-        self.progressBarUpdate.signals.finished.connect(self.deleteProgressBar)
+        self.progressBarUpdate.signals.finished.connect(self.deleteTab2ProgressBar)
         self.progressBarUpdate.signals.disableButtons.connect(self.disableButtons)
         self.threadpool.start(self.progressBarUpdate)
 

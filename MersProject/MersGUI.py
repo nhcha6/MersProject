@@ -328,30 +328,55 @@ class MyTableWidget(QWidget):
         self.tabs.setCurrentIndex(1)
 
     def firstTabValid(self):
-        if self.tab1.byIonAccStatus.text() not in ["Invalid", ""] and \
-            self.tab1.ppmStatus.text() not in ["Invalid", ""] and \
-            self.tab1.toleranceStatus.text() not in ["Invalid", ""] and \
-            self.tab1.minByIonStatus.text() not in ["Invalid", ""]:
+        if self.tab1.byIonFlag.isChecked():
+            statusList = [self.tab1.byIonAccStatus.text(), self.tab1.ppmStatus.text(), \
+                            self.tab1.toleranceStatus.text(), self.tab1.minByIonStatus.text()]
+        else:
+            statusList = [self.tab1.ppmStatus.text(), self.tab1.toleranceStatus.text()]
+        for status in statusList:
+            if status in ["Invalid", ""]:
+                return False
+        return True
+
+
+    def secondTabValid(self):
+        transFlag = self.tab2.trans.isChecked()
+        cisFlag = self.tab2.cis.isChecked()
+        linearFlag = self.tab2.linear.isChecked()
+        outputFlag = cisFlag or linearFlag or transFlag
+
+        plusOneFlag = self.tab2.plusOne.isChecked()
+        plusTwoFlag = self.tab2.plusTwo.isChecked()
+        plusThreeFlag = self.tab2.plusThree.isChecked()
+        plusFourFlag = self.tab2.plusFour.isChecked()
+        plusFiveFlag = self.tab2.plusFive.isChecked()
+        chargeFlag = plusOneFlag or plusTwoFlag or plusThreeFlag or plusFourFlag or plusFiveFlag
+
+        if chargeFlag and outputFlag:
             return True
         return False
 
     def enableControl(self):
         if self.fasta is not None and self.mgfPath is not None:
-            self.tab1.minByIonText.setEnabled(True)
-            self.tab1.ppmText.setEnabled(True)
-            self.tab1.byIonAccText.setEnabled(True)
             self.tab1.toleranceText.setEnabled(True)
-            statusList = [self.tab1.byIonAccStatus.text(), self.tab1.ppmStatus.text(), \
-                          self.tab1.toleranceStatus.text(), self.tab1.minByIonStatus.text()]
+            self.tab1.ppmText.setEnabled(True)
+            self.tab1.byIonFlag.setEnabled(True)
+            if self.tab1.byIonFlag.isChecked():
+                self.tab1.byIonAccText.setEnabled(True)
+                self.tab1.minByIonText.setEnabled(True)
+            else:
+                self.tab1.byIonAccText.setEnabled(False)
+                self.tab1.minByIonText.setEnabled(False)
             if self.firstTabValid():
                 self.tabs.setTabEnabled(1, True)
                 self.nextTab.setEnabled(True)
+                if self.secondTabValid():
+                    self.tab2.output.setEnabled(True)
+                else:
+                    self.tab2.output.setEnabled(False)
             else:
                 self.tabs.setTabEnabled(1, False)
                 self.nextTab.setEnabled(False)
-
-
-
 
     def confirmationFunction(self):
 
@@ -717,8 +742,11 @@ class MyTableWidget(QWidget):
         self.tab2.overlap = QCheckBox('Overlap Off', self)
         self.tab2.trans = QCheckBox('Trans', self)
         self.tab2.trans.stateChanged.connect(self.disableMaxDist)  # connect trans check box to relevant function
+        self.tab2.trans.stateChanged.connect(self.enableControl)
         self.tab2.cis = QCheckBox('Cis', self)
+        self.tab2.cis.stateChanged.connect(self.enableControl)
         self.tab2.linear = QCheckBox('Linear', self)
+        self.tab2.linear.stateChanged.connect(self.enableControl)
 
     def addChargeStates(self):
 
@@ -727,10 +755,15 @@ class MyTableWidget(QWidget):
         """
         self.tab2.chargeLabel = QLabel('Charge states (z): ')
         self.tab2.plusOne = QCheckBox('+1', self)
+        self.tab2.plusOne.stateChanged.connect(self.enableControl)
         self.tab2.plusTwo = QCheckBox('+2', self)
+        self.tab2.plusTwo.stateChanged.connect(self.enableControl)
         self.tab2.plusThree = QCheckBox('+3', self)
+        self.tab2.plusThree.stateChanged.connect(self.enableControl)
         self.tab2.plusFour = QCheckBox('+4', self)
+        self.tab2.plusFour.stateChanged.connect(self.enableControl)
         self.tab2.plusFive = QCheckBox('+5', self)
+        self.tab2.plusFive.stateChanged.connect(self.enableControl)
 
     def addModifications(self):
 
@@ -801,18 +834,21 @@ class MyTableWidget(QWidget):
         self.tab1.ppmText = QLineEdit(self)
         self.tab1.ppmText.setEnabled(False)
         self.tab1.ppmText.textChanged[str].connect(self.textBoxChanged)
+        self.tab1.ppmText.textChanged[str].connect(self.enableControl)
         self.tab1.ppmStatus = QLabel("")
 
         self.tab1.toleranceLabel = QLabel('Intensity Threshold: ')
         self.tab1.toleranceText = QLineEdit(self)
         self.tab1.toleranceText.setEnabled(False)
         self.tab1.toleranceText.textChanged[str].connect(self.textBoxChanged)
+        self.tab1.toleranceText.textChanged[str].connect(self.enableControl)
         self.tab1.toleranceStatus = QLabel("")
 
         self.tab1.minByIonLabel = QLabel('Minimum b/y Ion Matches(%): ')
         self.tab1.minByIonText = QLineEdit(self)
         self.tab1.minByIonText.setEnabled(False)
         self.tab1.minByIonText.textChanged[str].connect(self.textBoxChanged)
+        self.tab1.minByIonText.textChanged[str].connect(self.enableControl)
         self.tab1.minByIonStatus = QLabel("")
 
 
@@ -824,9 +860,9 @@ class MyTableWidget(QWidget):
         self.tab1.byIonAccStatus = QLabel("")
 
         self.tab1.byIonFlag = QCheckBox('Apply b/y Ion Comparison: ')
-        self.tab1.byIonFlag.stateChanged.connect(self.disableByInputs)
-
-
+        self.tab1.byIonFlag.setEnabled(False)
+        #self.tab1.byIonFlag.stateChanged.connect(self.disableByInputs)
+        self.tab1.byIonFlag.stateChanged.connect(self.enableControl)
 
         # for i in range(10, 110, 10):
         #     self.tab1.ppmCombo.addItem(str(i))

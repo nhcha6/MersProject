@@ -101,7 +101,7 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
     toWriteQueue = multiprocessing.Queue()
     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, toWriteQueue, mgfObj))
 
-    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue,))
+    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
     writerProcess.start()
 
     for key, value in seqDict.items():
@@ -165,9 +165,11 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
 
 
-def writer(queue):
+def writer(queue, outputPath):
     seenPeptides = {}
-    with open("NewOutput.fasta", "w") as output_handle:
+    saveHandle = str(outputPath) + "/NewOutput.fasta"
+    print(saveHandle)
+    with open(saveHandle, "w") as output_handle:
         while True:
             matchedPeptides = queue.get()
 

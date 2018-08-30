@@ -422,7 +422,7 @@ class MyTableWidget(QWidget):
                                         maxDistance, outputPath, chargeFlags)
             else:
 
-                outputPath = None
+                outputPath = self.getOutputPath()
                 #mgfGen.signals.finished.connect(self.onlyImportMGF)
                 mgfGen.signals.finished.connect(functools.partial(self.importedMGF, mined, maxed, overlapFlag,
                                                                       transFlag, cisFlag, linearFlag, csvFlag, modList,

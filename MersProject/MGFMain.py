@@ -1,6 +1,6 @@
 import numpy
 import pandas as pd
-from pyteomics import mgf
+from pyteomics import mgf, mzxml
 import math
 from bisect import bisect_left
 from MonoAminoAndMods import *

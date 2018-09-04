@@ -427,7 +427,9 @@ class MyTableWidget(QWidget):
                 mgfGen.signals.finished.connect(functools.partial(self.importedMGF, mined, maxed, overlapFlag,
                                                                       transFlag, cisFlag, linearFlag, csvFlag, modList,
                                                                       maxDistance, outputPath, chargeFlags))
-                self.threadpool.start(mgfGen)
+                if outputPath is not False:
+
+                    self.threadpool.start(mgfGen)
 
 
 

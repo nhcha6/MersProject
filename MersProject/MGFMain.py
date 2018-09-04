@@ -185,7 +185,7 @@ def changeIntToPoints(maxIntensityArray):
 def findLargeIndex(arr,x):
 
     closest = takeClosest(arr, x, True)
-    print('Closest is ' + str(closest))
+
     if closest == len(arr)-1 or closest == -1:
 
         if arr[-1] < x:
@@ -232,10 +232,7 @@ def takeClosest(myList, myNumber, indexBool = False):
             return pos - 1
         return before
 
-arr = [10, 20, 30, 40, 50,54]
-num = findLargeIndex(arr, 12)
-print(num)
-print(len(arr) - num)
+
 def sortMgfDFValues(mgfDf):
     for charge, masses in mgfDf.items():
         masses.sort()

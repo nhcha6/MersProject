@@ -385,6 +385,9 @@ class MyTableWidget(QWidget):
         message box summarising the inputs of the user. When yes is clicked on the message box, the output function is
         called which begins generating results
         """
+        if self.tab1.byIonFlag.isChecked() == False:
+            self.tab1.byIonAccText.setText('1')
+            self.tab1.minByIonText.setText('1')
 
         ppmVal, intensityThreshold, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, \
         modList, outputFlag, chargeFlags, minSimBy, byIonAccuracy, byIonFlag = self.getInputParams()
@@ -407,6 +410,10 @@ class MyTableWidget(QWidget):
                                          'b/y Ion Accuracy: ' + str(byIonAccuracy) + '\n' +
                                          'b/y Ion Flag: ' + str(byIonFlag),
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if self.tab1.byIonFlag.isChecked() == False:
+            self.tab1.byIonAccText.setText('')
+            self.tab1.minByIonText.setText('')
 
         if reply == QMessageBox.Yes:
 
@@ -523,9 +530,10 @@ class MyTableWidget(QWidget):
         self.nextTab.setEnabled(True)
         self.tab1.ppmText.setEnabled(True)
         self.tab1.toleranceText.setEnabled(True)
-        self.tab1.minByIonText.setEnabled(True)
-        self.tab1.byIonAccText.setEnabled(True)
         self.tab1.byIonFlag.setEnabled(True)
+        if self.tab1.byIonFlag.isChecked() == True:
+            self.tab1.minByIonText.setEnabled(True)
+            self.tab1.byIonAccText.setEnabled(True)
 
     def enableTab2Widgets(self):
         self.tab2.minimumCombo.setEnabled(True)
@@ -886,10 +894,10 @@ class MyTableWidget(QWidget):
 
         self.tab1.minByIonLabel = QLabel('Minimum b/y Ion Matches(%): ')
         self.tab1.minByIonText = QLineEdit(self)
+        self.tab1.minByIonStatus = QLabel("")
         self.tab1.minByIonText.setEnabled(False)
         self.tab1.minByIonText.textChanged[str].connect(self.textBoxChanged)
         self.tab1.minByIonText.textChanged[str].connect(self.enableControl)
-        self.tab1.minByIonStatus = QLabel("")
 
 
         self.tab1.byIonAccLabel = QLabel('b/y Ion Accuracy (0.01 - 0.2): ')

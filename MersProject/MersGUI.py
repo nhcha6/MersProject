@@ -409,7 +409,7 @@ class MyTableWidget(QWidget):
                                   maxDistance, outputPath, chargeFlags, self.mgf)
         end = time.time()
 
-        print(end - start)
+        #print(end - start)
 
         # The following statements are used to open the output directory after output is created into file format
         # print(tryString)

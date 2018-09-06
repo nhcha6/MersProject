@@ -70,7 +70,7 @@ def generateMGFList(mgfObj, massDict, modList):
                             mzArray = mgfObj.pepmassIonArray[(charge, closest)]
                             simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
                             percentSim = 100*simIons/len(byIonArray)
-                            print(percentSim)
+                            #print(percentSim)
                             if percentSim >= mgfObj.minSimBy:
                                 matchedPeptides.add(alphaKey)
 

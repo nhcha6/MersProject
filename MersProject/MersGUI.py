@@ -652,7 +652,7 @@ class MyTableWidget(QWidget):
         for intensity in intensities:
             self.tab1.toleranceCombo.addItem(str(intensity))
 
-        for i in range(1, 10):
+        for i in range(10, 100, 10):
             self.tab1.minByIonCombo.addItem(str(i))
 
         ionAccuracies = [0.4, 0.2, 0.1, 0.05, 0.02, 0.01]

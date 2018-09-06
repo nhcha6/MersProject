@@ -69,7 +69,9 @@ def generateMGFList(mgfObj, massDict, modList):
                             byIonArray = sortBYDict(byIonDict)
                             mzArray = mgfObj.pepmassIonArray[(charge, closest)]
                             simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
-                            if simIons >= mgfObj.minSimBy:
+                            percentSim = 100*simIons/len(byIonArray)
+                            print(percentSim)
+                            if percentSim >= mgfObj.minSimBy:
                                 matchedPeptides.add(alphaKey)
 
                         # count similar ions and add that to simComparisons. Note that mzArray have multiple lists

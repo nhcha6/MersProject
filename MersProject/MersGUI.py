@@ -645,6 +645,7 @@ class MyTableWidget(QWidget):
 
         self.tab1.byIonFlag = QCheckBox('Apply b/y Ion Comparison: ')
 
+        self.tab1.ppmCombo.addItem('15')
         for i in range(10, 110, 10):
             self.tab1.ppmCombo.addItem(str(i))
 

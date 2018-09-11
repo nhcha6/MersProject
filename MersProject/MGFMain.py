@@ -375,7 +375,7 @@ def sortBYDict(byIonDict):
 
 def findSimIons(mzArray, byIons, accuracy):
 
-    simIonsArray = []
+    simIons = 0
     for array in mzArray:
         simTemp = 0
         for mass in byIons:
@@ -384,8 +384,10 @@ def findSimIons(mzArray, byIons, accuracy):
             lowerThresh = mass - accuracy
             if lowerThresh < closest < upperThresh:
                 simTemp += 1
-            simIonsArray.append(simTemp*100/len(byIons))
-        simIons = max(simIonsArray)
+        if simTemp > simIons:
+            simIons = simTemp
+
+    simIons = (simIons*100) / len (byIons)
 
     return simIons
 

@@ -167,7 +167,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
 
 def writer(queue, outputPath):
     seenPeptides = {}
-    saveHandle = str(outputPath) + "/NewOutput.fasta"
+    saveHandle = str(outputPath) + "/NewOutput1.fasta"
     print(saveHandle)
     with open(saveHandle, "w") as output_handle:
         while True:
@@ -433,6 +433,9 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
                     if linearCheck(toAddReverse, combineLinearSet):
                         combModless.append(toAddReverse)
                         combModlessRef.append(addReverseRef)
+
+            elif maxDistCheck(splitRef[i], splitRef[j], maxDistance):
+                break
 
             toAddForward = ""
             toAddReverse = ""

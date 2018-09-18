@@ -4,7 +4,7 @@ import sys
 import subprocess
 from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QTabWidget, QVBoxLayout, \
     QFileDialog, QGridLayout, QLabel, QComboBox, QCheckBox, QMessageBox, QDesktopWidget, \
-    QProgressBar, QLineEdit
+    QProgressBar, QLineEdit, QInputDialog, QGroupBox, QFormLayout
 from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtCore import *
 from PyQt5.QtCore import pyqtSlot
@@ -201,7 +201,7 @@ class MyTableWidget(QWidget):
         # Add tabs to table class (self)
         self.tabs.addTab(self.tab1, "Select File and Path")
         self.tabs.addTab(self.tab2, "Input Parameters")
-        self.tabs.setTabEnabled(1, False)
+        #self.tabs.setTabEnabled(1, False)
 
         # Creation of tab layout and widgets within tab
         self.tab1.layout = QGridLayout(self)
@@ -230,8 +230,6 @@ class MyTableWidget(QWidget):
     def importedMGF(self):
         print("MGF FILE UPLOADED")
         QMessageBox.about(self, "Message", 'MGF file imported.')
-
-
 
     def uploadMgf(self, input_path, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag):
         print("UPLOADING MGF")
@@ -697,6 +695,10 @@ class MyTableWidget(QWidget):
             if not modSender[i]:
                 modChange.append(modCombos[i])
 
+        sender = self.tab2.sender()
+        if sender.currentText() == 'Custom Modification':
+            self.showDialog()
+
         modValue1 = modChange[0].currentText()
         modValue2 = modChange[1].currentText()
 
@@ -720,6 +722,16 @@ class MyTableWidget(QWidget):
             modChange[1].addItem(modValue2)
             indexMod2 = modChange[1].findText(modValue2)
             modChange[1].setCurrentIndex(indexMod2)
+
+    def showDialog(self):
+
+        self.formGroupBox = QGroupBox("Form layout")
+        layout = QFormLayout()
+        layout.addRow(QLabel("Modified Peptides: "), QLineEdit())
+        layout.addRow(QLabel("Mass Change: "), QLineEdit())
+        #layout.addRow(QLabel("Age:"), QSpinBox())
+        self.formGroupBox.setLayout(layout)
+        self.formGroupBox.show()
 
     def getInputParams(self):
 
@@ -835,6 +847,9 @@ class MyTableWidget(QWidget):
             self.tab2.mod1Combo.addItem(modification)
             self.tab2.mod2Combo.addItem(modification)
             self.tab2.mod3Combo.addItem(modification)
+        self.tab2.mod1Combo.addItem("Custom Modification")
+        self.tab2.mod2Combo.addItem("Custom Modification")
+        self.tab2.mod3Combo.addItem("Custom Modification")
 
     def textBoxSender(self, sender):
         if sender == self.tab1.byIonAccText:
@@ -877,7 +892,7 @@ class MyTableWidget(QWidget):
         self.mgfPlotFlag = QCheckBox('Produce Intensity Plot')
         self.nextTab = QPushButton("Next Tab")
         self.nextTab.clicked.connect(self.nextTabFunc)
-        self.nextTab.setEnabled(False)
+        #self.nextTab.setEnabled(False)
 
         self.tab1.ppmLabel = QLabel('PPM (0.1 - 1000): ')
         self.tab1.ppmText = QLineEdit(self)

@@ -368,10 +368,13 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
             toAdd += peptide[j]
             if linearFlag:
                 ref.append(j+1)
-                if maxSize(toAdd, maxed) and minSize(toAdd, mined):
-                    splits.append(toAdd)
-                    temp = list(ref)
-                    splitRef.append(temp)
+                if maxSize(toAdd, maxed):
+                    if minSize(toAdd, mined):
+                        splits.append(toAdd)
+                        temp = list(ref)
+                        splitRef.append(temp)
+                else:
+                    break
 
             else:
                 if maxSize(toAdd, maxed-1):

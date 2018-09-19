@@ -15,6 +15,7 @@ import numpy as np
 from Mers import *
 from MGFMain import *
 import functools
+from functools import partial
 
 
 class WorkerSignals(QObject):
@@ -224,8 +225,6 @@ class MyTableWidget(QWidget):
         # Add tabs to widget
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
-
-
 
     def importedMGF(self):
         print("MGF FILE UPLOADED")
@@ -697,7 +696,7 @@ class MyTableWidget(QWidget):
 
         sender = self.tab2.sender()
         if sender.currentText() == 'Custom Modification':
-            self.showDialog()
+            self.showCustomMod(sender)
 
         modValue1 = modChange[0].currentText()
         modValue2 = modChange[1].currentText()
@@ -712,6 +711,8 @@ class MyTableWidget(QWidget):
             if modification not in (text, modValue1, modValue2):
                 modChange[0].addItem(modification)
                 modChange[1].addItem(modification)
+        modChange[0].addItem("Custom Modification")
+        modChange[1].addItem("Custom Modification")
 
         if modValue1 not in (text, 'None'):
             modChange[0].addItem(modValue1)
@@ -723,15 +724,39 @@ class MyTableWidget(QWidget):
             indexMod2 = modChange[1].findText(modValue2)
             modChange[1].setCurrentIndex(indexMod2)
 
-    def showDialog(self):
+    def showCustomMod(self, sender):
 
-        self.formGroupBox = QGroupBox("Form layout")
+        self.formGroupBox = QGroupBox('Custom Modification')
         layout = QFormLayout()
-        layout.addRow(QLabel("Modified Peptides: "), QLineEdit())
-        layout.addRow(QLabel("Mass Change: "), QLineEdit())
-        #layout.addRow(QLabel("Age:"), QSpinBox())
+        layout.addRow(QLabel("Input modified amino acids without spaces: TGN \n" +
+                             "Input mass change as a decimal number"))
+        self.custAminoInput = QLineEdit()
+        self.custMassInput = QLineEdit()
+        self.addModButton = QPushButton("Create Modification")
+        # partial method allows variable to be passed to connected function on click
+        self.addCustToModListSender = partial(self.addCustToModlist, sender)
+        self.addModButton.clicked.connect(self.addCustToModListSender)
+        layout.addRow(QLabel("Modified Amino Acids: "), self.custAminoInput)
+        layout.addRow(QLabel("Mass Change: "), self.custMassInput)
+        layout.addRow(self.addModButton)
         self.formGroupBox.setLayout(layout)
         self.formGroupBox.show()
+
+    def addCustToModlist(self, sender):
+        aminoAcids = self.custAminoInput.text()
+        massChange = self.custMassInput.text()
+        for char in aminoAcids:
+            if char not in monoAminoMass.keys():
+                QMessageBox.about(self, "Message", 'Amino Acids are not valid. Please leave no spaces and use capitals!')
+                return
+        try:
+            float(massChange)
+        except ValueError:
+            QMessageBox.about(self, "Message", 'Mass Change is not a valid decimal number!')
+            return
+        print(sender)
+        print(aminoAcids)
+        print(massChange)
 
     def getInputParams(self):
 
@@ -847,9 +872,9 @@ class MyTableWidget(QWidget):
             self.tab2.mod1Combo.addItem(modification)
             self.tab2.mod2Combo.addItem(modification)
             self.tab2.mod3Combo.addItem(modification)
-        self.tab2.mod1Combo.addItem("Custom Modification")
-        self.tab2.mod2Combo.addItem("Custom Modification")
-        self.tab2.mod3Combo.addItem("Custom Modification")
+        self.tab2.mod1Combo.addItem('Custom Modification')
+        self.tab2.mod2Combo.addItem('Custom Modification')
+        self.tab2.mod3Combo.addItem('Custom Modification')
 
     def textBoxSender(self, sender):
         if sender == self.tab1.byIonAccText:
@@ -892,7 +917,7 @@ class MyTableWidget(QWidget):
         self.mgfPlotFlag = QCheckBox('Produce Intensity Plot')
         self.nextTab = QPushButton("Next Tab")
         self.nextTab.clicked.connect(self.nextTabFunc)
-        #self.nextTab.setEnabled(False)
+        self.nextTab.setEnabled(False)
 
         self.tab1.ppmLabel = QLabel('PPM (0.1 - 1000): ')
         self.tab1.ppmText = QLineEdit(self)

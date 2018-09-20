@@ -136,6 +136,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     # Convert it into a dictionary that has a mass
     massDict = combMass(combined, combinedRef)
     # Apply mods to the dictionary values and update the dictionary
+
     massDict = applyMods(massDict, modList)
 
     # Add the charge information along with their masses

@@ -202,7 +202,7 @@ class MyTableWidget(QWidget):
         # Add tabs to table class (self)
         self.tabs.addTab(self.tab1, "Select File and Path")
         self.tabs.addTab(self.tab2, "Input Parameters")
-        #self.tabs.setTabEnabled(1, False)
+        self.tabs.setTabEnabled(1, False)
 
         # Creation of tab layout and widgets within tab
         self.tab1.layout = QGridLayout(self)
@@ -727,8 +727,8 @@ class MyTableWidget(QWidget):
     def showCustomMod(self, sender):
 
         self.formGroupBox = QGroupBox('Custom Modification')
-        layout = QFormLayout()
-        layout.addRow(QLabel("Input modified amino acids without spaces: TGN \n" +
+        self.formLayout = QFormLayout()
+        self.formLayout.addRow(QLabel("Input modified amino acids without spaces: TGN \n" +
                              "Input mass change as a decimal number"))
         self.custAminoInput = QLineEdit()
         self.custMassInput = QLineEdit()
@@ -736,27 +736,45 @@ class MyTableWidget(QWidget):
         # partial method allows variable to be passed to connected function on click
         self.addCustToModListSender = partial(self.addCustToModlist, sender)
         self.addModButton.clicked.connect(self.addCustToModListSender)
-        layout.addRow(QLabel("Modified Amino Acids: "), self.custAminoInput)
-        layout.addRow(QLabel("Mass Change: "), self.custMassInput)
-        layout.addRow(self.addModButton)
-        self.formGroupBox.setLayout(layout)
+        self.formLayout.addRow(QLabel("Modified Amino Acids: "), self.custAminoInput)
+        self.formLayout.addRow(QLabel("Mass Change: "), self.custMassInput)
+        self.formLayout.addRow(self.addModButton)
+        self.formGroupBox.setLayout(self.formLayout)
         self.formGroupBox.show()
 
     def addCustToModlist(self, sender):
         aminoAcids = self.custAminoInput.text()
         massChange = self.custMassInput.text()
+        modKey = "Custom " + aminoAcids
+        modValue = []
+
+        # validity checks
         for char in aminoAcids:
             if char not in monoAminoMass.keys():
                 QMessageBox.about(self, "Message", 'Amino Acids are not valid. Please leave no spaces and use capitals!')
                 return
+            else:
+                modValue.append(char)
         try:
             float(massChange)
         except ValueError:
             QMessageBox.about(self, "Message", 'Mass Change is not a valid decimal number!')
             return
-        print(sender)
-        print(aminoAcids)
-        print(massChange)
+
+        # update modTable and GUI
+        modValue.append(float(massChange))
+        modTable[modKey] = modValue
+
+        sender.addItem(modKey)
+        indexCustom = sender.findText(modKey)
+        sender.setCurrentIndex(indexCustom)
+
+        # delete pop up box
+        self.formLayout.removeWidget(self.formGroupBox)
+        self.formGroupBox.deleteLater()
+        self.formGroupBox = None
+
+        QMessageBox.about(self, "Message", 'Custom Modification successfully added!')
 
     def getInputParams(self):
 

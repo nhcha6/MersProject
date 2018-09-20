@@ -36,7 +36,6 @@ def generateMGFList(protId, mgfObj, massDict, modList):
 
     Generates the list of unique peptides that have masses that match within the specified
     """
-    print("in")
     if mgfObj.mgfDf:
 
         matchedPeptides = {}
@@ -54,26 +53,41 @@ def generateMGFList(protId, mgfObj, massDict, modList):
             for charge, chargeMass in value[2].items():
                 # Shift to outside for charge for loop
                 if alphaKey not in matchedPeptides.keys():
+
+                    # define required data in a temporary form
                     pepMasses = mgfObj.mgfDf[charge]
-                    #closest = takeClosest(pepMasses, chargeMass)
-                    index = takeClosest(pepMasses, chargeMass, True)
-                    pepMass = pepMasses[index]
-                    step = 1
-                    while pepMatch(chargeMass, pepMass, mgfObj.ppmVal):
-                        print(pepMass)
-                        if mgfObj.byIonFlag == False:
-                            matchedPeptides[alphaKey] = protId
+                    #closestIndex = takeClosest(pepMasses, chargeMass, True)
+                    #pepMass = pepMasses[closestIndex]
+                    steps = [1,-1]
+                    matchAdded = False
+
+                    # need to iterate up and down from the closest to ensure all b/y ion comparison is run
+                    # on all relevant pepMasses
+                    for step in steps:
+                        # matchAdded is set to True if if the B/y ion check is passed in the iterations
+                        # using step 1
+                        if matchAdded == True:
                             break
-                        else:
-                            byIonArray = initIonMass(key, modList)
-                            mzArray = mgfObj.pepmassIonArray[(charge, pepMass)]
-                            simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
-                            if simIons >= mgfObj.minSimBy:
+                        index = takeClosest(pepMasses, chargeMass, True)
+                        if step == -1:
+                            index += step
+                        pepMass = pepMasses[index]
+                        while pepMatch(chargeMass, pepMass, mgfObj.ppmVal):
+                            if mgfObj.byIonFlag == False:
                                 matchedPeptides[alphaKey] = protId
+                                matchAdded = True
                                 break
                             else:
-                                index += step
-                                pepMass = pepMasses[index]
+                                byIonArray = initIonMass(key, modList)
+                                mzArray = mgfObj.pepmassIonArray[(charge, pepMass)]
+                                simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
+                                if simIons >= mgfObj.minSimBy:
+                                    matchedPeptides[alphaKey] = protId
+                                    matchAdded = True
+                                    break
+                                else:
+                                    index += step
+                                    pepMass = pepMasses[index]
                 else:
                     break
             # check it passes max simcomparisons and then add alphakey to matchedpeptides!

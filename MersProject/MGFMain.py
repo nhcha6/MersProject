@@ -36,6 +36,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
 
     Generates the list of unique peptides that have masses that match within the specified
     """
+    print("in")
     if mgfObj.mgfDf:
 
         matchedPeptides = {}
@@ -53,25 +54,26 @@ def generateMGFList(protId, mgfObj, massDict, modList):
             for charge, chargeMass in value[2].items():
                 # Shift to outside for charge for loop
                 if alphaKey not in matchedPeptides.keys():
-                    closest = takeClosest(mgfObj.mgfDf[charge], chargeMass)
-                    if pepMatch(chargeMass, closest, mgfObj.ppmVal):
-
-                        #mzArray = mgfObj.pepmassIonArray[(charge, closest)]
-                        #simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
-
+                    pepMasses = mgfObj.mgfDf[charge]
+                    #closest = takeClosest(pepMasses, chargeMass)
+                    index = takeClosest(pepMasses, chargeMass, True)
+                    pepMass = pepMasses[index]
+                    step = 1
+                    while pepMatch(chargeMass, pepMass, mgfObj.ppmVal):
+                        print(pepMass)
                         if mgfObj.byIonFlag == False:
                             matchedPeptides[alphaKey] = protId
+                            break
                         else:
                             byIonArray = initIonMass(key, modList)
-
-                            mzArray = mgfObj.pepmassIonArray[(charge, closest)]
+                            mzArray = mgfObj.pepmassIonArray[(charge, pepMass)]
                             simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
                             if simIons >= mgfObj.minSimBy:
-
                                 matchedPeptides[alphaKey] = protId
-
-                        # count similar ions and add that to simComparisons. Note that mzArray have multiple lists
-                        #matchedPeptides.add(alphaKey)
+                                break
+                            else:
+                                index += step
+                                pepMass = pepMasses[index]
                 else:
                     break
             # check it passes max simcomparisons and then add alphakey to matchedpeptides!

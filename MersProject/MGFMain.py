@@ -34,7 +34,8 @@ class MGF:
 def generateMGFList(protId, mgfObj, massDict, modList):
     """
 
-    Generates the list of unique peptides that have masses that match within the specified
+    Generates the list of unique peptides that have masses that match within the specified.
+
     """
     if mgfObj.mgfDf:
 
@@ -68,23 +69,42 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                         # using step 1
                         if matchAdded == True:
                             break
+
+                        # Get the closest index, denoted by the bool flag as the last argument, think this
+                        # should be outside the step loop, as done twice when traversing back.
                         index = takeClosest(pepMasses, chargeMass, True)
+
+                        # Start traversing backwards
                         if step == -1:
                             index += step
+
+                        # Get the pepmass at that index
                         pepMass = pepMasses[index]
+
+                        # While there is a current match. pepMass is changed per iteration if previous
+                        # pepmass didn't match.
                         while pepMatch(chargeMass, pepMass, mgfObj.ppmVal):
+
+                            # Not super important but this should likely be at the very start and outside the step
+                            # loop.
                             if mgfObj.byIonFlag == False:
                                 matchedPeptides[alphaKey] = protId
                                 matchAdded = True
                                 break
                             else:
+                                # Check the similarity of the byIons as was being done previously
                                 byIonArray = initIonMass(key, modList)
                                 mzArray = mgfObj.pepmassIonArray[(charge, pepMass)]
                                 simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
+
+                                # If they match in accordance with the input minimum requirement, add them to the list
                                 if simIons >= mgfObj.minSimBy:
                                     matchedPeptides[alphaKey] = protId
                                     matchAdded = True
                                     break
+
+                                # If they didn't match try the next one. Step will be 1 when traversing forward, -1
+                                # when traversing backward thus will be able to go up and down.
                                 else:
                                     index += step
                                     pepMass = pepMasses[index]
@@ -96,7 +116,6 @@ def generateMGFList(protId, mgfObj, massDict, modList):
 
 def modToPeptide(moddedPeptide):
     peptide = ''.join(filter(lambda x: x.isalpha(), moddedPeptide))
-
     return peptide.upper()
 
 

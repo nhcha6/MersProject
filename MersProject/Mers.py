@@ -40,7 +40,6 @@ class Fasta:
         """
         Function that literally combines everything to generate output
         """
-
         self.allProcessList = []
 
         if transFlag:
@@ -57,7 +56,7 @@ class Fasta:
             cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.seqDict, CIS, mined, maxed,
                                                                                   overlapFlag, csvFlag, modList,
                                                                                   maxDistance,
-                                                                                  outputPath, chargeFlags, mgfObj))
+                                                                                  outputPath, chargeFlags, mgfObj, modTable))
             self.allProcessList.append(cisProcess)
             cisProcess.start()
 
@@ -66,7 +65,7 @@ class Fasta:
             linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.seqDict, LINEAR, mined,
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      modList, maxDistance,
-                                                                                     outputPath, chargeFlags, mgfObj))
+                                                                                     outputPath, chargeFlags, mgfObj, modTable))
             self.allProcessList.append(linearProcess)
             linearProcess.start()
 
@@ -75,12 +74,14 @@ class Fasta:
 
 
 def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
-                       modList, maxDistance, outputPath, chargeFlags, mgfObj):
+                       modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable):
 
     """
     Process that is in charge for dealing with cis and linear. Creates sub processes for every protein to compute
     their respective output
     """
+
+
 
     finalPath = None
 
@@ -99,7 +100,8 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
     lockVar = multiprocessing.Lock()
 
     toWriteQueue = multiprocessing.Queue()
-    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, toWriteQueue, mgfObj))
+    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, toWriteQueue,
+                                                                                              mgfObj, childTable))
 
     writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
     writerProcess.start()
@@ -127,7 +129,6 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     """
     Compute the peptides for the given protein
     """
-
     start = time.time()
 
     # Get the initial peptides and their positions
@@ -279,7 +280,8 @@ def applyMods(combineModlessDict, modList):
         # Don't need to worry about it if no modification!
         if mod != 'None':
             # Get the list of modifications taking place
-            aminoList = modTable[mod]
+            aminoList = finalModTable[mod]
+           
             # Go through each character in the modification one by one
             for i in range(0, len(aminoList) - 1):
 
@@ -682,7 +684,7 @@ def nth_replace(string, old, new, n=1, option='only nth'):
     return new.join(nth_split)
 
 
-def processLockInit(lockVar, toWriteQueue, mgfObj):
+def processLockInit(lockVar, toWriteQueue, mgfObj, childTable):
 
     """
     Designed to set up a global lock for a child processes (child per protein)
@@ -692,6 +694,8 @@ def processLockInit(lockVar, toWriteQueue, mgfObj):
     lock = lockVar
     global mgfData
     mgfData = mgfObj
+    global finalModTable
+    finalModTable = childTable
     genMassDict.toWriteQueue = toWriteQueue
 
 

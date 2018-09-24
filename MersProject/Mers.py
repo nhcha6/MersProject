@@ -358,10 +358,15 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
 
         # linear flag to ensure min is correct for cis and trans
         if linearFlag and minSize(toAdd, mined):
-            splits.append(toAdd)
-            splitRef.append(temp)
 
-        elif not linearFlag:
+            # Don't need to continue this run as first amino acid is unknown
+            if 'X' in toAdd:
+                continue
+            else:
+                splits.append(toAdd)
+                splitRef.append(temp)
+
+        elif not linearFlag and 'X' not in toAdd:
             splits.append(toAdd)
             splitRef.append(temp)
 
@@ -373,6 +378,10 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
                 ref.append(j+1)
                 if maxSize(toAdd, maxed):
                     if minSize(toAdd, mined):
+
+                        # All future splits will contain X if an X is found in the current run, hence break
+                        if 'X' in toAdd:
+                            break
                         splits.append(toAdd)
                         temp = list(ref)
                         splitRef.append(temp)
@@ -381,6 +390,9 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
 
             else:
                 if maxSize(toAdd, maxed-1):
+                    # All future splits will contain X if an X is found in the current run, hence break
+                    if 'X' in toAdd:
+                        break
                     splits.append(toAdd)
                     ref.append(j+1)
                     temp = list(ref)

@@ -330,7 +330,7 @@ class MyTableWidget(QWidget):
     def firstTabValid(self):
         if self.tab1.byIonFlag.isChecked():
             statusList = [self.tab1.byIonAccStatus.text(), self.tab1.ppmStatus.text(), \
-                            self.tab1.toleranceStatus.text(), self.tab1.minByIonStatus.text()]
+                            "Valid", self.tab1.minByIonStatus.text()]
         else:
             statusList = [self.tab1.ppmStatus.text(), "Valid"]
         for status in statusList:
@@ -392,7 +392,7 @@ class MyTableWidget(QWidget):
         ppmVal, intensityThreshold, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, \
         modList, outputFlag, chargeFlags, minSimBy, byIonAccuracy, byIonFlag = self.getInputParams()
 
-        print("HEURE")
+
         reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' +
                                          'Minimum Peptide Length: ' + str(mined) + '\n' +
                                          'Maximum Peptide Length: ' + str(maxed) + '\n' +

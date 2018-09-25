@@ -112,6 +112,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                 # If they didn't match try the next one. Step will be 1 when traversing forward, -1
                                 # when traversing backward thus will be able to go up and down.
                                 else:
+                                    print(simIons)
                                     index += step
                                     pepMass = pepMasses[index]
                 else:
@@ -128,7 +129,7 @@ def modToPeptide(moddedPeptide):
 def pepMatch(predictedMass, pepmass, ppmVal):
 
     currentPpm = calcPpm(predictedMass, pepmass)
-    print(currentPpm)
+
     if int(round(currentPpm)) <= ppmVal:
         return True
     return False

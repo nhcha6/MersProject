@@ -51,14 +51,22 @@ def generateMGFList(protId, mgfObj, massDict, modList):
 
             #print(byIonArray)
 
+            if alphaKey != 'TIFQNK':
+                continue
+
+
+
             for charge, chargeMass in value[2].items():
                 # Shift to outside for charge for loop
                 if alphaKey not in matchedPeptides.keys():
 
                     # define required data in a temporary form
+                    print(key)
                     pepMasses = mgfObj.mgfDf[charge]
-                    #closestIndex = takeClosest(pepMasses, chargeMass, True)
-                    #pepMass = pepMasses[closestIndex]
+                    closestIndex = takeClosest(pepMasses, chargeMass, True)
+                    pepMass = pepMasses[closestIndex]
+                    pepMatch(chargeMass, pepMass, mgfObj.ppmVal)
+
                     steps = [1,-1]
                     matchAdded = False
 
@@ -122,6 +130,7 @@ def modToPeptide(moddedPeptide):
 def pepMatch(predictedMass, pepmass, ppmVal):
 
     currentPpm = calcPpm(predictedMass, pepmass)
+    print(currentPpm)
     if int(round(currentPpm)) <= ppmVal:
         return True
     return False

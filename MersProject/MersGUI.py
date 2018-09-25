@@ -332,7 +332,7 @@ class MyTableWidget(QWidget):
             statusList = [self.tab1.byIonAccStatus.text(), self.tab1.ppmStatus.text(), \
                             self.tab1.toleranceStatus.text(), self.tab1.minByIonStatus.text()]
         else:
-            statusList = [self.tab1.ppmStatus.text(), self.tab1.toleranceStatus.text()]
+            statusList = [self.tab1.ppmStatus.text(), "Valid"]
         for status in statusList:
             if status in ["Invalid", ""]:
                 return False
@@ -782,7 +782,7 @@ class MyTableWidget(QWidget):
     def getInputParams(self):
 
         ppmVal = float(self.tab1.ppmText.text())
-        toleranceLevel = float(self.tab1.toleranceText.text())
+        toleranceLevel = self.tab1.toleranceText.text()
 
         minByIon = int(self.tab1.minByIonText.text())
         byIonAccuracy = float(self.tab1.byIonAccText.text())
@@ -949,9 +949,9 @@ class MyTableWidget(QWidget):
 
         self.tab1.toleranceLabel = QLabel('Intensity Threshold: ')
         self.tab1.toleranceText = QLineEdit(self)
-        self.tab1.toleranceText.setEnabled(False)
-        self.tab1.toleranceText.textChanged[str].connect(self.textBoxChanged)
-        self.tab1.toleranceText.textChanged[str].connect(self.enableControl)
+        #self.tab1.toleranceText.setEnabled(False)
+        #self.tab1.toleranceText.textChanged[str].connect(self.textBoxChanged)
+        #self.tab1.toleranceText.textChanged[str].connect(self.enableControl)
         self.tab1.toleranceStatus = QLabel("")
 
         self.tab1.minByIonLabel = QLabel('Minimum b/y Ion Matches(%): ')

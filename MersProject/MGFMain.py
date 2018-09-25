@@ -51,10 +51,8 @@ def generateMGFList(protId, mgfObj, massDict, modList):
 
             #print(byIonArray)
 
-            if alphaKey != 'DAVLRFNGAPTANF':
+            if alphaKey != mgfObj.intensityThreshold:
                 continue
-
-
 
             for charge, chargeMass in value[2].items():
                 # Shift to outside for charge for loop
@@ -171,7 +169,9 @@ def readMGF(input_path, intensityThreshold):
 
                 # Add it to the dataframe if they are not already in the set
 
-                if chargePepmassTup not in uniqueSpec and maxIntensity > intensityThreshold:
+                # removing intensity Threshold just for this branch, as intensity threshold where putting sequences
+                # to find
+                if chargePepmassTup not in uniqueSpec: #and maxIntensity > intensityThreshold:
 
 
                     if charge in mgfDf:

@@ -40,7 +40,7 @@ class Fasta:
         """
         Function that literally combines everything to generate output
         """
-
+        print(mgfObj.intensityThreshold)
         self.allProcessList = []
 
         if transFlag:

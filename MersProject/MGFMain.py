@@ -42,6 +42,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
         matchedPeptides = {}
         for key, value in massDict.items():
             # convert modified peptides to original form
+            needToGenBY = 0
             if not key.isalpha():
                 alphaKey = modToPeptide(key)
             else:
@@ -99,9 +100,13 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                 break
                             else:
                                 # Check the similarity of the byIons as was being done previously
-                                byIonArray = initIonMass(key, modList)
+                                if needToGenBY == 0:
+                                    byIonArray = initIonMass(key, modList)
+                                    print(byIonArray)
+                                    needToGenBY +=1
                                 mzArray = mgfObj.pepmassIonArray[(charge, pepMass)]
                                 simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
+                                print(simIons)
 
                                 # If they match in accordance with the input minimum requirement, add them to the list
                                 if simIons >= mgfObj.minSimBy:
@@ -112,7 +117,6 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                 # If they didn't match try the next one. Step will be 1 when traversing forward, -1
                                 # when traversing backward thus will be able to go up and down.
                                 else:
-                                    print(simIons)
                                     index += step
                                     pepMass = pepMasses[index]
                 else:

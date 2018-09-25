@@ -180,7 +180,7 @@ def writer(queue, outputPath):
             if matchedPeptides == 'stop':
                 logging.info("ALL LINEAR COMPUTED, STOP MESSAGE SENT")
                 break
-            start = time.time()
+
 
             for key, value in matchedPeptides.items():
                 if key not in seenPeptides.keys():
@@ -188,9 +188,6 @@ def writer(queue, outputPath):
                 else:
                     seenPeptides[key].append(value)
 
-            end = time.time()
-            total = end-start
-            logging.info("Added matched in: " + str(total))
 
 
         logging.info("Writing to fasta")
@@ -359,7 +356,7 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
         # linear flag to ensure min is correct for cis and trans
         if linearFlag and minSize(toAdd, mined):
 
-            # Don't need to continue this run as first amino acid is unknown
+            # Don't need to continue this run as first amino acid is unknown X
             if 'X' in toAdd:
                 continue
             else:

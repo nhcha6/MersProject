@@ -187,9 +187,12 @@ class MyTableWidget(QWidget):
         self.threadpool = QThreadPool()
 
         # Default values for the input parameters
-        self.minDefault = '8'
-        self.maxDefault = '12'
+        self.minDefault = '7'
+        self.maxDefault = '15'
         self.maxDistDefault = '25'
+
+        self.mod1Default = 'Oxidation (M)'
+        self.mod2Default = 'Phosphorylation (STY)'
         #self.minByIonDefault = '50'
         #self.byIonAccDefault = '0.1'
 
@@ -1075,21 +1078,33 @@ class MyTableWidget(QWidget):
 
         minIndex = self.tab2.minimumCombo.findText(str(self.minDefault))
 
+        modOneIndex = self.tab2.mod1Combo.findText(str(self.mod1Default))
+        self.tab2.mod1Combo.setCurrentIndex(modOneIndex)
+
+        modTwoIndex = self.tab2.mod2Combo.findText(str(self.mod2Default))
+        self.tab2.mod2Combo.setCurrentIndex(modTwoIndex)
+
+        self.tab1.ppmText.setText('10')
+        self.tab1.toleranceText.setText('0')
+
+
+
+
         # set to true as defaults for linear, cis and overlap off. Set trans off for now.
         self.tab2.minimumCombo.setCurrentIndex(minIndex)
         self.tab2.overlap.setChecked(True)
-        self.tab2.cis.setChecked(True)
+        #self.tab2.cis.setChecked(True)
         self.tab2.linear.setChecked(True)
         self.tab2.trans.setEnabled(False)
         self.tab2.plusTwo.setChecked(True)
-
+        self.tab2.plusThree.setChecked(True)
         # minByIonIndex = self.tab1.minByIonCombo.findText(self.minByIonDefault)
         # self.tab1.minByIonCombo.setCurrentIndex(minByIonIndex)
 
         # byIonAccIndex = self.tab1.byIonAccCombo.findText(self.byIonAccDefault)
         # self.tab1.byIonAccCombo.setCurrentIndex(byIonAccIndex)
 
-        self.tab1.byIonFlag.setChecked(True)
+        #self.tab1.byIonFlag.setChecked(True)
 
     @pyqtSlot()
     def on_click(self):

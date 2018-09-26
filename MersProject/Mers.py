@@ -40,7 +40,6 @@ class Fasta:
         """
         Function that literally combines everything to generate output
         """
-
         self.allProcessList = []
 
         if transFlag:
@@ -57,7 +56,7 @@ class Fasta:
             cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.seqDict, CIS, mined, maxed,
                                                                                   overlapFlag, csvFlag, modList,
                                                                                   maxDistance,
-                                                                                  outputPath, chargeFlags, mgfObj))
+                                                                                  outputPath, chargeFlags, mgfObj, modTable))
             self.allProcessList.append(cisProcess)
             cisProcess.start()
 
@@ -66,7 +65,7 @@ class Fasta:
             linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.seqDict, LINEAR, mined,
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      modList, maxDistance,
-                                                                                     outputPath, chargeFlags, mgfObj))
+                                                                                     outputPath, chargeFlags, mgfObj, modTable))
             self.allProcessList.append(linearProcess)
             linearProcess.start()
 
@@ -75,12 +74,14 @@ class Fasta:
 
 
 def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
-                       modList, maxDistance, outputPath, chargeFlags, mgfObj):
+                       modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable):
 
     """
     Process that is in charge for dealing with cis and linear. Creates sub processes for every protein to compute
     their respective output
     """
+
+
 
     finalPath = None
 
@@ -99,7 +100,8 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
     lockVar = multiprocessing.Lock()
 
     toWriteQueue = multiprocessing.Queue()
-    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, toWriteQueue, mgfObj))
+    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, toWriteQueue,
+                                                                                              mgfObj, childTable))
 
     writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
     writerProcess.start()
@@ -127,7 +129,6 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     """
     Compute the peptides for the given protein
     """
-
     start = time.time()
 
     # Get the initial peptides and their positions
@@ -179,7 +180,7 @@ def writer(queue, outputPath):
             if matchedPeptides == 'stop':
                 logging.info("ALL LINEAR COMPUTED, STOP MESSAGE SENT")
                 break
-            start = time.time()
+
 
             for key, value in matchedPeptides.items():
                 if key not in seenPeptides.keys():
@@ -187,9 +188,6 @@ def writer(queue, outputPath):
                 else:
                     seenPeptides[key].append(value)
 
-            end = time.time()
-            total = end-start
-            logging.info("Added matched in: " + str(total))
 
 
         logging.info("Writing to fasta")
@@ -279,7 +277,8 @@ def applyMods(combineModlessDict, modList):
         # Don't need to worry about it if no modification!
         if mod != 'None':
             # Get the list of modifications taking place
-            aminoList = modTable[mod]
+            aminoList = finalModTable[mod]
+           
             # Go through each character in the modification one by one
             for i in range(0, len(aminoList) - 1):
 
@@ -356,10 +355,15 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
 
         # linear flag to ensure min is correct for cis and trans
         if linearFlag and minSize(toAdd, mined):
-            splits.append(toAdd)
-            splitRef.append(temp)
 
-        elif not linearFlag:
+            # Don't need to continue this run as first amino acid is unknown X
+            if 'X' in toAdd or 'U' in toAdd:
+                continue
+            else:
+                splits.append(toAdd)
+                splitRef.append(temp)
+
+        elif not linearFlag and 'X' not in toAdd and 'U' not in toAdd:
             splits.append(toAdd)
             splitRef.append(temp)
 
@@ -371,6 +375,10 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
                 ref.append(j+1)
                 if maxSize(toAdd, maxed):
                     if minSize(toAdd, mined):
+
+                        # All future splits will contain X if an X is found in the current run, hence break
+                        if 'X' in toAdd or 'U' in toAdd:
+                            break
                         splits.append(toAdd)
                         temp = list(ref)
                         splitRef.append(temp)
@@ -379,6 +387,9 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
 
             else:
                 if maxSize(toAdd, maxed-1):
+                    # All future splits will contain X if an X is found in the current run, hence break
+                    if 'X' in toAdd or 'U' in toAdd:
+                        break
                     splits.append(toAdd)
                     ref.append(j+1)
                     temp = list(ref)
@@ -682,7 +693,7 @@ def nth_replace(string, old, new, n=1, option='only nth'):
     return new.join(nth_split)
 
 
-def processLockInit(lockVar, toWriteQueue, mgfObj):
+def processLockInit(lockVar, toWriteQueue, mgfObj, childTable):
 
     """
     Designed to set up a global lock for a child processes (child per protein)
@@ -692,6 +703,8 @@ def processLockInit(lockVar, toWriteQueue, mgfObj):
     lock = lockVar
     global mgfData
     mgfData = mgfObj
+    global finalModTable
+    finalModTable = childTable
     genMassDict.toWriteQueue = toWriteQueue
 
 

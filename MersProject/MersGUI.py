@@ -202,7 +202,7 @@ class MyTableWidget(QWidget):
         # Add tabs to table class (self)
         self.tabs.addTab(self.tab1, "Select File and Path")
         self.tabs.addTab(self.tab2, "Input Parameters")
-        self.tabs.setTabEnabled(1, False)
+        #self.tabs.setTabEnabled(1, False)
 
         # Creation of tab layout and widgets within tab
         self.tab1.layout = QGridLayout(self)
@@ -726,6 +726,7 @@ class MyTableWidget(QWidget):
 
     def showCustomMod(self, sender):
 
+        sender.setCurrentIndex(0)
         self.formGroupBox = QGroupBox('Custom Modification')
         self.formLayout = QFormLayout()
         self.formLayout.addRow(QLabel("Input modified amino acids without spaces: TGN \n" +
@@ -775,6 +776,8 @@ class MyTableWidget(QWidget):
         self.formGroupBox = None
 
         QMessageBox.about(self, "Message", 'Custom Modification successfully added!')
+
+        return True
 
     def getInputParams(self):
 

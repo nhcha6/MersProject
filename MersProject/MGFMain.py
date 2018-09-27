@@ -5,7 +5,7 @@ import math
 from bisect import bisect_left
 from MonoAminoAndMods import *
 import matplotlib as mpl
-
+import csv
 import matplotlib.pyplot as plt
 import numpy as np
 # test
@@ -38,8 +38,10 @@ def generateMGFList(protId, mgfObj, massDict, modList):
     """
     if mgfObj.mgfDf:
 
+        massDictTest = generateTestData()
+
         matchedPeptides = {}
-        for key, value in massDict.items():
+        for key, value in massDictTest.items():
             # convert modified peptides to original form
             if not key.isalpha():
                 alphaKey = modToPeptide(key)
@@ -50,7 +52,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
 
             #print(byIonArray)
 
-            for charge, chargeMass in value[2].items():
+            for charge, chargeMass in value[1].items():
                 # Shift to outside for charge for loop
                 if alphaKey not in matchedPeptides.keys():
 
@@ -81,6 +83,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                 byIonArray = initIonMass(key, modList)
                                 mzArray = mgfObj.pepmassIonArray[(charge, pepMass)]
                                 simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
+                                print(alphaKey + str(simIons))
                                 if simIons >= mgfObj.minSimBy:
                                     matchedPeptides[alphaKey] = protId
                                     matchAdded = True
@@ -93,6 +96,46 @@ def generateMGFList(protId, mgfObj, massDict, modList):
             # check it passes max simcomparisons and then add alphakey to matchedpeptides!
         return matchedPeptides
 
+def generateTestData():
+    peptides = []
+    with open('input.csv', mode='r') as csv_file:
+        csv_reader = csv.DictReader(csv_file)
+        for row in csv_reader:
+            peptides.append(row["pep"])
+    massDict = massTestCalc(peptides)
+    chargeIonMass(massDict, [False, True, True, False, False])
+    return massDict
+
+def massTestCalc(peptides):
+    massDict = {}
+    for i in range(0, len(peptides)):
+        totalMass = 0
+        for j in range(0, len(peptides[i])):
+            totalMass += monoAminoMass[peptides[i][j]]
+        totalMass += H20_MASS
+        massDict[peptides[i]] = [totalMass]
+    return massDict
+
+def chargeIonMass(massDict, chargeFlags):
+
+    """
+    chargeFlags: [True, False, True, False, True]
+    """
+
+    for key, value in massDict.items():
+        chargeAssoc = {}
+        for z in range(0, len(chargeFlags)):
+
+            if chargeFlags[z]:
+                chargeMass = massCharge(value[0], z+1)  # +1 for actual value
+                chargeAssoc[z+1] = chargeMass
+        value.append(chargeAssoc)
+
+def massCharge(predictedMass, z):
+    chargeMass = (predictedMass + (z * 1.00794))/z
+    return chargeMass
+
+generateTestData()
 
 def modToPeptide(moddedPeptide):
     peptide = ''.join(filter(lambda x: x.isalpha(), moddedPeptide))

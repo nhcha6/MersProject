@@ -290,10 +290,9 @@ class MyTableWidget(QWidget):
 
         # Ensure opening fasta extension file by checking last five chars
         if fastaTest == 'fasta':
-            self.fasta = Fasta(addSequenceList(fname[0]))
+            self.fasta = Fasta(fname[0])
             self.enableControl()
-            QMessageBox.about(self, "Message", 'Fasta file imported.'
-                                               'There are ' + str(self.fasta.entries) + ' proteins in this file!')
+            QMessageBox.about(self, "Message", 'Fasta file imported.')
 
         # Ensuring program does not crash if no file is selected
         elif fname[0] == '':

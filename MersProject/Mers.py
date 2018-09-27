@@ -29,9 +29,9 @@ class Fasta:
     Class that represents the input from a fasta file
     """
 
-    def __init__(self, seqDict):
-        self.seqDict = seqDict
-        self.entries = len(seqDict)
+    def __init__(self, inputFile):
+        self.inputFile = inputFile
+        #self.entries = len(seqDict)
         self.allProcessList = []
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,

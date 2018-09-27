@@ -428,7 +428,6 @@ def findSimIons(mzArray, byIons, accuracy):
 
     return simIons
 
-
 # actualMass = 495.25851750000004
 # pepmass = 495.7115
 # ppmVal = 90

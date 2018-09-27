@@ -53,7 +53,7 @@ class Fasta:
             # file.write(json.dumps(combined))  # use `json.loads` to do the reverse
 
         if cisFlag:
-            cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.seqDict, CIS, mined, maxed,
+            cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, CIS, mined, maxed,
                                                                                   overlapFlag, csvFlag, modList,
                                                                                   maxDistance,
                                                                                   outputPath, chargeFlags, mgfObj, modTable))
@@ -62,7 +62,7 @@ class Fasta:
 
         if linearFlag:
 
-            linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.seqDict, LINEAR, mined,
+            linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, LINEAR, mined,
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      modList, maxDistance,
                                                                                      outputPath, chargeFlags, mgfObj, modTable))
@@ -73,7 +73,7 @@ class Fasta:
             process.join()
 
 
-def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
+def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag,
                        modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable):
 
     """
@@ -93,8 +93,8 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
     num_workers = multiprocessing.cpu_count()
 
     # Don't need all processes for small file?
-    if len(seqDict) < num_workers:
-        num_workers = len(seqDict)
+    # if len(seqDict) < num_workers:
+    #     num_workers = len(seqDict)
 
     # Used to lock write access to file
     lockVar = multiprocessing.Lock()
@@ -106,13 +106,15 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
     writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
     writerProcess.start()
 
-    for key, value in seqDict.items():
-
-        logging.info(spliceType + " process started for: " + value[0:5])
-
-        # Start the processes for each protein with the targe function being genMassDict
-        pool.apply_async(genMassDict, args=(spliceType, key, value, mined, maxed, overlapFlag,
-                                            csvFlag, modList, maxDistance, finalPath, chargeFlags))
+    #for key, value in seqDict.items():
+    with open(inputFile, "rU") as handle:
+        for record in SeqIO.parse(handle, 'fasta'):
+            seq = str(record.seq)
+            seqId = record.name
+            logging.info(spliceType + " process started for: " + seq[0:5])
+            # Start the processes for each protein with the targe function being genMassDict
+            pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
+                                                csvFlag, modList, maxDistance, finalPath, chargeFlags))
 
 
     pool.close()

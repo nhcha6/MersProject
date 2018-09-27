@@ -47,6 +47,8 @@ def generateMGFList(protId, mgfObj, massDict, modList):
             else:
                 alphaKey = key
 
+            if alphaKey == 'RLLLATVLQAV':
+                print('made it')
             # ion dict -> {'b/yion: mass'}
 
             #print(byIonArray)

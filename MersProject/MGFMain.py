@@ -98,7 +98,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
 
 def generateTestData():
     peptides = []
-    with open('input.csv', mode='r') as csv_file:
+    with open('input1.csv', mode='r') as csv_file:
         csv_reader = csv.DictReader(csv_file)
         for row in csv_reader:
             peptides.append(row["pep"])

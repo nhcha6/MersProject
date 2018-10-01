@@ -388,7 +388,6 @@ class MyTableWidget(QWidget):
         ppmVal, intensityThreshold, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, \
         modList, outputFlag, chargeFlags, minSimBy, byIonAccuracy, byIonFlag = self.getInputParams()
 
-        print("HEURE")
         reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' +
                                          'Minimum Peptide Length: ' + str(mined) + '\n' +
                                          'Maximum Peptide Length: ' + str(maxed) + '\n' +
@@ -807,11 +806,6 @@ class MyTableWidget(QWidget):
         plusFiveFlag = self.tab2.plusFive.isChecked()
 
         chargeFlags = [plusOneFlag, plusTwoFlag, plusThreeFlag, plusFourFlag, plusFiveFlag]
-
-        # self.fasta = Fasta(addSequenceList('/Users/nicolaschapman/Documents/UROP/Code/MersProject/small.fasta'))
-        # self.fasta = Fasta(addSequenceList('C:/Users/Arpit/Desktop/UROP/InputData/oneProtein.fasta'))
-        # self.fasta = Fasta(addSequenceList('C:/Users/Administrator/Desktop/UROP/InputData/OneProtein.fasta'))
-        # self.mgf = MGF(readMGF('C:/Users/Arpit/Desktop/UROP/InputData/mgf.mgf'))
 
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(),
                    self.tab2.mod3Combo.currentText()]

@@ -111,6 +111,9 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
         for record in SeqIO.parse(handle, 'fasta'):
             seq = str(record.seq)
             seqId = record.name
+
+
+            seqId = seqId.split('|')[1]
             logging.info(spliceType + " process started for: " + seq[0:5])
             # Start the processes for each protein with the targe function being genMassDict
             pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,

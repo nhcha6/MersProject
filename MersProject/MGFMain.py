@@ -401,7 +401,7 @@ def initIonMass(peptide, modList):
     else:
         blist, ylist = createBYIonsMod(peptide)
         dict = ionMassDictMod(blist, ylist, modList)
-    return sorted(dict.values())
+    return dict.values()
 
 def sortBYDict(byIonDict):
     byIonArray = []

@@ -5,10 +5,10 @@ import math
 from bisect import bisect_left
 from MonoAminoAndMods import *
 import matplotlib as mpl
-
 import matplotlib.pyplot as plt
 import numpy as np
-# test
+import math
+
 class MGF:
 
     """
@@ -84,9 +84,6 @@ def generateMGFList(protId, mgfObj, massDict, modList):
 
                         # Get the pepmass at that index
                         pepMass = pepMasses[index]
-                        print(alphaKey)
-                        print(index)
-                        print(pepMass)
 
                         # While there is a current match. pepMass is changed per iteration if previous
                         # pepmass didn't match.
@@ -117,8 +114,6 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                 else:
                                     index += step
                                     pepMass = pepMasses[index]
-                                    print(index)
-                                    print(pepMass)
                 else:
                     break
             # check it passes max simcomparisons and then add alphakey to matchedpeptides!
@@ -437,6 +432,32 @@ def findSimIons(mzArray, byIons, accuracy):
 
     return simIons
 
+def simIons(mzArray, byIons, accuracy, minSim):
+
+    noSimReq = math.ceil(len(byIons)*minSim/100)
+    for array in mzArray:
+        simTemp = 0
+        byIonsTested = 0
+        for mass in byIons:
+            byIonsTested += 1
+            closest = takeClosest(array, mass)
+            upperThresh = mass + accuracy
+            lowerThresh = mass - accuracy
+            if lowerThresh < closest < upperThresh:
+                simTemp += 1
+                if simTemp >= noSimReq:
+                    return True
+            elif (len(byIons) - byIonsTested) < noSimReq:
+                break
+    return False
+
+# mzArray = [[8, 10, 12, 16, 20], [2, 4, 6, 39, 35]]
+# byIons = [8.01, 9.99, 12.01, 20, 22]
+# accuracy = 0.05
+# minSim = 80
+#
+# print(simIons(mzArray, byIons, accuracy, minSim))
+
 # actualMass = 495.25851750000004
 # pepmass = 495.7115
 # ppmVal = 90
@@ -454,3 +475,4 @@ def findSimIons(mzArray, byIons, accuracy):
 # print(pepList)
 # actualMass = 894
 # print(takeClosest(pepList, actualMass))
+

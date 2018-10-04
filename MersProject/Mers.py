@@ -174,7 +174,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
 
 def writer(queue, outputPath):
     seenPeptides = {}
-    saveHandle = str(outputPath) + "/NewOutput2.fasta"
+    saveHandle = str(outputPath)
     print(saveHandle)
     with open(saveHandle, "w") as output_handle:
         while True:

@@ -101,10 +101,11 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                 # Check the similarity of the byIons as was being done previously
                                 byIonArray = initIonMass(key, modList)
                                 mzArray = mgfObj.pepmassIonArray[(charge, pepMass)]
-                                simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
-
+                                numberSim = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
+                                print(alphaKey)
+                                print(numberSim)
                                 # If they match in accordance with the input minimum requirement, add them to the list
-                                if simIons >= mgfObj.minSimBy:
+                                if simIons(mzArray, byIonArray, mgfObj.byIonAccuracy, mgfObj.minSimBy):
                                     matchedPeptides[alphaKey] = protId
                                     matchAdded = True
                                     break
@@ -435,19 +436,24 @@ def findSimIons(mzArray, byIons, accuracy):
 def simIons(mzArray, byIons, accuracy, minSim):
 
     noSimReq = math.ceil(len(byIons)*minSim/100)
+    print(noSimReq)
     for array in mzArray:
         simTemp = 0
         byIonsTested = 0
         for mass in byIons:
             byIonsTested += 1
+            print(byIonsTested)
             closest = takeClosest(array, mass)
             upperThresh = mass + accuracy
             lowerThresh = mass - accuracy
             if lowerThresh < closest < upperThresh:
                 simTemp += 1
+                print(simTemp)
                 if simTemp >= noSimReq:
+                    print('met max')
                     return True
-            elif (len(byIons) - byIonsTested) < noSimReq:
+            elif (len(byIons) - byIonsTested) < noSimReq - simTemp:
+                print('cannot meet min')
                 break
     return False
 

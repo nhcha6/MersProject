@@ -47,12 +47,6 @@ def generateMGFList(protId, mgfObj, massDict, modList):
             else:
                 alphaKey = key
 
-            if alphaKey == 'RLLLATVLQAV':
-                print('made it')
-            # ion dict -> {'b/yion: mass'}
-
-            #print(byIonArray)
-
             for charge, chargeMass in value[2].items():
                 # Shift to outside for charge for loop
                 if alphaKey not in matchedPeptides.keys():
@@ -61,8 +55,10 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                     pepMasses = mgfObj.mgfDf[charge]
                     #closestIndex = takeClosest(pepMasses, chargeMass, True)
                     #pepMass = pepMasses[closestIndex]
+
                     steps = [1,-1]
                     matchAdded = False
+                    closestMatched = False
 
                     # need to iterate up and down from the closest to ensure all b/y ion comparison is run
                     # on all relevant pepMasses
@@ -70,6 +66,12 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                         # matchAdded is set to True if if the B/y ion check is passed in the iterations
                         # using step 1
                         if matchAdded == True:
+                            break
+
+                        # if the closest pepmass doesn't bass the pepMatch test, closestMatched will still
+                        # be false and we should break the loop to avoid running the code again.
+                        if step == -1 and closestMatched == False:
+                            print('closest pepMatch failed')
                             break
 
                         # Get the closest index, denoted by the bool flag as the last argument, think this
@@ -82,11 +84,16 @@ def generateMGFList(protId, mgfObj, massDict, modList):
 
                         # Get the pepmass at that index
                         pepMass = pepMasses[index]
+                        print(alphaKey)
+                        print(index)
+                        print(pepMass)
 
                         # While there is a current match. pepMass is changed per iteration if previous
                         # pepmass didn't match.
                         while pepMatch(chargeMass, pepMass, mgfObj.ppmVal):
-
+                            # Set closestMatched flag to True if the while loop is entered so that the second
+                            # step can be broken if closest match fails
+                            closestMatched = True
                             # Not super important but this should likely be at the very start and outside the step
                             # loop.
                             if mgfObj.byIonFlag == False:
@@ -110,6 +117,8 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                 else:
                                     index += step
                                     pepMass = pepMasses[index]
+                                    print(index)
+                                    print(pepMass)
                 else:
                     break
             # check it passes max simcomparisons and then add alphakey to matchedpeptides!

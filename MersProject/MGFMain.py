@@ -71,7 +71,6 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                         # if the closest pepmass doesn't bass the pepMatch test, closestMatched will still
                         # be false and we should break the loop to avoid running the code again.
                         if step == -1 and closestMatched == False:
-                            print('closest pepMatch failed')
                             break
 
                         # Get the closest index, denoted by the bool flag as the last argument, think this
@@ -101,9 +100,6 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                 # Check the similarity of the byIons as was being done previously
                                 byIonArray = initIonMass(key, modList)
                                 mzArray = mgfObj.pepmassIonArray[(charge, pepMass)]
-                                numberSim = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
-                                print(alphaKey)
-                                print(numberSim)
                                 # If they match in accordance with the input minimum requirement, add them to the list
                                 if simIons(mzArray, byIonArray, mgfObj.byIonAccuracy, mgfObj.minSimBy):
                                     matchedPeptides[alphaKey] = protId
@@ -436,24 +432,19 @@ def findSimIons(mzArray, byIons, accuracy):
 def simIons(mzArray, byIons, accuracy, minSim):
 
     noSimReq = math.ceil(len(byIons)*minSim/100)
-    print(noSimReq)
     for array in mzArray:
         simTemp = 0
         byIonsTested = 0
         for mass in byIons:
             byIonsTested += 1
-            print(byIonsTested)
             closest = takeClosest(array, mass)
             upperThresh = mass + accuracy
             lowerThresh = mass - accuracy
             if lowerThresh < closest < upperThresh:
                 simTemp += 1
-                print(simTemp)
                 if simTemp >= noSimReq:
-                    print('met max')
                     return True
             elif (len(byIons) - byIonsTested) < noSimReq - simTemp:
-                print('cannot meet min')
                 break
     return False
 

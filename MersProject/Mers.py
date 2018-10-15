@@ -35,7 +35,7 @@ class Fasta:
         self.allProcessList = []
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                       maxDistance, outputPath, chargeFlags, mgfObj=None):
+                       maxDistance, outputPath, chargeFlags, mgfObj, useMgf):
 
         """
         Function that literally combines everything to generate output
@@ -56,7 +56,7 @@ class Fasta:
             cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, CIS, mined, maxed,
                                                                                   overlapFlag, csvFlag, modList,
                                                                                   maxDistance,
-                                                                                  outputPath, chargeFlags, mgfObj, modTable))
+                                                                                  outputPath, chargeFlags, mgfObj, modTable, useMgf))
             self.allProcessList.append(cisProcess)
             cisProcess.start()
 
@@ -65,7 +65,7 @@ class Fasta:
             linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, LINEAR, mined,
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      modList, maxDistance,
-                                                                                     outputPath, chargeFlags, mgfObj, modTable))
+                                                                                     outputPath, chargeFlags, mgfObj, modTable, useMgf))
             self.allProcessList.append(linearProcess)
             linearProcess.start()
 
@@ -74,7 +74,7 @@ class Fasta:
 
 
 def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag,
-                       modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable):
+                       modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable, useMgf):
 
     """
     Process that is in charge for dealing with cis and linear. Creates sub processes for every protein to compute
@@ -117,7 +117,7 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
             logging.info(spliceType + " process started for: " + seq[0:5])
             # Start the processes for each protein with the targe function being genMassDict
             pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
-                                                csvFlag, modList, maxDistance, finalPath, chargeFlags))
+                                                csvFlag, modList, maxDistance, finalPath, chargeFlags, useMgf))
 
 
     pool.close()
@@ -129,7 +129,7 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
 
 
 def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList,
-                maxDistance, finalPath, chargeFlags):
+                maxDistance, finalPath, chargeFlags, useMgf):
 
     """
     Compute the peptides for the given protein
@@ -157,9 +157,10 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
         matchedPeptides = generateMGFList(protId, mgfData, massDict, modList)
         genMassDict.toWriteQueue.put(matchedPeptides)
 
-    if mgfData is None:
+    if useMgf is False:
         allPeptides = getAllPep(massDict)
         genMassDict.toWriteQueue.put(allPeptides)
+
     # If csv is selected, write to csv file
     if csvFlag:
         logging.info("Writing locked :(")
@@ -175,13 +176,14 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
 
 def getAllPep(massDict):
 
+    allPeptides = set()
     for key, value in massDict.items():
-        infoRow = [key, value[0], value[1]]
-        for chargeIndex in chargeHeaders:
-            chargeMass = value[2][chargeIndex + 1]
-            infoRow.append(str(chargeMass))
-        writer.writerow(infoRow)
-
+        if not key.isalpha():
+            alphaKey = modToPeptide(key)
+        else:
+            alphaKey = key
+        allPeptides.add(alphaKey)
+    return allPeptides
 
 def writer(queue, outputPath):
     seenPeptides = {}

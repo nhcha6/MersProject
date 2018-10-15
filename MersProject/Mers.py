@@ -35,7 +35,7 @@ class Fasta:
         self.allProcessList = []
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                       maxDistance, outputPath, chargeFlags, mgfObj):
+                       maxDistance, outputPath, chargeFlags, mgfObj=None):
 
         """
         Function that literally combines everything to generate output
@@ -157,7 +157,9 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
         matchedPeptides = generateMGFList(protId, mgfData, massDict, modList)
         genMassDict.toWriteQueue.put(matchedPeptides)
 
-
+    if mgfData is None:
+        allPeptides = getAllPep(massDict)
+        genMassDict.toWriteQueue.put(allPeptides)
     # If csv is selected, write to csv file
     if csvFlag:
         logging.info("Writing locked :(")
@@ -170,6 +172,15 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     end = time.time()
 
     logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
+
+def getAllPep(massDict):
+
+    for key, value in massDict.items():
+        infoRow = [key, value[0], value[1]]
+        for chargeIndex in chargeHeaders:
+            chargeMass = value[2][chargeIndex + 1]
+            infoRow.append(str(chargeMass))
+        writer.writerow(infoRow)
 
 
 def writer(queue, outputPath):

@@ -9,6 +9,7 @@ from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtCore import *
 from PyQt5.QtCore import pyqtSlot
 import matplotlib as mpl
+
 mpl.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import numpy as np
@@ -102,6 +103,7 @@ class MGFImporter(QRunnable):
         end = time.time()
         print("Uploading mgf took: " + str(end - start))
 
+
 class MGFPlotter(QRunnable):
     """
 
@@ -190,8 +192,8 @@ class MyTableWidget(QWidget):
         self.minDefault = '8'
         self.maxDefault = '12'
         self.maxDistDefault = '25'
-        #self.minByIonDefault = '50'
-        #self.byIonAccDefault = '0.1'
+        # self.minByIonDefault = '50'
+        # self.byIonAccDefault = '0.1'
 
         # Initialisation of two tabs
         self.tabs = QTabWidget()
@@ -202,7 +204,7 @@ class MyTableWidget(QWidget):
         # Add tabs to table class (self)
         self.tabs.addTab(self.tab1, "Select File and Path")
         self.tabs.addTab(self.tab2, "Input Parameters")
-        #self.tabs.setTabEnabled(1, False)
+        # self.tabs.setTabEnabled(1, False)
 
         # Creation of tab layout and widgets within tab
         self.tab1.layout = QGridLayout(self)
@@ -237,9 +239,8 @@ class MyTableWidget(QWidget):
         self.mgf = MGF(mgfDf, pepmassIonArray, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag)
 
     def onlyImportMGF(self, ms2Thresh, intensityPoints):
-      
-        plot(ms2Thresh, intensityPoints)
 
+        plot(ms2Thresh, intensityPoints)
 
     def uploadMgfPreStep(self):
         """
@@ -292,6 +293,7 @@ class MyTableWidget(QWidget):
         if fastaTest == 'fasta':
             self.fasta = Fasta(fname[0])
             self.enableControl()
+            self.controlMGFInput()
             QMessageBox.about(self, "Message", 'Fasta file imported.')
 
         # Ensuring program does not crash if no file is selected
@@ -324,16 +326,17 @@ class MyTableWidget(QWidget):
         self.tabs.setCurrentIndex(1)
 
     def firstTabValid(self):
+        if self.mgfFlag.isChecked() == True:
+            return True
         if self.tab1.byIonFlag.isChecked():
             statusList = [self.tab1.byIonAccStatus.text(), self.tab1.ppmStatus.text(), \
-                            self.tab1.toleranceStatus.text(), self.tab1.minByIonStatus.text()]
+                          self.tab1.toleranceStatus.text(), self.tab1.minByIonStatus.text()]
         else:
             statusList = [self.tab1.ppmStatus.text(), self.tab1.toleranceStatus.text()]
         for status in statusList:
             if status in ["Invalid", ""]:
                 return False
         return True
-
 
     def secondTabValid(self):
         transFlag = self.tab2.trans.isChecked()
@@ -353,26 +356,49 @@ class MyTableWidget(QWidget):
         return False
 
     def enableControl(self):
-        if self.fasta is not None and self.mgfPath is not None:
-            self.tab1.toleranceText.setEnabled(True)
-            self.tab1.ppmText.setEnabled(True)
-            self.tab1.byIonFlag.setEnabled(True)
-            if self.tab1.byIonFlag.isChecked():
-                self.tab1.byIonAccText.setEnabled(True)
-                self.tab1.minByIonText.setEnabled(True)
-            else:
-                self.tab1.byIonAccText.setEnabled(False)
-                self.tab1.minByIonText.setEnabled(False)
-            if self.firstTabValid():
-                self.tabs.setTabEnabled(1, True)
-                self.nextTab.setEnabled(True)
-                if self.secondTabValid():
-                    self.tab2.output.setEnabled(True)
+        if self.fasta is not None:
+            print(self.mgfPath)
+            if self.mgfPath is not None or self.mgfFlag.isChecked() == True:
+                print('in')
+                self.tab1.toleranceText.setEnabled(True)
+                self.tab1.ppmText.setEnabled(True)
+                self.tab1.byIonFlag.setEnabled(True)
+                if self.tab1.byIonFlag.isChecked():
+                    self.tab1.byIonAccText.setEnabled(True)
+                    self.tab1.minByIonText.setEnabled(True)
                 else:
-                    self.tab2.output.setEnabled(False)
+                    self.tab1.byIonAccText.setEnabled(False)
+                    self.tab1.minByIonText.setEnabled(False)
+                if self.firstTabValid():
+                    self.tabs.setTabEnabled(1, True)
+                    self.nextTab.setEnabled(True)
+                    if self.secondTabValid():
+                        self.tab2.output.setEnabled(True)
+                    else:
+                        self.tab2.output.setEnabled(False)
+                else:
+                    print('here')
+                    self.tabs.setTabEnabled(1, False)
+                    self.nextTab.setEnabled(False)
             else:
                 self.tabs.setTabEnabled(1, False)
                 self.nextTab.setEnabled(False)
+
+    def controlMGFInput(self):
+        if self.mgfFlag.isChecked():
+            self.enableControl()
+            self.mgfButton.setEnabled(False)
+            self.mgfPlotFlag.setEnabled(False)
+            self.tab1.ppmText.setEnabled(False)
+            self.tab1.toleranceText.setEnabled(False)
+            self.tab1.minByIonText.setEnabled(False)
+            self.tab1.byIonAccText.setEnabled(False)
+            self.tab1.byIonFlag.setEnabled(False)
+            # self.tab1.ppmLabel.setEnabled(False)
+        if not self.mgfFlag.isChecked():
+            self.enableControl()
+            self.mgfButton.setEnabled(True)
+            self.mgfPlotFlag.setEnabled(True)
 
     def confirmationFunction(self):
 
@@ -389,22 +415,23 @@ class MyTableWidget(QWidget):
         modList, outputFlag, chargeFlags, minSimBy, byIonAccuracy, byIonFlag = self.getInputParams()
 
         reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' +
-                                         'Minimum Peptide Length: ' + str(mined) + '\n' +
-                                         'Maximum Peptide Length: ' + str(maxed) + '\n' +
-                                         'Maximum Distance: ' + str(maxDistance) + '\n' +
-                                         'Modifications: ' + str(modList) + '\n' +
-                                         'No Overlap: ' + str(overlapFlag) + '\n' +
-                                         'Linear Splicing: ' + str(linearFlag) + '\n' +
-                                         'Cis Splicing: ' + str(cisFlag) + '\n' +
-                                         'Trans Splicing: ' + str(transFlag) + '\n' +
-                                         'Print intial combinations: ' + str(csvFlag) + '\n' +
-                                         'Charge States: ' + str(chargeFlags) + '\n' +
-                                         'PPM Value: ' + str(ppmVal) + '\n' +
-                                         'Intensity Threshold: ' + str(intensityThreshold) + '\n'
-                                         'Min b/y Ion (%): ' + str(minSimBy) + '\n' +
-                                         'b/y Ion Accuracy: ' + str(byIonAccuracy) + '\n' +
-                                         'b/y Ion Flag: ' + str(byIonFlag),
-                                         QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                                     'Minimum Peptide Length: ' + str(mined) + '\n' +
+                                     'Maximum Peptide Length: ' + str(maxed) + '\n' +
+                                     'Maximum Distance: ' + str(maxDistance) + '\n' +
+                                     'Modifications: ' + str(modList) + '\n' +
+                                     'No Overlap: ' + str(overlapFlag) + '\n' +
+                                     'Linear Splicing: ' + str(linearFlag) + '\n' +
+                                     'Cis Splicing: ' + str(cisFlag) + '\n' +
+                                     'Trans Splicing: ' + str(transFlag) + '\n' +
+                                     'Print intial combinations: ' + str(csvFlag) + '\n' +
+                                     'Charge States: ' + str(chargeFlags) + '\n' +
+                                     'PPM Value: ' + str(ppmVal) + '\n' +
+                                     'Intensity Threshold: ' + str(intensityThreshold) + '\n'
+                                                                                         'Min b/y Ion (%): ' + str(
+            minSimBy) + '\n' +
+                                     'b/y Ion Accuracy: ' + str(byIonAccuracy) + '\n' +
+                                     'b/y Ion Flag: ' + str(byIonFlag),
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
         if self.tab1.byIonFlag.isChecked() == False:
             self.tab1.byIonAccText.setText('')
@@ -414,33 +441,29 @@ class MyTableWidget(QWidget):
 
             print(self.mgfPath)
             # UPLOAD MGF FILE HERE
+            if self.mgfPath is not None:
             mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, ppmVal, intensityThreshold, minSimBy,
-                                byIonAccuracy, byIonFlag)
+                                 byIonAccuracy, byIonFlag)
 
             if csvFlag:
                 outputPath = self.getOutputPath()
                 if outputPath is not False:
                     self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                                        maxDistance, outputPath, chargeFlags)
+                                       maxDistance, outputPath, chargeFlags)
             else:
 
                 outputPath = self.getOutputPath()
-                #mgfGen.signals.finished.connect(self.onlyImportMGF)
+                # mgfGen.signals.finished.connect(self.onlyImportMGF)
                 mgfGen.signals.finished.connect(functools.partial(self.importedMGF, mined, maxed, overlapFlag,
-                                                                      transFlag, cisFlag, linearFlag, csvFlag, modList,
-                                                                      maxDistance, outputPath, chargeFlags))
+                                                                  transFlag, cisFlag, linearFlag, csvFlag, modList,
+                                                                  maxDistance, outputPath, chargeFlags))
                 if outputPath is not False:
-
                     self.threadpool.start(mgfGen)
-
-
-
 
     def importedMGF(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                     maxDistance, outputPath, chargeFlags):
 
         print("MGF FILE UPLOADED")
-
 
         self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                            maxDistance, outputPath, chargeFlags)
@@ -728,7 +751,7 @@ class MyTableWidget(QWidget):
         self.formGroupBox = QGroupBox('Custom Modification')
         self.formLayout = QFormLayout()
         self.formLayout.addRow(QLabel("Input modified amino acids without spaces: TGN \n" +
-                             "Input mass change as a decimal number"))
+                                      "Input mass change as a decimal number"))
         self.custAminoInput = QLineEdit()
         self.custMassInput = QLineEdit()
         self.addModButton = QPushButton("Create Modification")
@@ -750,7 +773,8 @@ class MyTableWidget(QWidget):
         # validity checks
         for char in aminoAcids:
             if char not in monoAminoMass.keys():
-                QMessageBox.about(self, "Message", 'Amino Acids are not valid. Please leave no spaces and use capitals!')
+                QMessageBox.about(self, "Message",
+                                  'Amino Acids are not valid. Please leave no spaces and use capitals!')
                 return
             else:
                 modValue.append(char)
@@ -932,6 +956,8 @@ class MyTableWidget(QWidget):
         self.nextTab = QPushButton("Next Tab")
         self.nextTab.clicked.connect(self.nextTabFunc)
         self.nextTab.setEnabled(False)
+        self.mgfFlag = QCheckBox("Apply MGF Comparison")
+        self.mgfFlag.stateChanged.connect(self.controlMGFInput)
 
         self.tab1.ppmLabel = QLabel('PPM (0.1 - 1000): ')
         self.tab1.ppmText = QLineEdit(self)
@@ -954,7 +980,6 @@ class MyTableWidget(QWidget):
         self.tab1.minByIonText.textChanged[str].connect(self.textBoxChanged)
         self.tab1.minByIonText.textChanged[str].connect(self.enableControl)
 
-
         self.tab1.byIonAccLabel = QLabel('b/y Ion Accuracy (0.01 - 0.2): ')
         self.tab1.byIonAccText = QLineEdit(self)
         self.tab1.byIonAccText.setEnabled(False)
@@ -964,7 +989,7 @@ class MyTableWidget(QWidget):
 
         self.tab1.byIonFlag = QCheckBox('Apply b/y Ion Comparison: ')
         self.tab1.byIonFlag.setEnabled(False)
-        #self.tab1.byIonFlag.stateChanged.connect(self.disableByInputs)
+        # self.tab1.byIonFlag.stateChanged.connect(self.disableByInputs)
         self.tab1.byIonFlag.stateChanged.connect(self.enableControl)
 
         # for i in range(10, 110, 10):
@@ -986,8 +1011,9 @@ class MyTableWidget(QWidget):
         self.tab1.layout.setColumnStretch(5, 1)
         self.tab1.layout.setRowStretch(0, 1)
         self.tab1.layout.setRowStretch(5, 1)
-        self.tab1.layout.addWidget(self.pushButton1, 1, 2, 1, 2)
+        self.tab1.layout.addWidget(self.pushButton1, 1, 2)
         self.tab1.layout.addWidget(self.mgfButton, 2, 2)
+        self.tab1.layout.addWidget(self.mgfFlag, 1, 3)
         self.tab1.layout.addWidget(self.mgfPlotFlag, 2, 3)
         self.tab1.layout.addWidget(self.tab1.ppmLabel, 3, 2)
         self.tab1.layout.addWidget(self.tab1.ppmText, 3, 3)

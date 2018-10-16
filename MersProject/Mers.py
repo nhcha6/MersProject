@@ -35,7 +35,7 @@ class Fasta:
         self.allProcessList = []
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                       maxDistance, outputPath, chargeFlags, mgfObj, useMgf):
+                       maxDistance, outputPath, chargeFlags, mgfObj:
 
         """
         Function that literally combines everything to generate output
@@ -56,7 +56,7 @@ class Fasta:
             cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, CIS, mined, maxed,
                                                                                   overlapFlag, csvFlag, modList,
                                                                                   maxDistance,
-                                                                                  outputPath, chargeFlags, mgfObj, modTable, useMgf))
+                                                                                  outputPath, chargeFlags, mgfObj, modTable))
             self.allProcessList.append(cisProcess)
             cisProcess.start()
 
@@ -65,7 +65,7 @@ class Fasta:
             linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, LINEAR, mined,
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      modList, maxDistance,
-                                                                                     outputPath, chargeFlags, mgfObj, modTable, useMgf))
+                                                                                     outputPath, chargeFlags, mgfObj, modTable))
             self.allProcessList.append(linearProcess)
             linearProcess.start()
 
@@ -74,7 +74,7 @@ class Fasta:
 
 
 def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag,
-                       modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable, useMgf):
+                       modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable):
 
     """
     Process that is in charge for dealing with cis and linear. Creates sub processes for every protein to compute
@@ -117,7 +117,7 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
             logging.info(spliceType + " process started for: " + seq[0:5])
             # Start the processes for each protein with the targe function being genMassDict
             pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
-                                                csvFlag, modList, maxDistance, finalPath, chargeFlags, useMgf))
+                                                csvFlag, modList, maxDistance, finalPath, chargeFlags))
 
 
     pool.close()
@@ -129,7 +129,7 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
 
 
 def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList,
-                maxDistance, finalPath, chargeFlags, useMgf):
+                maxDistance, finalPath, chargeFlags):
 
     """
     Compute the peptides for the given protein
@@ -157,7 +157,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
         matchedPeptides = generateMGFList(protId, mgfData, massDict, modList)
         genMassDict.toWriteQueue.put(matchedPeptides)
 
-    if useMgf is False:
+    if mgfData is None:
         allPeptides = getAllPep(massDict)
         genMassDict.toWriteQueue.put(allPeptides)
 

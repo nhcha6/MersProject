@@ -411,6 +411,12 @@ class MyTableWidget(QWidget):
             self.tab1.byIonAccText.setText('1')
             self.tab1.minByIonText.setText('1')
 
+        if self.mgfFlag.isChecked() == True:
+            self.tab1.ppmText.setText('1')
+            self.tab1.toleranceText.setText('1')
+            self.tab1.byIonAccText.setText('1')
+            self.tab1.minByIonText.setText('1')
+
         ppmVal, intensityThreshold, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, \
         modList, outputFlag, chargeFlags, minSimBy, byIonAccuracy, byIonFlag = self.getInputParams()
 
@@ -437,12 +443,18 @@ class MyTableWidget(QWidget):
             self.tab1.byIonAccText.setText('')
             self.tab1.minByIonText.setText('')
 
+        if self.mgfFlag.isChecked() == True:
+            self.tab1.ppmText.setText('')
+            self.tab1.toleranceText.setText('')
+            self.tab1.byIonAccText.setText('')
+            self.tab1.minByIonText.setText('')
+
         if reply == QMessageBox.Yes:
 
             print(self.mgfPath)
             # UPLOAD MGF FILE HERE
-            if self.mgfPath is not None:
-            mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, ppmVal, intensityThreshold, minSimBy,
+            if self.mgfFlag.isChecked() == False:
+                mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, ppmVal, intensityThreshold, minSimBy,
                                  byIonAccuracy, byIonFlag)
 
             if csvFlag:
@@ -458,7 +470,11 @@ class MyTableWidget(QWidget):
                                                                   transFlag, cisFlag, linearFlag, csvFlag, modList,
                                                                   maxDistance, outputPath, chargeFlags))
                 if outputPath is not False:
-                    self.threadpool.start(mgfGen)
+                    if self.mgfFlag.isChecked() == False:
+                        self.threadpool.start(mgfGen)
+                    else:
+                        self.importedMGF(mined, maxed, overlapFlag,transFlag, cisFlag, linearFlag, csvFlag, modList,
+                                         maxDistance, outputPath, chargeFlags)
 
     def importedMGF(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                     maxDistance, outputPath, chargeFlags):

@@ -35,7 +35,7 @@ class Fasta:
         self.allProcessList = []
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                       maxDistance, outputPath, chargeFlags, mgfObj:
+                       maxDistance, outputPath, chargeFlags, mgfObj):
 
         """
         Function that literally combines everything to generate output

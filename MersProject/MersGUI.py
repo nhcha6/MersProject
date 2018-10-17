@@ -562,6 +562,8 @@ class MyTableWidget(QWidget):
     def enableAllWidgets(self):
         self.enableTab1Widgets()
         self.enableTab2Widgets()
+        if self.mgfFlag.isChecked():
+            self.controlMGFInput()
 
     def enableTab1Widgets(self):
         self.pushButton1.setEnabled(True)

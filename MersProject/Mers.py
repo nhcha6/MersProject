@@ -159,7 +159,10 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
 
     if mgfData is None:
         allPeptides = getAllPep(massDict)
-        genMassDict.toWriteQueue.put(allPeptides)
+        allPeptidesDict = {}
+        for peptide in allPeptides:
+            allPeptidesDict[peptide] = protId
+        genMassDict.toWriteQueue.put(allPeptidesDict)
 
     # If csv is selected, write to csv file
     if csvFlag:
@@ -199,6 +202,8 @@ def writer(queue, outputPath):
                 logging.info("ALL LINEAR COMPUTED, STOP MESSAGE SENT")
                 break
 
+            # if type(matchedPeptides) == set:
+            #     for peptide in matchedPeptides:
 
             for key, value in matchedPeptides.items():
                 if key not in seenPeptides.keys():

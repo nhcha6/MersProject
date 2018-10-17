@@ -451,11 +451,8 @@ class MyTableWidget(QWidget):
 
         if reply == QMessageBox.Yes:
 
-            print(self.mgfPath)
-            # UPLOAD MGF FILE HERE
-            if self.mgfFlag.isChecked() == False:
-                mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, ppmVal, intensityThreshold, minSimBy,
-                                 byIonAccuracy, byIonFlag)
+
+
 
             if csvFlag:
                 outputPath = self.getOutputPath()
@@ -466,11 +463,14 @@ class MyTableWidget(QWidget):
 
                 outputPath = self.getOutputPath()
                 # mgfGen.signals.finished.connect(self.onlyImportMGF)
-                mgfGen.signals.finished.connect(functools.partial(self.importedMGF, mined, maxed, overlapFlag,
-                                                                  transFlag, cisFlag, linearFlag, csvFlag, modList,
-                                                                  maxDistance, outputPath, chargeFlags))
                 if outputPath is not False:
                     if self.mgfFlag.isChecked() == False:
+                        mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, ppmVal, intensityThreshold, minSimBy,
+                                             byIonAccuracy, byIonFlag)
+                        mgfGen.signals.finished.connect(functools.partial(self.importedMGF, mined, maxed, overlapFlag,
+                                                                          transFlag, cisFlag, linearFlag, csvFlag,
+                                                                          modList,
+                                                                          maxDistance, outputPath, chargeFlags))
                         self.threadpool.start(mgfGen)
                     else:
                         self.importedMGF(mined, maxed, overlapFlag,transFlag, cisFlag, linearFlag, csvFlag, modList,

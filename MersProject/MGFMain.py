@@ -5,10 +5,10 @@ import math
 from bisect import bisect_left
 from MonoAminoAndMods import *
 import matplotlib as mpl
-
 import matplotlib.pyplot as plt
 import numpy as np
-# test
+import math
+
 class MGF:
 
     """
@@ -47,12 +47,6 @@ def generateMGFList(protId, mgfObj, massDict, modList):
             else:
                 alphaKey = key
 
-            if alphaKey == 'RLLLATVLQAV':
-                print('made it')
-            # ion dict -> {'b/yion: mass'}
-
-            #print(byIonArray)
-
             for charge, chargeMass in value[2].items():
                 # Shift to outside for charge for loop
                 if alphaKey not in matchedPeptides.keys():
@@ -61,8 +55,10 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                     pepMasses = mgfObj.mgfDf[charge]
                     #closestIndex = takeClosest(pepMasses, chargeMass, True)
                     #pepMass = pepMasses[closestIndex]
+
                     steps = [1,-1]
                     matchAdded = False
+                    closestMatched = False
 
                     # need to iterate up and down from the closest to ensure all b/y ion comparison is run
                     # on all relevant pepMasses
@@ -70,6 +66,11 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                         # matchAdded is set to True if if the B/y ion check is passed in the iterations
                         # using step 1
                         if matchAdded == True:
+                            break
+
+                        # if the closest pepmass doesn't bass the pepMatch test, closestMatched will still
+                        # be false and we should break the loop to avoid running the code again.
+                        if step == -1 and closestMatched == False:
                             break
 
                         # Get the closest index, denoted by the bool flag as the last argument, think this
@@ -86,7 +87,9 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                         # While there is a current match. pepMass is changed per iteration if previous
                         # pepmass didn't match.
                         while pepMatch(chargeMass, pepMass, mgfObj.ppmVal):
-
+                            # Set closestMatched flag to True if the while loop is entered so that the second
+                            # step can be broken if closest match fails
+                            closestMatched = True
                             # Not super important but this should likely be at the very start and outside the step
                             # loop.
                             if mgfObj.byIonFlag == False:
@@ -97,10 +100,8 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                 # Check the similarity of the byIons as was being done previously
                                 byIonArray = initIonMass(key, modList)
                                 mzArray = mgfObj.pepmassIonArray[(charge, pepMass)]
-                                simIons = findSimIons(mzArray, byIonArray, mgfObj.byIonAccuracy)
-
                                 # If they match in accordance with the input minimum requirement, add them to the list
-                                if simIons >= mgfObj.minSimBy:
+                                if simIons(mzArray, byIonArray, mgfObj.byIonAccuracy, mgfObj.minSimBy):
                                     matchedPeptides[alphaKey] = protId
                                     matchAdded = True
                                     break
@@ -428,6 +429,32 @@ def findSimIons(mzArray, byIons, accuracy):
 
     return simIons
 
+def simIons(mzArray, byIons, accuracy, minSim):
+
+    noSimReq = math.ceil(len(byIons)*minSim/100)
+    for array in mzArray:
+        simTemp = 0
+        byIonsTested = 0
+        for mass in byIons:
+            byIonsTested += 1
+            closest = takeClosest(array, mass)
+            upperThresh = mass + accuracy
+            lowerThresh = mass - accuracy
+            if lowerThresh < closest < upperThresh:
+                simTemp += 1
+                if simTemp >= noSimReq:
+                    return True
+            elif (len(byIons) - byIonsTested) < noSimReq - simTemp:
+                break
+    return False
+
+# mzArray = [[8, 10, 12, 16, 20], [2, 4, 6, 39, 35]]
+# byIons = [8.01, 9.99, 12.01, 20, 22]
+# accuracy = 0.05
+# minSim = 80
+#
+# print(simIons(mzArray, byIons, accuracy, minSim))
+
 # actualMass = 495.25851750000004
 # pepmass = 495.7115
 # ppmVal = 90
@@ -445,3 +472,4 @@ def findSimIons(mzArray, byIons, accuracy):
 # print(pepList)
 # actualMass = 894
 # print(takeClosest(pepList, actualMass))
+

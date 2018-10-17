@@ -190,7 +190,7 @@ def getAllPep(massDict):
 
 def writer(queue, outputPath):
     seenPeptides = {}
-    saveHandle = str(outputPath) + "/NewOutput1.fasta"
+    saveHandle = str(outputPath)
     print(saveHandle)
     with open(saveHandle, "w") as output_handle:
         while True:
@@ -684,8 +684,9 @@ def editRefMassDict(massDict):
 
 
 def getFinalPath(outputPath, spliceType):
-    finalPath = str(outputPath) + '/' + spliceType + '.csv'
-    return finalPath
+    newPath = outputPath[0:-6]
+    newPath = str(outputPath) + spliceType + '.csv'
+    return newPath
 
 
 def nth_replace(string, old, new, n=1, option='only nth'):

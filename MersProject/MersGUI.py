@@ -364,9 +364,7 @@ class MyTableWidget(QWidget):
 
     def enableControl(self):
         if self.fasta is not None:
-            print(self.mgfPath)
             if self.mgfPath is not None or self.mgfFlag.isChecked() == True:
-                print('in')
                 self.tab1.toleranceText.setEnabled(True)
                 self.tab1.ppmText.setEnabled(True)
                 self.tab1.byIonFlag.setEnabled(True)
@@ -384,7 +382,6 @@ class MyTableWidget(QWidget):
                     else:
                         self.tab2.output.setEnabled(False)
                 else:
-                    print('here')
                     self.tabs.setTabEnabled(1, False)
                     self.nextTab.setEnabled(False)
             else:
@@ -465,7 +462,7 @@ class MyTableWidget(QWidget):
                 outputPath = self.getOutputPath()
                 if outputPath is not False:
                     self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                                       maxDistance, outputPath, chargeFlags)
+                                       maxDistance, outputPath, chargeFlags, False)
             else:
 
                 outputPath = self.getOutputPath()
@@ -481,15 +478,15 @@ class MyTableWidget(QWidget):
                         self.threadpool.start(mgfGen)
                     else:
                         self.importedMGF(mined, maxed, overlapFlag,transFlag, cisFlag, linearFlag, csvFlag, modList,
-                                         maxDistance, outputPath, chargeFlags)
+                                         maxDistance, outputPath, chargeFlags, True)
 
     def importedMGF(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                    maxDistance, outputPath, chargeFlags):
+                    maxDistance, outputPath, chargeFlags, mgfFlag=False):
 
         print("MGF FILE UPLOADED")
 
         self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                           maxDistance, outputPath, chargeFlags)
+                           maxDistance, outputPath, chargeFlags, mgfFlag)
 
     def outputFinished(self):
 
@@ -598,7 +595,7 @@ class MyTableWidget(QWidget):
         self.tab2.output.setEnabled(True)
 
     def outputPreStep(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList, maxDistance,
-                      outputPath, chargeFlags):
+                      outputPath, chargeFlags, mgfFlag):
 
         """
         Begins the output by creating a threadpool to keep gui responsive. Called by the confirmation function; also
@@ -612,7 +609,7 @@ class MyTableWidget(QWidget):
 
         self.outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag,
                                          csvFlag,
-                                         modList, maxDistance, outputPath, chargeFlags)
+                                         modList, maxDistance, outputPath, chargeFlags, mgfFlag)
 
         self.outputGen.signals.finished.connect(self.outputFinished)
         self.threadpool.start(self.outputGen)
@@ -637,7 +634,7 @@ class MyTableWidget(QWidget):
             self.tab2.maxDistCombo.setEnabled(True)
 
     def output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-               maxDistance, outputPath, chargeFlags):
+               maxDistance, outputPath, chargeFlags, mgfFlag):
 
         """
         called by output pre-step function, it runs the generateOutput function from Mers.py; This is shown to be
@@ -651,7 +648,7 @@ class MyTableWidget(QWidget):
 
         print("ABOUT TO DO OUTPUT")
         self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                                  maxDistance, outputPath, chargeFlags, self.mgf)
+                                  maxDistance, outputPath, chargeFlags, self.mgf, mgfFlag)
         end = time.time()
 
         print(end - start)

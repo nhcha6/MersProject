@@ -35,7 +35,7 @@ class Fasta:
         self.allProcessList = []
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                       maxDistance, outputPath, chargeFlags, mgfObj):
+                       maxDistance, outputPath, chargeFlags, mgfObj, mgfFlag):
 
         """
         Function that literally combines everything to generate output
@@ -56,7 +56,7 @@ class Fasta:
             cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, CIS, mined, maxed,
                                                                                   overlapFlag, csvFlag, modList,
                                                                                   maxDistance,
-                                                                                  outputPath, chargeFlags, mgfObj, modTable))
+                                                                                  outputPath, chargeFlags, mgfObj, modTable, mgfFlag))
             self.allProcessList.append(cisProcess)
             cisProcess.start()
 
@@ -65,7 +65,7 @@ class Fasta:
             linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, LINEAR, mined,
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      modList, maxDistance,
-                                                                                     outputPath, chargeFlags, mgfObj, modTable))
+                                                                                     outputPath, chargeFlags, mgfObj, modTable, mgfFlag))
             self.allProcessList.append(linearProcess)
             linearProcess.start()
 
@@ -74,7 +74,7 @@ class Fasta:
 
 
 def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag,
-                       modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable):
+                       modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag):
 
     """
     Process that is in charge for dealing with cis and linear. Creates sub processes for every protein to compute
@@ -117,7 +117,7 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
             logging.info(spliceType + " process started for: " + seq[0:5])
             # Start the processes for each protein with the targe function being genMassDict
             pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
-                                                csvFlag, modList, maxDistance, finalPath, chargeFlags))
+                                                csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfFlag))
 
 
     pool.close()
@@ -129,7 +129,7 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
 
 
 def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList,
-                maxDistance, finalPath, chargeFlags):
+                maxDistance, finalPath, chargeFlags, mgfFlag):
 
     """
     Compute the peptides for the given protein
@@ -151,18 +151,19 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
     massDict = editRefMassDict(massDict)
 
-    # If there is an mgf file AND there is a charge selected
-    if mgfData is not None and True in chargeFlags:
-        #fulfillPpmReq(mgfObj, massDict)
-        matchedPeptides = generateMGFList(protId, mgfData, massDict, modList)
-        genMassDict.toWriteQueue.put(matchedPeptides)
 
-    if mgfData is None:
+    if mgfFlag:
         allPeptides = getAllPep(massDict)
         allPeptidesDict = {}
         for peptide in allPeptides:
             allPeptidesDict[peptide] = protId
         genMassDict.toWriteQueue.put(allPeptidesDict)
+    # If there is an mgf file AND there is a charge selected
+    elif mgfData is not None and True in chargeFlags:
+        #fulfillPpmReq(mgfObj, massDict)
+        matchedPeptides = generateMGFList(protId, mgfData, massDict, modList)
+        genMassDict.toWriteQueue.put(matchedPeptides)
+
 
     # If csv is selected, write to csv file
     if csvFlag:

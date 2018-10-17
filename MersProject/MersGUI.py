@@ -972,7 +972,7 @@ class MyTableWidget(QWidget):
         self.nextTab = QPushButton("Next Tab")
         self.nextTab.clicked.connect(self.nextTabFunc)
         self.nextTab.setEnabled(False)
-        self.mgfFlag = QCheckBox("Apply MGF Comparison")
+        self.mgfFlag = QCheckBox("No MGF Comparison")
         self.mgfFlag.stateChanged.connect(self.controlMGFInput)
 
         self.tab1.ppmLabel = QLabel('PPM (0.1 - 1000): ')

@@ -481,8 +481,7 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
                     if linearCheck(toAddReverse, combineLinearSet):
                         combModless.append(toAddReverse)
                         combModlessRef.append(addReverseRef)
-
-            elif maxDistCheck(splitRef[i], splitRef[j], maxDistance):
+            elif not maxDistCheck(splitRef[i], splitRef[j], maxDistance):
                 break
 
             toAddForward = ""
@@ -592,7 +591,6 @@ def overlapComp(ref1, ref2):
     Outputs True if no intersection
     overlapComp needs to delete paired reference number if being applied to the splits output
     """
-
     S1 = set(ref1)
     S2 = set(ref2)
     if len(S1.intersection(S2)) == 0:

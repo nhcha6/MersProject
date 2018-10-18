@@ -715,15 +715,15 @@ class MyTableWidget(QWidget):
                 indexMin = comboChange.findText(str(value))
                 comboChange.setCurrentIndex(indexMin)
 
-            # wipe max distance values only if max is changed. Add None back to combo box.
-            self.tab2.maxDistCombo.clear()
-            self.tab2.maxDistCombo.addItem('None')
-            # refill max distance combo box with items greater than or equal to max
-            for i in range(int(text) - 1, 26):
-                self.tab2.maxDistCombo.addItem(str(i + 1))
-            if maxDistInt >= int(text):
-                indexDist = self.tab2.maxDistCombo.findText(str(maxDistValue))
-                self.tab2.maxDistCombo.setCurrentIndex(indexDist)
+            # # wipe max distance values only if max is changed. Add None back to combo box.
+            # self.tab2.maxDistCombo.clear()
+            # self.tab2.maxDistCombo.addItem('None')
+            # # refill max distance combo box with items greater than or equal to max
+            # for i in range(int(text) - 1, 26):
+            #     self.tab2.maxDistCombo.addItem(str(i + 1))
+            # if maxDistInt >= int(text):
+            #     indexDist = self.tab2.maxDistCombo.findText(str(maxDistValue))
+            #     self.tab2.maxDistCombo.setCurrentIndex(indexDist)
 
     def modSelected(self, text):
 
@@ -884,7 +884,7 @@ class MyTableWidget(QWidget):
             self.tab2.maximumCombo.addItem(str(i))
         for i in range(2, int(self.maxDefault) + 1):
             self.tab2.minimumCombo.addItem(str(i))
-        for i in range(int(self.maxDefault), 26):
+        for i in range(2, 26):
             self.tab2.maxDistCombo.addItem(str(i))
 
     def addFlagChecks(self):

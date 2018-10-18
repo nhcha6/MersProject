@@ -544,8 +544,8 @@ def getChargeIndex(chargeFlags):
 def maxDistCheck(ref1, ref2, maxDistance):
     if maxDistance == 'None':
         return True
-    valid = ref2[-1] - ref1[0]
-
+    # max distance defined as the number of peptides between to peptide strands
+    valid = ref2[0] - ref1[-1] - 1
     if valid > maxDistance:
         return False
     return True

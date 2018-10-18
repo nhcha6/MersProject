@@ -457,27 +457,27 @@ class MyTableWidget(QWidget):
 
 
 
-            if csvFlag:
-                outputPath = self.getOutputPath()
-                if outputPath is not False:
-                    self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                                       maxDistance, outputPath, chargeFlags, False)
-            else:
+            # if csvFlag:
+            #     outputPath = self.getOutputPath()
+            #     if outputPath is not False:
+            #         self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
+            #                            maxDistance, outputPath, chargeFlags, False)
+            # else:
 
-                outputPath = self.getOutputPath()
-                # mgfGen.signals.finished.connect(self.onlyImportMGF)
-                if outputPath is not False:
-                    if self.mgfFlag.isChecked() == False:
-                        mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, ppmVal, intensityThreshold, minSimBy,
-                                             byIonAccuracy, byIonFlag)
-                        mgfGen.signals.finished.connect(functools.partial(self.importedMGF, mined, maxed, overlapFlag,
-                                                                          transFlag, cisFlag, linearFlag, csvFlag,
-                                                                          modList,
-                                                                          maxDistance, outputPath, chargeFlags))
-                        self.threadpool.start(mgfGen)
-                    else:
-                        self.importedMGF(mined, maxed, overlapFlag,transFlag, cisFlag, linearFlag, csvFlag, modList,
-                                         maxDistance, outputPath, chargeFlags, True)
+            outputPath = self.getOutputPath()
+            # mgfGen.signals.finished.connect(self.onlyImportMGF)
+            if outputPath is not False:
+                if self.mgfFlag.isChecked() == False:
+                    mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, ppmVal, intensityThreshold, minSimBy,
+                                         byIonAccuracy, byIonFlag)
+                    mgfGen.signals.finished.connect(functools.partial(self.importedMGF, mined, maxed, overlapFlag,
+                                                                      transFlag, cisFlag, linearFlag, csvFlag,
+                                                                      modList,
+                                                                      maxDistance, outputPath, chargeFlags))
+                    self.threadpool.start(mgfGen)
+                else:
+                    self.importedMGF(mined, maxed, overlapFlag,transFlag, cisFlag, linearFlag, csvFlag, modList,
+                                     maxDistance, outputPath, chargeFlags, True)
 
     def importedMGF(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                     maxDistance, outputPath, chargeFlags, mgfFlag=False):

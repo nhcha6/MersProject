@@ -692,10 +692,9 @@ def editRefMassDict(massDict):
 
 
 def getFinalPath(outputPath, spliceType):
-    newPath = outputPath[0:-6]
-    newPath = str(outputPath) + spliceType + '.csv'
+    outputPathSmall = outputPath[0:-6]
+    newPath = str(outputPathSmall) + '-' + spliceType + '.csv'
     return newPath
-
 
 def nth_replace(string, old, new, n=1, option='only nth'):
 

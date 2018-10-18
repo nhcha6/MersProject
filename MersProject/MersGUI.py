@@ -51,15 +51,15 @@ class ProgressGenerator(QRunnable):
         self.signals.disableButtons.emit()
         while self.flag:
             self.signals.updateProgBar.emit(0)
-            time.sleep(0.5)
+            time.sleep(0.1)
             self.signals.updateProgBar.emit(25)
-            time.sleep(0.5)
+            time.sleep(0.1)
             self.signals.updateProgBar.emit(50)
-            time.sleep(0.5)
+            time.sleep(0.1)
             self.signals.updateProgBar.emit(75)
-            time.sleep(0.5)
+            time.sleep(0.1)
             self.signals.updateProgBar.emit(100)
-            time.sleep(0.5)
+            time.sleep(0.1)
         self.signals.finished.emit()
 
 
@@ -508,6 +508,15 @@ class MyTableWidget(QWidget):
         self.enableControl()
 
     def updateProgressBar(self, value):
+        try:
+            print(self.fasta.pepTotal.get())
+        except multiprocessing.Queue.empty():
+            print("")
+        try:
+            print(self.fasta.pepCompleted.get())
+        except multiprocessing.Queue.empty():
+            print("")
+
         self.progressBar.setValue(value)
 
     def deleteTab2ProgressBar(self):

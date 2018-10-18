@@ -33,6 +33,9 @@ class Fasta:
         self.inputFile = inputFile
         #self.entries = len(seqDict)
         self.allProcessList = []
+        self.pepTotal = multiprocessing.Queue()
+        self.pepCompleted = multiprocessing.Queue()
+
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                        maxDistance, outputPath, chargeFlags, mgfObj, mgfFlag):
@@ -61,11 +64,11 @@ class Fasta:
             cisProcess.start()
 
         if linearFlag:
-
             linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, LINEAR, mined,
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      modList, maxDistance,
-                                                                                     outputPath, chargeFlags, mgfObj, modTable, mgfFlag))
+                                                                                     outputPath, chargeFlags, mgfObj, modTable, mgfFlag,
+                                                                                     self.pepCompleted, self.pepTotal))
             self.allProcessList.append(linearProcess)
             linearProcess.start()
 
@@ -73,8 +76,11 @@ class Fasta:
             process.join()
 
 
+
+
+
 def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag,
-                       modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag):
+                       modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag, pepCompleted, pepTotal):
 
     """
     Process that is in charge for dealing with cis and linear. Creates sub processes for every protein to compute
@@ -100,7 +106,8 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
     lockVar = multiprocessing.Lock()
 
     toWriteQueue = multiprocessing.Queue()
-    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, toWriteQueue,
+
+    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, toWriteQueue, pepCompleted,
                                                                                               mgfObj, childTable))
 
     writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
@@ -108,7 +115,9 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
 
     #for key, value in seqDict.items():
     with open(inputFile, "rU") as handle:
+        counter = 0
         for record in SeqIO.parse(handle, 'fasta'):
+            counter += 1
             seq = str(record.seq)
             seqId = record.name
 
@@ -119,14 +128,13 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
             pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
                                                 csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfFlag))
 
-
+    pepTotal.put(counter)
     pool.close()
     pool.join()
 
     toWriteQueue.put('stop')
     writerProcess.join()
     logging.info("All " + spliceType + " !joined")
-
 
 def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList,
                 maxDistance, finalPath, chargeFlags, mgfFlag):
@@ -177,6 +185,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     end = time.time()
 
     logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
+    genMassDict.pepCompleted.put(1)
 
 def getAllPep(massDict):
 
@@ -718,7 +727,7 @@ def nth_replace(string, old, new, n=1, option='only nth'):
     return new.join(nth_split)
 
 
-def processLockInit(lockVar, toWriteQueue, mgfObj, childTable):
+def processLockInit(lockVar, toWriteQueue, pepCompleted, mgfObj, childTable):
 
     """
     Designed to set up a global lock for a child processes (child per protein)
@@ -731,6 +740,7 @@ def processLockInit(lockVar, toWriteQueue, mgfObj, childTable):
     global finalModTable
     finalModTable = childTable
     genMassDict.toWriteQueue = toWriteQueue
+    genMassDict.pepCompleted = pepCompleted
 
 
 

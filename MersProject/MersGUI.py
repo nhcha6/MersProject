@@ -315,10 +315,12 @@ class MyTableWidget(QWidget):
             text, ok = QInputDialog.getText(self, 'Input Dialog',
                                             'Enter your file name:')
 
-            outputPath = None
             if ok:
+                if text == "":
+                    return False
                 outputPath = outputFile + '/' + text + ".fasta"
-            print(outputPath)
+            else:
+                return False
         return outputPath
 
     def stopFunction(self):

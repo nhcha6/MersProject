@@ -396,6 +396,7 @@ class MyTableWidget(QWidget):
             self.tab1.toleranceText.setEnabled(False)
             self.tab1.minByIonText.setEnabled(False)
             self.tab1.byIonAccText.setEnabled(False)
+            self.tab1.byIonFlag.setChecked(False)
             self.tab1.byIonFlag.setEnabled(False)
             # self.tab1.ppmLabel.setEnabled(False)
         if not self.mgfFlag.isChecked():
@@ -410,18 +411,9 @@ class MyTableWidget(QWidget):
         message box summarising the inputs of the user. When yes is clicked on the message box, the output function is
         called which begins generating results
         """
-        if self.tab1.byIonFlag.isChecked() == False:
-            self.tab1.byIonAccText.setText('1')
-            self.tab1.minByIonText.setText('1')
-
-        if self.mgfFlag.isChecked() == True:
-            self.tab1.ppmText.setText('1')
-            self.tab1.toleranceText.setText('1')
-            self.tab1.byIonAccText.setText('1')
-            self.tab1.minByIonText.setText('1')
 
         ppmVal, intensityThreshold, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, \
-        modList, outputFlag, chargeFlags, minSimBy, byIonAccuracy, byIonFlag = self.getInputParams()
+        modList, outputFlag, chargeFlags, minSimBy, byIonAccuracy, byIonFlag, mgfFlag = self.getInputParams()
 
         reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' +
                                      'Minimum Peptide Length: ' + str(mined) + '\n' +
@@ -432,25 +424,15 @@ class MyTableWidget(QWidget):
                                      'Linear Splicing: ' + str(linearFlag) + '\n' +
                                      'Cis Splicing: ' + str(cisFlag) + '\n' +
                                      'Trans Splicing: ' + str(transFlag) + '\n' +
-                                     'Print intial combinations: ' + str(csvFlag) + '\n' +
+                                     'Print Intial Combinations: ' + str(csvFlag) + '\n' +
                                      'Charge States: ' + str(chargeFlags) + '\n' +
+                                     'No MGF Comparison: ' + str(mgfFlag) + '\n' +
                                      'PPM Value: ' + str(ppmVal) + '\n' +
-                                     'Intensity Threshold: ' + str(intensityThreshold) + '\n'
-                                                                                         'Min b/y Ion (%): ' + str(
-            minSimBy) + '\n' +
-                                     'b/y Ion Accuracy: ' + str(byIonAccuracy) + '\n' +
-                                     'b/y Ion Flag: ' + str(byIonFlag),
+                                     'Intensity Threshold: ' + str(intensityThreshold) + '\n' +
+                                     'Apply b/y Ion Comparison: ' + str(byIonFlag) + '\n' +
+                                     'Min b/y Ion %: ' + str(minSimBy) + '\n' +
+                                     'b/y Ion Accuracy: ' + str(byIonAccuracy) + '\n',
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-
-        if self.tab1.byIonFlag.isChecked() == False:
-            self.tab1.byIonAccText.setText('')
-            self.tab1.minByIonText.setText('')
-
-        if self.mgfFlag.isChecked() == True:
-            self.tab1.ppmText.setText('')
-            self.tab1.toleranceText.setText('')
-            self.tab1.byIonAccText.setText('')
-            self.tab1.minByIonText.setText('')
 
         if reply == QMessageBox.Yes:
 
@@ -832,12 +814,24 @@ class MyTableWidget(QWidget):
 
     def getInputParams(self):
 
-        ppmVal = float(self.tab1.ppmText.text())
-        toleranceLevel = float(self.tab1.toleranceText.text())
-
-        minByIon = int(self.tab1.minByIonText.text())
-        byIonAccuracy = float(self.tab1.byIonAccText.text())
         byIonFlag = self.tab1.byIonFlag.isChecked()
+        mgfFlag = self.mgfFlag.isChecked()
+
+        if mgfFlag == False:
+            ppmVal = float(self.tab1.ppmText.text())
+            toleranceLevel = float(self.tab1.toleranceText.text())
+            if byIonFlag == True:
+                minByIon = int(self.tab1.minByIonText.text())
+                byIonAccuracy = float(self.tab1.byIonAccText.text())
+            else:
+                minByIon = None
+                byIonAccuracy = None
+        else:
+            minByIon = None
+            byIonAccuracy = None
+            ppmVal = None
+            toleranceLevel = None
+
 
         mined = int(self.tab2.minimumCombo.currentText())
         maxed = int(self.tab2.maximumCombo.currentText())
@@ -864,7 +858,7 @@ class MyTableWidget(QWidget):
                    self.tab2.mod3Combo.currentText()]
 
         return ppmVal, toleranceLevel, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, \
-               linearFlag, csvFlag, modList, outputFlag, chargeFlags, minByIon, byIonAccuracy, byIonFlag
+               linearFlag, csvFlag, modList, outputFlag, chargeFlags, minByIon, byIonAccuracy, byIonFlag, mgfFlag
 
     def addMinMaxAndDist(self):
 

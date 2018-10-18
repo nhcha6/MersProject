@@ -983,6 +983,7 @@ class MyTableWidget(QWidget):
         self.nextTab = QPushButton("Next Tab")
         self.nextTab.clicked.connect(self.nextTabFunc)
         self.nextTab.setEnabled(False)
+        self.tabs.setTabEnabled(1, False)
         self.mgfFlag = QCheckBox("No MGF Comparison")
         self.mgfFlag.stateChanged.connect(self.controlMGFInput)
 

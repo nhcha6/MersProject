@@ -25,7 +25,7 @@ class WorkerSignals(QObject):
     """
 
     finished = pyqtSignal()
-    updateProgBar = pyqtSignal(int)
+    updateProgBar = pyqtSignal()
     disableButtons = pyqtSignal()
     plot = pyqtSignal(list, list)
 
@@ -222,7 +222,7 @@ class MyTableWidget(QWidget):
 
         # variables to count the total number of processes and those which have finished
         self.finishedPeptides = 0
-        self.totalSize = 2
+        self.totalSize = 0
 
     def importedMGF(self):
         print("MGF FILE UPLOADED")
@@ -315,9 +315,10 @@ class MyTableWidget(QWidget):
             text, ok = QInputDialog.getText(self, 'Input Dialog',
                                             'Enter your file name:')
 
+            outputPath = None
             if ok:
                 outputPath = outputFile + '/' + text + ".fasta"
-        print(outputPath)
+            print(outputPath)
         return outputPath
 
     def stopFunction(self):
@@ -503,16 +504,15 @@ class MyTableWidget(QWidget):
         self.mgfPlotFlag.setEnabled(True)
         self.enableControl()
 
-    def updateProgressBar(self, value):
+    def updateProgressBar(self):
         if not self.fasta.pepTotal.empty():
-            self.totalSize = self.fasta.pepTotal.get()
+            self.totalSize += self.fasta.pepTotal.get()
         if not self.fasta.pepCompleted.empty():
             self.finishedPeptides += self.fasta.pepCompleted.get()
-        if self.totalSize is not 2 and self.finishedPeptides is not 0:
+        if self.totalSize is not 0 and self.finishedPeptides is not 0:
             value = self.finishedPeptides/self.totalSize*100
         else:
-            value = self.totalSize
-        print(value)
+            value = 2
         self.progressBar.setValue(value)
 
     def deleteTab2ProgressBar(self):

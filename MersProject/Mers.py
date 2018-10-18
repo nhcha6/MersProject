@@ -286,6 +286,7 @@ def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance):
 
         combined, combinedRef = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance,
                                                       combineLinearSet)
+
     elif spliceType == LINEAR:
 
         # Explicit change for high visibility regarding what's happening
@@ -441,7 +442,6 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
     size requirements, overlapFlag: boolean value true if overlapping combinations are undesired.
     Output: all combinations of possible splits which meets criteria
     """
-
     # initialise combinations array to hold the possible combinations from the input splits
     combModless = []
     combModlessRef = []
@@ -464,7 +464,6 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
 
             # max, min and max distance checks combined into one function for clarity for clarity
             if combineCheck(toAddForward, mined, maxed, splitRef[i], splitRef[j], maxDistance):
-
                 # V. messy, need a way to get better visual
                 if overlapFlag:
                     if overlapComp(splitRef[i], splitRef[j]):

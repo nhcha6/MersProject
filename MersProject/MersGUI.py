@@ -9,7 +9,7 @@ from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtCore import *
 from PyQt5.QtCore import pyqtSlot
 import matplotlib as mpl
-
+import queue
 mpl.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import numpy as np
@@ -50,16 +50,8 @@ class ProgressGenerator(QRunnable):
     def run(self):
         self.signals.disableButtons.emit()
         while self.flag:
-            self.signals.updateProgBar.emit(0)
-            time.sleep(0.1)
-            self.signals.updateProgBar.emit(25)
-            time.sleep(0.1)
-            self.signals.updateProgBar.emit(50)
-            time.sleep(0.1)
-            self.signals.updateProgBar.emit(75)
-            time.sleep(0.1)
-            self.signals.updateProgBar.emit(100)
-            time.sleep(0.1)
+            self.signals.updateProgBar.emit()
+            time.sleep(0.02)
         self.signals.finished.emit()
 
 
@@ -227,6 +219,10 @@ class MyTableWidget(QWidget):
         # Add tabs to widget
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
+
+        # variables to count the total number of processes and those which have finished
+        self.finishedPeptides = 0
+        self.totalSize = 2
 
     def importedMGF(self):
         print("MGF FILE UPLOADED")
@@ -508,15 +504,15 @@ class MyTableWidget(QWidget):
         self.enableControl()
 
     def updateProgressBar(self, value):
-        try:
-            print(self.fasta.pepTotal.get())
-        except multiprocessing.Queue.empty():
-            print("")
-        try:
-            print(self.fasta.pepCompleted.get())
-        except multiprocessing.Queue.empty():
-            print("")
-
+        if not self.fasta.pepTotal.empty():
+            self.totalSize = self.fasta.pepTotal.get()
+        if not self.fasta.pepCompleted.empty():
+            self.finishedPeptides += self.fasta.pepCompleted.get()
+        if self.totalSize is not 2 and self.finishedPeptides is not 0:
+            value = self.finishedPeptides/self.totalSize*100
+        else:
+            value = self.totalSize
+        print(value)
         self.progressBar.setValue(value)
 
     def deleteTab2ProgressBar(self):

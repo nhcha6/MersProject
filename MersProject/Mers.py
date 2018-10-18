@@ -59,7 +59,8 @@ class Fasta:
             cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, CIS, mined, maxed,
                                                                                   overlapFlag, csvFlag, modList,
                                                                                   maxDistance,
-                                                                                  outputPath, chargeFlags, mgfObj, modTable, mgfFlag))
+                                                                                  outputPath, chargeFlags, mgfObj, modTable, mgfFlag,
+                                                                                  self.pepCompleted, self.pepTotal))
             self.allProcessList.append(cisProcess)
             cisProcess.start()
 

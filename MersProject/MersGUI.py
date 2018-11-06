@@ -310,21 +310,7 @@ class MyTableWidget(QWidget):
 
         outputFile = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
         if outputFile == '':
-
             return False
-        # else:
-
-            # text, ok = QInputDialog.getText(self, 'Input Dialog',
-            #                                 'Enter your file name:')
-            #
-            # if ok:
-            #     if text == "":
-            #         return False
-            #     outputPath = outputFile + '/' + text + ".fasta"
-            # else:
-            #     return False
-        print(outputFile)
-
         return outputFile
 
     def stopFunction(self):
@@ -453,9 +439,6 @@ class MyTableWidget(QWidget):
             outputPath = {}
             now = datetime.now().strftime("%d%m%y_%H%M")
             outputFile = self.getOutputPath()
-            #     outputPath = outputFile + '/' + text + ".fasta"
-
-            # mgfGen.signals.finished.connect(self.onlyImportMGF)
             if outputFile is not False:
                 if linearFlag:
                     outputPath[LINEAR] = outputFile + '/' + LINEAR + now + ".fasta"
@@ -1145,7 +1128,7 @@ class MyTableWidget(QWidget):
         self.tab2.overlap.setChecked(True)
         self.tab2.cis.setChecked(True)
         self.tab2.linear.setChecked(True)
-        self.tab2.trans.setEnabled(False)
+        self.tab2.trans.setEnabled(True)
         self.tab2.plusTwo.setChecked(True)
 
         # minByIonIndex = self.tab1.minByIonCombo.findText(self.minByIonDefault)

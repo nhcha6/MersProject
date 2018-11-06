@@ -1,17 +1,5 @@
-from Mers import *
 
 
-def transOutput(finalPeptide, mined, maxed, overlapFlag, modList, outputPath, chargeFlags, linearFlag=False):
-    print('output create trans')
-    finalPath = str(outputPath) + '/Trans.csv'
-    open(finalPath, 'w', newline='')
-    splits, splitRef = splitDictPeptide(finalPeptide, mined, maxed, linearFlag)
-
-    # combined eg: ['ABC', 'BCA', 'ACD', 'DCA']
-    # combinedRef eg: [[0,1,2], [1,0,2], [0,2,3], [3,2,0]]
-    # pass splits through combined overlap peptide and then delete all duplicates
-
-    createTransProcess(splits, splitRef, mined, maxed, overlapFlag, modList, outputPath, chargeFlags)
 
 
 def createTransProcess(splits, splitsRef, mined, maxed, overlapFlag, modList, outputPath, chargeFlags):

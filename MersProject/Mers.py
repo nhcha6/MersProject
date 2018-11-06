@@ -23,6 +23,7 @@ logging.basicConfig(level = logging.DEBUG, format = '%(message)s')
 
 mgfData = None
 
+
 class Fasta:
 
     """
@@ -31,11 +32,9 @@ class Fasta:
 
     def __init__(self, inputFile):
         self.inputFile = inputFile
-        #self.entries = len(seqDict)
         self.allProcessList = []
         self.pepTotal = multiprocessing.Queue()
         self.pepCompleted = multiprocessing.Queue()
-
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                        maxDistance, outputPath, chargeFlags, mgfObj, mgfFlag):
@@ -44,13 +43,14 @@ class Fasta:
         Function that literally combines everything to generate output
         """
         self.allProcessList = []
-        print(outputPath)
         if transFlag:
-            finalPeptide = combinePeptides(self.seqDict)
-            transProcess = multiprocessing.Process(target=transOutput, args=(finalPeptide, mined, maxed, overlapFlag,
-                                                                             modList, outputPath[TRANS], chargeFlags))
+
+            transProcess = multiprocessing.Process(target=transOutput, args=(self.inputFile, TRANS, mined, maxed, overlapFlag,
+                                                                             modList, outputPath[TRANS], chargeFlags,
+                                                                             mgfObj, modTable, mgfFlag))
             #allProcessList.append(transProcess)
             self.allProcessList.append(transProcess)
+            transProcess.start()
 
         if cisFlag:
             cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, CIS, mined, maxed,
@@ -75,6 +75,45 @@ class Fasta:
 
 
 
+# def transOutput(inputPath, mined, maxed, overlapFlag, modList, outputPath, chargeFlags, linearFlag=False):
+def transOutput(inputFile, spliceType, mined, maxed, overlapFlag,
+                modList, outputPath, chargeFlags, mgfObj, modTable, mgfFlag):
+    seqDict = addSequenceList(inputFile)
+    finalPeptide = combinePeptides(seqDict)
+
+    #combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
+
+    combined, combinedRef = outputCreate(spliceType, finalPeptide, mined, maxed, overlapFlag)
+
+    # Convert it into a dictionary that has a mass
+    massDict = combMass(combined, combinedRef)
+    # Apply mods to the dictionary values and update the dictionary
+
+    massDict = applyMods(massDict, modList)
+
+    # Add the charge information along with their masses
+    chargeIonMass(massDict, chargeFlags)
+
+    # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
+    massDict = editRefMassDict(massDict)
+    #print(mgfObj.ppmVal)
+
+    if mgfFlag:
+        allPeptides = getAllPep(massDict)
+        allPeptidesDict = {}
+        for peptide in allPeptides:
+            allPeptidesDict[peptide] = [TRANS]
+
+    saveHandle = str(outputPath)
+    with open(saveHandle, "w") as output_handle:
+
+
+        logging.info("Writing to fasta")
+        SeqIO.write(createSeqObj(allPeptidesDict), output_handle, "fasta")
+
+
+
+   # createTransProcess(splits, splitRef, mined, maxed, overlapFlag, modList, outputPath, chargeFlags)
 
 
 def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag,
@@ -84,8 +123,6 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
     Process that is in charge for dealing with cis and linear. Creates sub processes for every protein to compute
     their respective output
     """
-
-
 
     finalPath = None
 
@@ -111,7 +148,6 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
     writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
     writerProcess.start()
 
-    #for key, value in seqDict.items():
     with open(inputFile, "rU") as handle:
         counter = 0
         for record in SeqIO.parse(handle, 'fasta'):
@@ -259,7 +295,8 @@ def createSeqObj(matchedPeptides):
     return seqRecords
 
 
-def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance):
+# set default maxDistance to be absurdly high incase of trans
+def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance=10000000):
 
     # Splits eg: ['A', 'AB', 'AD', 'B', 'BD']
     # SplitRef eg: [[0], [0,1], [0,2], [1], [1,2]]
@@ -267,7 +304,7 @@ def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance):
     splits, splitRef = splitDictPeptide(spliceType, peptide, mined, maxed)
     combined, combinedRef = None, None
 
-    if spliceType == CIS:
+    if spliceType == CIS or spliceType == TRANS:
 
         # get the linear set to ensure no linear peptides are added to cis set. ( Redoing is a little redundant,
         # need to find something better )

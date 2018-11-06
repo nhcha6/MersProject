@@ -309,8 +309,8 @@ class MyTableWidget(QWidget):
         """
 
         outputFile = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
-        print(outputFile)
         if outputFile == '':
+
             return False
         # else:
 
@@ -323,6 +323,8 @@ class MyTableWidget(QWidget):
             #     outputPath = outputFile + '/' + text + ".fasta"
             # else:
             #     return False
+        print(outputFile)
+
         return outputFile
 
     def stopFunction(self):
@@ -454,12 +456,12 @@ class MyTableWidget(QWidget):
             #     outputPath = outputFile + '/' + text + ".fasta"
 
             # mgfGen.signals.finished.connect(self.onlyImportMGF)
-            if outputPath is not False:
+            if outputFile is not False:
                 if linearFlag:
                     outputPath[LINEAR] = outputFile + '/' + LINEAR + now + ".fasta"
-                elif cisFlag:
+                if cisFlag:
                     outputPath[CIS] = outputFile + '/' + CIS + now + ".fasta"
-                elif transFlag:
+                if transFlag:
                     outputPath[TRANS] = outputFile + '/' + TRANS + now + ".fasta"
 
                 if self.mgfFlag.isChecked() == False:

@@ -44,22 +44,19 @@ class Fasta:
         Function that literally combines everything to generate output
         """
         self.allProcessList = []
-
+        print(outputPath)
         if transFlag:
             finalPeptide = combinePeptides(self.seqDict)
             transProcess = multiprocessing.Process(target=transOutput, args=(finalPeptide, mined, maxed, overlapFlag,
-                                                                             modList, outputPath, chargeFlags))
+                                                                             modList, outputPath[TRANS], chargeFlags))
             #allProcessList.append(transProcess)
             self.allProcessList.append(transProcess)
-            # combined = {'combined': combined}
-            # with open('output.txt', 'wb') as file:
-            # file.write(json.dumps(combined))  # use `json.loads` to do the reverse
 
         if cisFlag:
             cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, CIS, mined, maxed,
                                                                                   overlapFlag, csvFlag, modList,
                                                                                   maxDistance,
-                                                                                  outputPath, chargeFlags, mgfObj, modTable, mgfFlag,
+                                                                                  outputPath[CIS], chargeFlags, mgfObj, modTable, mgfFlag,
                                                                                   self.pepCompleted, self.pepTotal))
             self.allProcessList.append(cisProcess)
             cisProcess.start()
@@ -68,7 +65,7 @@ class Fasta:
             linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, LINEAR, mined,
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      modList, maxDistance,
-                                                                                     outputPath, chargeFlags, mgfObj, modTable, mgfFlag,
+                                                                                     outputPath[LINEAR], chargeFlags, mgfObj, modTable, mgfFlag,
                                                                                      self.pepCompleted, self.pepTotal))
             self.allProcessList.append(linearProcess)
             linearProcess.start()
@@ -205,10 +202,8 @@ def writer(queue, outputPath):
     print(saveHandle)
     with open(saveHandle, "w") as output_handle:
         while True:
+
             matchedPeptides = queue.get()
-
-
-
             if matchedPeptides == 'stop':
                 logging.info("ALL LINEAR COMPUTED, STOP MESSAGE SENT")
                 break

@@ -17,6 +17,7 @@ from Mers import *
 from MGFMain import *
 import functools
 from functools import partial
+from datetime import datetime
 
 
 class WorkerSignals(QObject):
@@ -133,7 +134,7 @@ class App(QMainWindow):
         super().__init__()
         self.title = 'Peptide Splicer'
         self.fastaTest = False
-        self.outputPath = ""
+        self.outputPath = []
         self.statusbar = self.statusBar()
 
         self.center()
@@ -308,20 +309,21 @@ class MyTableWidget(QWidget):
         """
 
         outputFile = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
-
+        print(outputFile)
         if outputFile == '':
             return False
-        else:
-            text, ok = QInputDialog.getText(self, 'Input Dialog',
-                                            'Enter your file name:')
+        # else:
 
-            if ok:
-                if text == "":
-                    return False
-                outputPath = outputFile + '/' + text + ".fasta"
-            else:
-                return False
-        return outputPath
+            # text, ok = QInputDialog.getText(self, 'Input Dialog',
+            #                                 'Enter your file name:')
+            #
+            # if ok:
+            #     if text == "":
+            #         return False
+            #     outputPath = outputFile + '/' + text + ".fasta"
+            # else:
+            #     return False
+        return outputFile
 
     def stopFunction(self):
         print('in stop function')
@@ -446,19 +448,20 @@ class MyTableWidget(QWidget):
 
         if reply == QMessageBox.Yes:
 
+            outputPath = {}
+            now = datetime.now().strftime("%d%m%y_%H%M")
+            outputFile = self.getOutputPath()
+            #     outputPath = outputFile + '/' + text + ".fasta"
 
-
-
-            # if csvFlag:
-            #     outputPath = self.getOutputPath()
-            #     if outputPath is not False:
-            #         self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-            #                            maxDistance, outputPath, chargeFlags, False)
-            # else:
-
-            outputPath = self.getOutputPath()
             # mgfGen.signals.finished.connect(self.onlyImportMGF)
             if outputPath is not False:
+                if linearFlag:
+                    outputPath[LINEAR] = outputFile + '/' + LINEAR + now + ".fasta"
+                elif cisFlag:
+                    outputPath[CIS] = outputFile + '/' + CIS + now + ".fasta"
+                elif transFlag:
+                    outputPath[TRANS] = outputFile + '/' + TRANS + now + ".fasta"
+
                 if self.mgfFlag.isChecked() == False:
                     mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, ppmVal, intensityThreshold, minSimBy,
                                          byIonAccuracy, byIonFlag)

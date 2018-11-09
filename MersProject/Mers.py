@@ -47,7 +47,7 @@ class Fasta:
 
             transProcess = multiprocessing.Process(target=transOutput, args=(self.inputFile, TRANS, mined, maxed, overlapFlag,
                                                                              modList, outputPath[TRANS], chargeFlags,
-                                                                             mgfObj, modTable, mgfFlag))
+                                                                             mgfObj, modTable, mgfFlag, self.pepCompleted, self.pepTotal))
             #allProcessList.append(transProcess)
             self.allProcessList.append(transProcess)
             transProcess.start()
@@ -77,43 +77,49 @@ class Fasta:
 
 # def transOutput(inputPath, mined, maxed, overlapFlag, modList, outputPath, chargeFlags, linearFlag=False):
 def transOutput(inputFile, spliceType, mined, maxed, overlapFlag,
-                modList, outputPath, chargeFlags, mgfObj, modTable, mgfFlag):
+                modList, outputPath, chargeFlags, mgfObj, modTable, mgfFlag, pepCompleted, pepTotal):
+
+
     seqDict = addSequenceList(inputFile)
+
     finalPeptide = combinePeptides(seqDict)
 
-    #combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
+    splits, splitRef = splitDictPeptide(spliceType, finalPeptide, mined, maxed)
+    
 
-    combined, combinedRef = outputCreate(spliceType, finalPeptide, mined, maxed, overlapFlag)
+    splitLen = len(splits)
+    print(splitLen)
+    changeOver = []
+    for i in range(1, 5):
+        val = splitLen - math.ceil(splitLen / (2 ** i))
+        changeOver.append(val)
+    print(changeOver)
 
-    # Convert it into a dictionary that has a mass
-    massDict = combMass(combined, combinedRef)
-    # Apply mods to the dictionary values and update the dictionary
+    iterCounter = 1
+    counter = 1
+    multiprocessIter = []
+    iterFlag = True
+    while iterFlag:
+        splitsProcess = []
+        splitRefProcess = []
+        for i in range(0, iterCounter):
+            splitsProcess.append(splits[counter + i])
+            splitRefProcess.append(splitRef[counter + i])
+            if counter + i == splitLen - 1:
+                iterFlag = False
+                break
+        counter += iterCounter
+        # start process for the relevant splits
+        print(splitsProcess)
+        print(splitRefProcess)
 
-    massDict = applyMods(massDict, modList)
-
-    # Add the charge information along with their masses
-    chargeIonMass(massDict, chargeFlags)
-
-    # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
-    massDict = editRefMassDict(massDict)
-    #print(mgfObj.ppmVal)
-
-    if mgfFlag:
-        allPeptides = getAllPep(massDict)
-        allPeptidesDict = {}
-        for peptide in allPeptides:
-            allPeptidesDict[peptide] = [TRANS]
-
-    saveHandle = str(outputPath)
-    with open(saveHandle, "w") as output_handle:
-
-
-        logging.info("Writing to fasta")
-        SeqIO.write(createSeqObj(allPeptidesDict), output_handle, "fasta")
+        S1 = set(changeOver)
+        S2 = set(splitIndex)
+        if len(S1.intersection(S2)) != 0:
+            iterCounter += 1
 
 
 
-   # createTransProcess(splits, splitRef, mined, maxed, overlapFlag, modList, outputPath, chargeFlags)
 
 
 def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag,
@@ -327,6 +333,33 @@ def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance=100
     combined, combinedRef = removeDupsQuick(combined, combinedRef)
 
     return combined, combinedRef
+
+def transProcess(inputFile, spliceType, mined, maxed, overlapFlag,
+                    modList, outputPath, chargeFlags, mgfObj, modTable, mgfFlag):
+
+    # combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
+
+    combined, combinedRef = outputCreate(spliceType, finalPeptide, mined, maxed, overlapFlag)
+    # Convert it into a dictionary that has a mass
+    massDict = combMass(combined, combinedRef)
+    # Apply mods to the dictionary values and update the dictionary
+    massDict = applyMods(massDict, modList)
+    # Add the charge information along with their masses
+    chargeIonMass(massDict, chargeFlags)
+    # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
+    massDict = editRefMassDict(massDict)
+    # print(mgfObj.ppmVal)
+    if mgfFlag:
+        allPeptides = getAllPep(massDict)
+        allPeptidesDict = {}
+        for peptide in allPeptides:
+            allPeptidesDict[peptide] = [TRANS]
+    saveHandle = str(outputPath)
+    with open(saveHandle, "w") as output_handle:
+
+        logging.info("Writing to fasta")
+        SeqIO.write(createSeqObj(allPeptidesDict), output_handle, "fasta")
+
 
 
 def applyMods(combineModlessDict, modList):
@@ -770,7 +803,5 @@ def processLockInit(lockVar, toWriteQueue, pepCompleted, mgfObj, childTable):
     finalModTable = childTable
     genMassDict.toWriteQueue = toWriteQueue
     genMassDict.pepCompleted = pepCompleted
-
-
 
 

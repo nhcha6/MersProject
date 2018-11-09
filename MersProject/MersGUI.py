@@ -354,7 +354,6 @@ class MyTableWidget(QWidget):
     def enableControl(self):
         if self.fasta is not None:
             if self.mgfPath is not None or self.mgfFlag.isChecked() == True:
-                print('2')
                 self.tab1.toleranceText.setEnabled(True)
                 self.tab1.toleranceLabel.setEnabled(True)
                 self.tab1.ppmText.setEnabled(True)
@@ -386,8 +385,9 @@ class MyTableWidget(QWidget):
 
     def controlMGFInput(self):
         if self.mgfFlag.isChecked():
+            # set values true/false before calling enableControl to avoid bug of it being called again later
+            self.tab1.byIonFlag.setChecked(False)
             self.enableControl()
-            print('1')
             self.mgfButton.setEnabled(False)
             self.mgfPlotFlag.setEnabled(False)
             self.tab1.ppmText.setEnabled(False)
@@ -398,13 +398,17 @@ class MyTableWidget(QWidget):
             self.tab1.minByIonLabel.setEnabled(False)
             self.tab1.byIonAccText.setEnabled(False)
             self.tab1.byIonAccLabel.setEnabled(False)
-            self.tab1.byIonFlag.setChecked(False)
             self.tab1.byIonFlag.setEnabled(False)
+            self.tab2.trans.setEnabled(True)
             # self.tab1.ppmLabel.setEnabled(False)
         if not self.mgfFlag.isChecked():
+            # set values true/false before calling enableControl to avoid bug of it being called again later
+            self.tab2.trans.setChecked(False)
             self.enableControl()
             self.mgfButton.setEnabled(True)
             self.mgfPlotFlag.setEnabled(True)
+            self.tab2.trans.setEnabled(False)
+
 
     def confirmationFunction(self):
 
@@ -1139,7 +1143,7 @@ class MyTableWidget(QWidget):
         # byIonAccIndex = self.tab1.byIonAccCombo.findText(self.byIonAccDefault)
         # self.tab1.byIonAccCombo.setCurrentIndex(byIonAccIndex)
 
-        self.tab1.byIonFlag.setChecked(False)
+        self.tab1.byIonFlag.setChecked(True)
 
     @pyqtSlot()
     def on_click(self):

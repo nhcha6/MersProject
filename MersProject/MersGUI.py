@@ -289,7 +289,7 @@ class MyTableWidget(QWidget):
         # Ensure opening fasta extension file by checking last five chars
         if fastaTest == 'fasta':
             self.fasta = Fasta(fname[0])
-            self.enableControl()
+            #self.enableControl()
             self.controlMGFInput()
             QMessageBox.about(self, "Message", 'Fasta file imported.')
 
@@ -354,6 +354,7 @@ class MyTableWidget(QWidget):
     def enableControl(self):
         if self.fasta is not None:
             if self.mgfPath is not None or self.mgfFlag.isChecked() == True:
+                print('2')
                 self.tab1.toleranceText.setEnabled(True)
                 self.tab1.toleranceLabel.setEnabled(True)
                 self.tab1.ppmText.setEnabled(True)
@@ -386,6 +387,7 @@ class MyTableWidget(QWidget):
     def controlMGFInput(self):
         if self.mgfFlag.isChecked():
             self.enableControl()
+            print('1')
             self.mgfButton.setEnabled(False)
             self.mgfPlotFlag.setEnabled(False)
             self.tab1.ppmText.setEnabled(False)
@@ -1137,7 +1139,7 @@ class MyTableWidget(QWidget):
         # byIonAccIndex = self.tab1.byIonAccCombo.findText(self.byIonAccDefault)
         # self.tab1.byIonAccCombo.setCurrentIndex(byIonAccIndex)
 
-        self.tab1.byIonFlag.setChecked(True)
+        self.tab1.byIonFlag.setChecked(False)
 
     @pyqtSlot()
     def on_click(self):

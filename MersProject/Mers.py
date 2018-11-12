@@ -94,19 +94,19 @@ def transOutput(inputFile, spliceType, mined, maxed, overlapFlag,
         changeOver.append(val)
 
     # configure mutliprocessing functionality
-    num_workers = multiprocessing.cpu_count()
-
-    # Used to lock write access to file
-    lockVar = multiprocessing.Lock()
-
-    toWriteQueue = multiprocessing.Queue()
-
-    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockTrans,
-                                initargs=(lockVar, toWriteQueue, pepCompleted,
-                                          splits, splitsRef, childTable))
-
-    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
-    writerProcess.start()
+    # num_workers = multiprocessing.cpu_count()
+    #
+    # # Used to lock write access to file
+    # lockVar = multiprocessing.Lock()
+    #
+    # toWriteQueue = multiprocessing.Queue()
+    #
+    # pool = multiprocessing.Pool(processes=num_workers, initializer=processLockTrans,
+    #                             initargs=(lockVar, toWriteQueue, pepCompleted,
+    #                                       splits, splitsRef, childTable))
+    #
+    # writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
+    # writerProcess.start()
 
     # Create processes by dividing up the splits.
     iterCounter = 1
@@ -115,35 +115,34 @@ def transOutput(inputFile, spliceType, mined, maxed, overlapFlag,
     iterFlag = True
     numOfProcesses = 0
     while iterFlag:
-        # splitsProcess = []
-        # splitRefProcess = []
         splitsIndex = []
         for i in range(0, iterCounter):
-            # splitsProcess.append(splits[counter + i])
-            # splitRefProcess.append(splitRef[counter + i])
             splitsIndex.append(counter + i)
             if counter + i == splitLen - 1:
                 iterFlag = False
                 break
         counter += iterCounter
+        multiprocessIter.append(splitsIndex)
         # start process for the relevant splits
-        pool.apply_async(transProcess, args=(spliceType,splitsIndex,mined, maxed,overlapFlag,modList,outputPath,
-                                             chargeFlags, mgfObj, modTable, mgfFlag))
+        # pool.apply_async(transProcess, args=(spliceType,splitsIndex,mined, maxed,overlapFlag,modList,outputPath,
+        #                                      chargeFlags, mgfObj, modTable, mgfFlag))
         numOfProcesses += 1
 
         # change number of splits in each iteration when changeover point is reached
         S1 = set(changeOver)
-        S2 = set(splitIndex)
+        S2 = set(splitsIndex)
         if len(S1.intersection(S2)) != 0:
             iterCounter = iterCounter*2
 
-    pepTotal.put(numOfProcesses)
-    pool.close()
-    pool.join()
+    print(multiprocessIter)
 
-    toWriteQueue.put('stop')
-    writerProcess.join()
-    logging.info("All " + spliceType + " !joined")
+    #pepTotal.put(numOfProcesses)
+    # pool.close()
+    # pool.join()
+    #
+    # toWriteQueue.put('stop')
+    # writerProcess.join()
+    # logging.info("All " + spliceType + " !joined")
 
 
 
@@ -363,7 +362,7 @@ def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance=100
 # takes splits index from the multiprocessing pool and adds to writer the output. Splits and SplitRef are global
 # variables within the pool.
 def transProcess(spliceType,splitsIndex,mined, maxed,overlapFlag,modList,outputPath,
-                                             chargeFlags, mgfObj, modTable, mgfFlag)
+                                             chargeFlags, mgfObj, modTable, mgfFlag):
 
     # combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
 
@@ -828,7 +827,7 @@ def processLockInit(lockVar, toWriteQueue, pepCompleted, mgfObj, childTable):
     genMassDict.toWriteQueue = toWriteQueue
     genMassDict.pepCompleted = pepCompleted
 
-def processLockTrans(lockVar, toWriteQueue, pepCompleted, allSplits, allSplitRef childTable):
+def processLockTrans(lockVar, toWriteQueue, pepCompleted, allSplits, allSplitRef, childTable):
 
     """
     Designed to set up a global lock for a child processes (child per protein)

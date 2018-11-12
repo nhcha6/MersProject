@@ -134,8 +134,11 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
         if len(S1.intersection(S2)) != 0:
             iterCounter = iterCounter*2
 
-    for index in multiprocessIter:
-        transProcess(spliceType,index,splits, splitRef, mined, maxed, maxDistance, overlapFlag,modList,outputPath, chargeFlags, mgfObj, modTable, mgfFlag)
+
+        for index in multiprocessIter:
+            massDict = transProcess(spliceType,index,splits, splitRef, mined, maxed, maxDistance, overlapFlag,modList,outputPath, chargeFlags, mgfObj, modTable, mgfFlag)
+
+            writeToCsv(massDict, index, outputPath, chargeFlags):
 
     #pepTotal.put(numOfProcesses)
     # pool.close()

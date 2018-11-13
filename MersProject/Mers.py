@@ -134,11 +134,11 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
         if len(S1.intersection(S2)) != 0:
             iterCounter = iterCounter*2
 
+    print(multiprocessIter)
+    for index in multiprocessIter:
+        massDict = transProcess(spliceType,index,splits, splitRef, mined, maxed, maxDistance, overlapFlag,modList,outputPath, chargeFlags, mgfObj, modTable, mgfFlag)
 
-        for index in multiprocessIter:
-            massDict = transProcess(spliceType,index,splits, splitRef, mined, maxed, maxDistance, overlapFlag,modList,outputPath, chargeFlags, mgfObj, modTable, mgfFlag)
-
-            writeToCsv(massDict, index, outputPath, chargeFlags):
+        writeToCsv(massDict, index, outputPath, chargeFlags)
 
     #pepTotal.put(numOfProcesses)
     # pool.close()
@@ -168,7 +168,7 @@ def transProcess(spliceType, splitsIndex, splits, splitRef, mined, maxed, maxDis
     # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
     massDict = editRefMassDict(massDict)
 
-    print(massDict)
+    return massDict
     # print(mgfObj.ppmVal)
     # if mgfFlag:
     #     allPeptides = getAllPep(massDict)

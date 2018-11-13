@@ -45,7 +45,7 @@ class Fasta:
         self.allProcessList = []
         if transFlag:
 
-            transProcess = multiprocessing.Process(target=transOutput, args=(self.inputFile, TRANS, mined, maxed, overlapFlag,
+            transProcess = multiprocessing.Process(target=transOutput, args=(self.inputFile, TRANS, mined, maxed, maxDistance, overlapFlag,
                                                                              modList, outputPath[TRANS], chargeFlags,
                                                                              mgfObj, modTable, mgfFlag, self.pepCompleted, self.pepTotal))
             #allProcessList.append(transProcess)
@@ -76,7 +76,7 @@ class Fasta:
 
 
 # def transOutput(inputPath, mined, maxed, overlapFlag, modList, outputPath, chargeFlags, linearFlag=False):
-def transOutput(inputFile, spliceType, mined, maxed, overlapFlag,
+def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
                 modList, outputPath, chargeFlags, mgfObj, modTable, mgfFlag, pepCompleted, pepTotal):
 
 
@@ -109,7 +109,7 @@ def transOutput(inputFile, spliceType, mined, maxed, overlapFlag,
     # writerProcess.start()
 
     # Create processes by dividing up the splits.
-    iterCounter = 1
+    iterCounter = math.ceil(splitLen/1000)
     counter = 1
     multiprocessIter = []
     iterFlag = True
@@ -134,7 +134,8 @@ def transOutput(inputFile, spliceType, mined, maxed, overlapFlag,
         if len(S1.intersection(S2)) != 0:
             iterCounter = iterCounter*2
 
-    print(multiprocessIter)
+    for index in multiprocessIter:
+        transProcess(spliceType,index,splits, splitRef, mined, maxed, maxDistance, overlapFlag,modList,outputPath, chargeFlags, mgfObj, modTable, mgfFlag)
 
     #pepTotal.put(numOfProcesses)
     # pool.close()
@@ -145,7 +146,87 @@ def transOutput(inputFile, spliceType, mined, maxed, overlapFlag,
     # logging.info("All " + spliceType + " !joined")
 
 
+# takes splits index from the multiprocessing pool and adds to writer the output. Splits and SplitRef are global
+# variables within the pool.
+def transProcess(spliceType, splitsIndex, splits, splitRef, mined, maxed, maxDistance, overlapFlag, modList, outputPath,
+                 chargeFlags, mgfObj, modTable, mgfFlag):
 
+    # Look to produce only trans spliced peptides - not linear or cis. Do so by not allowing combination of peptides
+    # which originate from the same protein as opposed to solving for Cis and Linear and not including that
+    # in the output
+
+    combined, combinedRef = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex)
+    # Convert it into a dictionary that has a mass
+    massDict = combMass(combined, combinedRef)
+    # Apply mods to the dictionary values and update the dictionary
+    massDict = applyMods(massDict, modList)
+    # Add the charge information along with their masses
+    chargeIonMass(massDict, chargeFlags)
+    # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
+    massDict = editRefMassDict(massDict)
+
+    print(massDict)
+    # print(mgfObj.ppmVal)
+    # if mgfFlag:
+    #     allPeptides = getAllPep(massDict)
+    #     allPeptidesDict = {}
+    #     for peptide in allPeptides:
+    #         allPeptidesDict[peptide] = protId
+    #     transProcess.toWriteQueue.put(allPeptidesDict)
+
+def combineTransPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance, splitsIndex, combineLinearSet=None):
+
+    """
+    Input: splits: list of splits, splitRef: list of the character indexes for splits, mined/maxed: min and max
+    size requirements, overlapFlag: boolean value true if overlapping combinations are undesired.
+    Output: all combinations of possible splits which meets criteria
+    """
+    # initialise combinations array to hold the possible combinations from the input splits
+    combModless = []
+    combModlessRef = []
+    # iterate through all of the splits and build up combinations which meet min/max/overlap criteria
+    for i in splitsIndex:
+
+        # toAdd variables hold temporary combinations for insertion in final matrix if it meets criteria
+        toAddForward = ""
+
+        toAddReverse = ""
+
+        for j in range(i + 1, len(splits)):
+            # create forward combination of i and j
+            toAddForward += splits[i]
+            toAddForward += splits[j]
+            addForwardRef = splitRef[i] + splitRef[j]
+            toAddReverse += splits[j]
+            toAddReverse += splits[i]
+            addReverseRef = splitRef[j] + splitRef[i]
+
+            # max, min and max distance checks combined into one function for clarity for clarity
+            if combineCheck(toAddForward, mined, maxed, splitRef[i], splitRef[j], maxDistance):
+                # V. messy, need a way to get better visual
+                if overlapFlag:
+                    if overlapComp(splitRef[i], splitRef[j]):
+                        if linearCheck(toAddForward, combineLinearSet):
+                            combModless.append(toAddForward)
+                            combModlessRef.append(addForwardRef)
+                        if linearCheck(toAddReverse, combineLinearSet):
+                            combModless.append(toAddReverse)
+                            combModlessRef.append(addReverseRef)
+
+                else:
+                    if linearCheck(toAddForward, combineLinearSet):
+                        combModless.append(toAddForward)
+                        combModlessRef.append(addForwardRef)
+                    if linearCheck(toAddReverse, combineLinearSet):
+                        combModless.append(toAddReverse)
+                        combModlessRef.append(addReverseRef)
+            elif not maxDistCheck(splitRef[i], splitRef[j], maxDistance):
+                break
+
+            toAddForward = ""
+            toAddReverse = ""
+
+    return combModless, combModlessRef
 
 def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag,
                        modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag, pepCompleted, pepTotal):
@@ -358,32 +439,6 @@ def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance=100
     combined, combinedRef = removeDupsQuick(combined, combinedRef)
 
     return combined, combinedRef
-
-# takes splits index from the multiprocessing pool and adds to writer the output. Splits and SplitRef are global
-# variables within the pool.
-def transProcess(spliceType,splitsIndex,mined, maxed,overlapFlag,modList,outputPath,
-                                             chargeFlags, mgfObj, modTable, mgfFlag):
-
-    # combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
-
-    combined, combinedRef = outputCreate(spliceType, finalPeptide, mined, maxed, overlapFlag)
-    # Convert it into a dictionary that has a mass
-    massDict = combMass(combined, combinedRef)
-    # Apply mods to the dictionary values and update the dictionary
-    massDict = applyMods(massDict, modList)
-    # Add the charge information along with their masses
-    chargeIonMass(massDict, chargeFlags)
-    # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
-    massDict = editRefMassDict(massDict)
-    # print(mgfObj.ppmVal)
-    if mgfFlag:
-        allPeptides = getAllPep(massDict)
-        allPeptidesDict = {}
-        for peptide in allPeptides:
-            allPeptidesDict[peptide] = protId
-        transProcess.toWriteQueue.put(allPeptidesDict)
-
-
 
 def applyMods(combineModlessDict, modList):
 
@@ -667,6 +722,10 @@ def combineCheck(split, mined, maxed, ref1, ref2, maxDistance='None'):
 
 
 def linearCheck(toAdd, combinedLinearSet):
+    # Look to do this better, not comparing to combineLinearSet, instead checking that the splitsRefs aren't linearly
+    # ordered: [1, 2, 3] and [4, 5, 6] are obviously linearly ordered.
+    if combinedLinearSet is None:
+        return True
     if toAdd in combinedLinearSet:
         return False
     return True

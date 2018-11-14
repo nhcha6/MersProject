@@ -23,6 +23,9 @@ logging.basicConfig(level = logging.DEBUG, format = '%(message)s')
 
 mgfData = None
 
+# massDict syntax: PEPTIDE: [monoisotopic mass, [referenceLocation], {charge: m/z}]
+# for example: {'DQQ': [389.15466499999997, ['121', '117-118'], {2: 195.58527249999997}],
+# 'QDQ': [389.15466499999997, ['118-119', '117'], {2: 195.58527249999997}]......
 
 class Fasta:
 
@@ -134,11 +137,28 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
         if len(S1.intersection(S2)) != 0:
             iterCounter = iterCounter*2
 
-    print(multiprocessIter)
+    massDictAll = {}
+    seenPeptides = {}
     for index in multiprocessIter:
         massDict = transProcess(spliceType,index,splits, splitRef, mined, maxed, maxDistance, overlapFlag,modList,outputPath, chargeFlags, mgfObj, modTable, mgfFlag)
+        massDictAll.update(massDict)
+        #print(massDict)
+        for key, value in massDict.items():
+            if key not in seenPeptides.keys():
+                seenPeptides[key] = value
+            # else:
+            #     seenPeptides[key].append(value)
+    #print(seenPeptides)
+    #writeToCsv(seenPeptides, index, outputPath, chargeFlags)
 
-        writeToCsv(massDict, index, outputPath, chargeFlags)
+    allPeptides = getAllPep(massDictAll)
+    allPeptidesDict = {}
+    for peptide in allPeptides:
+        allPeptidesDict[peptide] = [TRANS]
+    saveHandle = str(outputPath)
+    with open(saveHandle, 'w') as output_handle:
+        SeqIO.write(createSeqObj(allPeptidesDict), output_handle, "fasta")
+
 
     #pepTotal.put(numOfProcesses)
     # pool.close()
@@ -157,7 +177,6 @@ def transProcess(spliceType, splitsIndex, splits, splitRef, mined, maxed, maxDis
     # Look to produce only trans spliced peptides - not linear or cis. Do so by not allowing combination of peptides
     # which originate from the same protein as opposed to solving for Cis and Linear and not including that
     # in the output
-
     combined, combinedRef = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex)
     # Convert it into a dictionary that has a mass
     massDict = combMass(combined, combinedRef)
@@ -177,7 +196,7 @@ def transProcess(spliceType, splitsIndex, splits, splitRef, mined, maxed, maxDis
     #         allPeptidesDict[peptide] = protId
     #     transProcess.toWriteQueue.put(allPeptidesDict)
 
-def combineTransPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance, splitsIndex, combineLinearSet=None):
+def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, combineLinearSet=None):
 
     """
     Input: splits: list of splits, splitRef: list of the character indexes for splits, mined/maxed: min and max
@@ -187,15 +206,18 @@ def combineTransPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance
     # initialise combinations array to hold the possible combinations from the input splits
     combModless = []
     combModlessRef = []
+    print(splits)
     # iterate through all of the splits and build up combinations which meet min/max/overlap criteria
     for i in splitsIndex:
-
+        print(i)
         # toAdd variables hold temporary combinations for insertion in final matrix if it meets criteria
         toAddForward = ""
 
         toAddReverse = ""
 
+
         for j in range(i + 1, len(splits)):
+            print(j)
             # create forward combination of i and j
             toAddForward += splits[i]
             toAddForward += splits[j]

@@ -304,7 +304,7 @@ def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance=100
     splits, splitRef = splitDictPeptide(spliceType, peptide, mined, maxed)
     combined, combinedRef = None, None
 
-    if spliceType == CIS or spliceType == TRANS:
+    if spliceType == CIS:
 
         # get the linear set to ensure no linear peptides are added to cis set. ( Redoing is a little redundant,
         # need to find something better )
@@ -318,7 +318,8 @@ def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance=100
 
         combined, combinedRef = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance,
                                                       combineLinearSet)
-
+    elif spliceType == TRANS:
+        combined, combinedRef = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
     elif spliceType == LINEAR:
 
         # Explicit change for high visibility regarding what's happening
@@ -507,6 +508,7 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
                             combModlessRef.append(addReverseRef)
 
                 else:
+
                     if linearCheck(toAddForward, combineLinearSet):
                         combModless.append(toAddForward)
                         combModlessRef.append(addForwardRef)
@@ -611,6 +613,8 @@ def combineCheck(split, mined, maxed, ref1, ref2, maxDistance='None'):
 
 
 def linearCheck(toAdd, combinedLinearSet):
+    if combinedLinearSet is None:
+        return True
     if toAdd in combinedLinearSet:
         return False
     return True

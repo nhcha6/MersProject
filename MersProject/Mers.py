@@ -234,6 +234,7 @@ def getAllPep(massDict):
 
 def writer(queue, outputPath):
     seenPeptides = {}
+    backwardsSeenPeptides = {}
     saveHandle = str(outputPath)
     print(saveHandle)
     with open(saveHandle, "w") as output_handle:
@@ -249,14 +250,39 @@ def writer(queue, outputPath):
 
             for key, value in matchedPeptides.items():
                 if key not in seenPeptides.keys():
+
                     seenPeptides[key] = [value]
                 else:
                     seenPeptides[key].append(value)
 
+                # Come back to make this less ugly and more efficient
+                if value not in backwardsSeenPeptides.keys():
+                    backwardsSeenPeptides[value] = [key]
+                else:
+                    backwardsSeenPeptides[value].append(key)
+
 
 
         logging.info("Writing to fasta")
+        writeProtToPep(backwardsSeenPeptides, 'ProtToPep', outputPath)
+        writeProtToPep(seenPeptides, 'PepToProt', outputPath)
         SeqIO.write(createSeqObj(seenPeptides), output_handle, "fasta")
+
+def writeProtToPep(seenPeptides, groupedBy, outputPath):
+    with open(outputPath+ groupedBy + '.csv', 'a', newline='') as csv_file:
+
+        writer = csv.writer(csv_file, delimiter=',')
+        if groupedBy is 'ProtToPep':
+            header = 'Protein'
+        else:
+            header = 'Peptide'
+        writer.writerow([header])
+        for key, value in seenPeptides.items():
+            infoRow = [key]
+            writer.writerow(infoRow)
+            for peptide in value:
+                writer.writerow([peptide])
+            writer.writerow([])
 
 
 def fulfillPpmReq(mgfObj, massDict):

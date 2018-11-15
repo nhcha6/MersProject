@@ -90,7 +90,6 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
     splits, splitRef = splitDictPeptide(spliceType, finalPeptide, mined, maxed)
 
     splitLen = len(splits)
-    print(splitLen)
     changeOver = []
     for i in range(1, 5):
         val = splitLen - math.ceil(splitLen / (2 ** i))
@@ -179,7 +178,6 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
     # Look to produce only trans spliced peptides - not linear or cis. Do so by not allowing combination of peptides
     # which originate from the same protein as opposed to solving for Cis and Linear and not including that
     # in the output
-    print('in')
     combined, combinedRef = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex)
     # Convert it into a dictionary that has a mass
     massDict = combMass(combined, combinedRef)
@@ -195,7 +193,6 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
     #print(allPeptides)
     for peptide in allPeptides:
         allPeptidesDict[peptide] = TRANS
-    print(allPeptidesDict)
     transProcess.toWriteQueue.put(allPeptidesDict)
 
 def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, combineLinearSet=None):
@@ -371,7 +368,6 @@ def getAllPep(massDict):
 def writer(queue, outputPath):
     seenPeptides = {}
     saveHandle = str(outputPath)
-    print(saveHandle)
     with open(saveHandle, "w") as output_handle:
         while True:
 
@@ -391,7 +387,6 @@ def writer(queue, outputPath):
                         seenPeptides[key].append(value)
 
 
-        print(seenPeptides)
         logging.info("Writing to fasta")
         SeqIO.write(createSeqObj(seenPeptides), output_handle, "fasta")
 

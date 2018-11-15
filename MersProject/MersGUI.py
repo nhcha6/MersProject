@@ -289,7 +289,7 @@ class MyTableWidget(QWidget):
         # Ensure opening fasta extension file by checking last five chars
         if fastaTest == 'fasta':
             self.fasta = Fasta(fname[0])
-            self.enableControl()
+            #self.enableControl()
             self.controlMGFInput()
             QMessageBox.about(self, "Message", 'Fasta file imported.')
 
@@ -385,6 +385,8 @@ class MyTableWidget(QWidget):
 
     def controlMGFInput(self):
         if self.mgfFlag.isChecked():
+            # set values true/false before calling enableControl to avoid bug of it being called again later
+            self.tab1.byIonFlag.setChecked(False)
             self.enableControl()
             self.mgfButton.setEnabled(False)
             self.mgfPlotFlag.setEnabled(False)
@@ -396,13 +398,17 @@ class MyTableWidget(QWidget):
             self.tab1.minByIonLabel.setEnabled(False)
             self.tab1.byIonAccText.setEnabled(False)
             self.tab1.byIonAccLabel.setEnabled(False)
-            self.tab1.byIonFlag.setChecked(False)
             self.tab1.byIonFlag.setEnabled(False)
+            self.tab2.trans.setEnabled(True)
             # self.tab1.ppmLabel.setEnabled(False)
         if not self.mgfFlag.isChecked():
+            # set values true/false before calling enableControl to avoid bug of it being called again later
+            self.tab2.trans.setChecked(False)
             self.enableControl()
             self.mgfButton.setEnabled(True)
             self.mgfPlotFlag.setEnabled(True)
+            self.tab2.trans.setEnabled(False)
+
 
     def confirmationFunction(self):
 

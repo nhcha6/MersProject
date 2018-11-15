@@ -158,7 +158,7 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
     #     SeqIO.write(createSeqObj(allPeptidesDict), output_handle, "fasta")
 
 
-    #pepTotal.put(numOfProcesses)
+    pepTotal.put(numOfProcesses)
     pool.close()
     pool.join()
 
@@ -194,6 +194,7 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
     for peptide in allPeptides:
         allPeptidesDict[peptide] = TRANS
     transProcess.toWriteQueue.put(allPeptidesDict)
+    transProcess.pepCompleted.put(1)
 
 def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, combineLinearSet=None):
 

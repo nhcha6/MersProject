@@ -52,7 +52,7 @@ class ProgressGenerator(QRunnable):
         self.signals.disableButtons.emit()
         while self.flag:
             self.signals.updateProgBar.emit()
-            time.sleep(0.02)
+            time.sleep(0.01)
         self.signals.finished.emit()
 
 
@@ -501,6 +501,8 @@ class MyTableWidget(QWidget):
             value = self.finishedPeptides/self.totalSize*100
         else:
             value = 2
+        print(self.totalSize)
+        print(self.finishedPeptides)
         self.progressBar.setValue(value)
 
     def deleteTab2ProgressBar(self):

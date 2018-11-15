@@ -97,19 +97,18 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
         changeOver.append(val)
 
     # configure mutliprocessing functionality
-    # num_workers = multiprocessing.cpu_count()
-    #
-    # # Used to lock write access to file
-    # lockVar = multiprocessing.Lock()
-    #
-    # toWriteQueue = multiprocessing.Queue()
-    #
-    # pool = multiprocessing.Pool(processes=num_workers, initializer=processLockTrans,
-    #                             initargs=(lockVar, toWriteQueue, pepCompleted,
-    #                                       splits, splitsRef, childTable))
-    #
-    # writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
-    # writerProcess.start()
+    num_workers = multiprocessing.cpu_count()
+
+    # Used to lock write access to file
+    lockVar = multiprocessing.Lock()
+
+    toWriteQueue = multiprocessing.Queue()
+
+    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockTrans, initargs=(lockVar, toWriteQueue, pepCompleted,
+                                          splits, splitRef, mgfObj, modTable))
+
+    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
+    writerProcess.start()
 
     # Create processes by dividing up the splits.
     iterCounter = math.ceil(splitLen/1000)
@@ -125,58 +124,62 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
                 iterFlag = False
                 break
         counter += iterCounter
-        multiprocessIter.append(splitsIndex)
+        #multiprocessIter.append(splitsIndex)
         # start process for the relevant splits
-        # pool.apply_async(transProcess, args=(spliceType,splitsIndex,mined, maxed,overlapFlag,modList,outputPath,
-        #                                      chargeFlags, mgfObj, modTable, mgfFlag))
-        numOfProcesses += 1
+        pool.apply_async(transProcess, args=(spliceType,splitsIndex,mined, maxed,maxDistance,overlapFlag, modList, outputPath,chargeFlags, mgfObj, mgfFlag))
 
+        #pool.apply_async(tester, args=(iterCounter,))
+        numOfProcesses += 1
         # change number of splits in each iteration when changeover point is reached
         S1 = set(changeOver)
         S2 = set(splitsIndex)
         if len(S1.intersection(S2)) != 0:
             iterCounter = iterCounter*2
 
-    massDictAll = {}
-    seenPeptides = {}
-    for index in multiprocessIter:
-        massDict = transProcess(spliceType,index,splits, splitRef, mined, maxed, maxDistance, overlapFlag,modList,outputPath, chargeFlags, mgfObj, modTable, mgfFlag)
-        massDictAll.update(massDict)
-        #print(massDict)
-        for key, value in massDict.items():
-            if key not in seenPeptides.keys():
-                seenPeptides[key] = value
+    # massDictAll = {}
+    # seenPeptides = {}
+    # for index in multiprocessIter:
+    #     massDict = transProcess(spliceType,index,splits, splitRef, mined, maxed, maxDistance, overlapFlag,modList,outputPath, chargeFlags, mgfObj, modTable, mgfFlag)
+    #     massDictAll.update(massDict)
+    #     #print(massDict)
+    #     for key, value in massDict.items():
+    #         if key not in seenPeptides.keys():
+    #             seenPeptides[key] = value
             # else:
             #     seenPeptides[key].append(value)
     #print(seenPeptides)
     #writeToCsv(seenPeptides, index, outputPath, chargeFlags)
 
-    allPeptides = getAllPep(massDictAll)
-    allPeptidesDict = {}
-    for peptide in allPeptides:
-        allPeptidesDict[peptide] = [TRANS]
-    saveHandle = str(outputPath)
-    with open(saveHandle, 'w') as output_handle:
-        SeqIO.write(createSeqObj(allPeptidesDict), output_handle, "fasta")
+    # allPeptides = getAllPep(massDictAll)
+    # allPeptidesDict = {}
+    # for peptide in allPeptides:
+    #     allPeptidesDict[peptide] = [TRANS]
+    # saveHandle = str(outputPath)
+    # with open(saveHandle, 'w') as output_handle:
+    #     SeqIO.write(createSeqObj(allPeptidesDict), output_handle, "fasta")
 
 
     #pepTotal.put(numOfProcesses)
-    # pool.close()
-    # pool.join()
-    #
-    # toWriteQueue.put('stop')
-    # writerProcess.join()
-    # logging.info("All " + spliceType + " !joined")
+    pool.close()
+    pool.join()
 
+    toWriteQueue.put('stop')
+    writerProcess.join()
+    logging.info("All " + spliceType + " !joined")
+
+def tester(var):
+    print(var)
+    print(splits)
 
 # takes splits index from the multiprocessing pool and adds to writer the output. Splits and SplitRef are global
 # variables within the pool.
-def transProcess(spliceType, splitsIndex, splits, splitRef, mined, maxed, maxDistance, overlapFlag, modList, outputPath,
-                 chargeFlags, mgfObj, modTable, mgfFlag):
+def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, outputPath,
+                 chargeFlags, mgfObj, mgfFlag):
 
     # Look to produce only trans spliced peptides - not linear or cis. Do so by not allowing combination of peptides
     # which originate from the same protein as opposed to solving for Cis and Linear and not including that
     # in the output
+    print('in')
     combined, combinedRef = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex)
     # Convert it into a dictionary that has a mass
     massDict = combMass(combined, combinedRef)
@@ -186,15 +189,14 @@ def transProcess(spliceType, splitsIndex, splits, splitRef, mined, maxed, maxDis
     chargeIonMass(massDict, chargeFlags)
     # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
     massDict = editRefMassDict(massDict)
-
-    return massDict
-    # print(mgfObj.ppmVal)
-    # if mgfFlag:
-    #     allPeptides = getAllPep(massDict)
-    #     allPeptidesDict = {}
-    #     for peptide in allPeptides:
-    #         allPeptidesDict[peptide] = protId
-    #     transProcess.toWriteQueue.put(allPeptidesDict)
+    #return massDict
+    allPeptides = getAllPep(massDict)
+    allPeptidesDict = {}
+    #print(allPeptides)
+    for peptide in allPeptides:
+        allPeptidesDict[peptide] = [TRANS]
+    print(allPeptideDict)
+    transProcess.toWriteQueue.put(allPeptidesDict)
 
 def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, combineLinearSet=None):
 
@@ -206,10 +208,8 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
     # initialise combinations array to hold the possible combinations from the input splits
     combModless = []
     combModlessRef = []
-    print(splits)
     # iterate through all of the splits and build up combinations which meet min/max/overlap criteria
     for i in splitsIndex:
-        print(i)
         # toAdd variables hold temporary combinations for insertion in final matrix if it meets criteria
         toAddForward = ""
 
@@ -217,7 +217,6 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
 
 
         for j in range(i + 1, len(splits)):
-            print(j)
             # create forward combination of i and j
             toAddForward += splits[i]
             toAddForward += splits[j]
@@ -911,12 +910,11 @@ def processLockInit(lockVar, toWriteQueue, pepCompleted, mgfObj, childTable):
     genMassDict.toWriteQueue = toWriteQueue
     genMassDict.pepCompleted = pepCompleted
 
-def processLockTrans(lockVar, toWriteQueue, pepCompleted, allSplits, allSplitRef, childTable):
+def processLockTrans(lockVar, toWriteQueue, pepCompleted, allSplits, allSplitRef, mgfObj, childTable):
 
     """
     Designed to set up a global lock for a child processes (child per protein)
     """
-
     global lock
     lock = lockVar
     global mgfData
@@ -929,7 +927,5 @@ def processLockTrans(lockVar, toWriteQueue, pepCompleted, allSplits, allSplitRef
     splitRef = allSplitRef
     transProcess.toWriteQueue = toWriteQueue
     transProcess.pepCompleted = pepCompleted
-
-
 
 

@@ -194,8 +194,8 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
     allPeptidesDict = {}
     #print(allPeptides)
     for peptide in allPeptides:
-        allPeptidesDict[peptide] = [TRANS]
-    print(allPeptideDict)
+        allPeptidesDict[peptide] = TRANS
+    print(allPeptidesDict)
     transProcess.toWriteQueue.put(allPeptidesDict)
 
 def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, combineLinearSet=None):
@@ -387,10 +387,11 @@ def writer(queue, outputPath):
                 if key not in seenPeptides.keys():
                     seenPeptides[key] = [value]
                 else:
-                    seenPeptides[key].append(value)
+                    if value not in seenPeptides[key]:
+                        seenPeptides[key].append(value)
 
 
-
+        print(seenPeptides)
         logging.info("Writing to fasta")
         SeqIO.write(createSeqObj(seenPeptides), output_handle, "fasta")
 

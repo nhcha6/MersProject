@@ -309,9 +309,19 @@ class MyTableWidget(QWidget):
         """
 
         outputFile = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+
         if outputFile == '':
             return False
-        return outputFile
+        else:
+            text, ok = QInputDialog.getText(self, 'Input Dialog',
+                                            'Enter your file name:')
+
+            if ok:
+                outputPath = outputFile + '/' + text
+            else:
+                return False
+        print(outputPath)
+        return outputPath
 
     def stopFunction(self):
         print('in stop function')
@@ -447,11 +457,12 @@ class MyTableWidget(QWidget):
             outputFile = self.getOutputPath()
             if outputFile is not False:
                 if linearFlag:
-                    outputPath[LINEAR] = outputFile + '/' + LINEAR + now + ".fasta"
+                    outputPath[LINEAR] = outputFile + '-' + LINEAR + now + ".fasta"
                 if cisFlag:
-                    outputPath[CIS] = outputFile + '/' + CIS + now + ".fasta"
+                    outputPath[CIS] = outputFile + '-' + CIS + now + ".fasta"
                 if transFlag:
-                    outputPath[TRANS] = outputFile + '/' + TRANS + now + ".fasta"
+                    outputPath[TRANS] = outputFile + '-' + TRANS + now + ".fasta"
+                    print(outputPath[TRANS])
 
                 if self.mgfFlag.isChecked() == False:
                     mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, ppmVal, intensityThreshold, minSimBy,
@@ -501,8 +512,6 @@ class MyTableWidget(QWidget):
             value = self.finishedPeptides/self.totalSize*100
         else:
             value = 2
-        print(self.totalSize)
-        print(self.finishedPeptides)
         self.progressBar.setValue(value)
 
     def deleteTab2ProgressBar(self):

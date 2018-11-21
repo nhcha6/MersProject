@@ -13,6 +13,8 @@ import json
 import logging
 from MGFMain import *
 import atexit
+import os
+import psutil
 
 TRANS = "Trans"
 LINEAR = "Linear"
@@ -289,6 +291,9 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
             seq = str(record.seq)
             seqId = record.name
 
+            while memoryCheck():
+                time.sleep(10)
+                logging.info('Memory Limit Reached')
 
             seqId = seqId.split('|')[1]
             logging.info(spliceType + " process started for: " + seq[0:5])
@@ -303,6 +308,14 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
     toWriteQueue.put('stop')
     writerProcess.join()
     logging.info("All " + spliceType + " !joined")
+
+def memoryCheck():
+    process = psutil.Process(os.getpid())
+    print(process.memory_info().rss)
+    if process.memory_info().rss > 1000000000:
+        return True
+    else:
+        return False
 
 def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList,
                 maxDistance, finalPath, chargeFlags, mgfFlag):
@@ -372,7 +385,6 @@ def writer(queue, outputPath):
     saveHandle = str(outputPath)
     with open(saveHandle, "w") as output_handle:
         while True:
-
             matchedPeptides = queue.get()
             if matchedPeptides == 'stop':
                 logging.info("ALL LINEAR COMPUTED, STOP MESSAGE SENT")

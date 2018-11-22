@@ -284,6 +284,8 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
     writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
     writerProcess.start()
 
+    maxMem = psutil.virtual_memory()[1] / 2
+    print(maxMem)
     with open(inputFile, "rU") as handle:
         counter = 0
         for record in SeqIO.parse(handle, 'fasta'):
@@ -291,8 +293,8 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
             seq = str(record.seq)
             seqId = record.name
 
-            while memoryCheck():
-                time.sleep(10)
+            while memoryCheck(maxMem):
+                time.sleep(0.1)
                 logging.info('Memory Limit Reached')
 
             seqId = seqId.split('|')[1]
@@ -300,6 +302,7 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
             # Start the processes for each protein with the targe function being genMassDict
             pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
                                                 csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfFlag))
+
 
     pepTotal.put(counter)
     pool.close()
@@ -309,10 +312,18 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
     writerProcess.join()
     logging.info("All " + spliceType + " !joined")
 
-def memoryCheck():
+def memoryCheck(maxMem):
     process = psutil.Process(os.getpid())
     print(process.memory_info().rss)
-    if process.memory_info().rss > 1000000000:
+    if process.memory_info().rss > maxMem:
+        return True
+    else:
+        return False
+
+def memoryCheck2():
+    memUsed = psutil.virtual_memory()[2]
+    print(memUsed)
+    if memUsed > 60:
         return True
     else:
         return False

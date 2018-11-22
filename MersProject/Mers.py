@@ -130,7 +130,8 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
         pool.apply_async(transProcess, args=(spliceType,splitsIndex,mined, maxed,maxDistance,overlapFlag, modList, outputPath,chargeFlags, mgfObj, mgfFlag))
 
         #pool.apply_async(tester, args=(iterCounter,))
-        numOfProcesses += 1
+        #numOfProcesses += 1
+        pepTotal.put(1)
         # change number of splits in each iteration when changeover point is reached
         S1 = set(changeOver)
         S2 = set(splitsIndex)
@@ -160,7 +161,7 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
     #     SeqIO.write(createSeqObj(allPeptidesDict), output_handle, "fasta")
 
 
-    pepTotal.put(numOfProcesses)
+    #pepTotal.put(numOfProcesses)
     pool.close()
     pool.join()
 
@@ -284,12 +285,14 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
     writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
     writerProcess.start()
 
+    print(psutil.virtual_memory())
     maxMem = psutil.virtual_memory()[1] / 2
     print(maxMem)
     with open(inputFile, "rU") as handle:
-        counter = 0
+        #counter = 0
         for record in SeqIO.parse(handle, 'fasta'):
-            counter += 1
+            #counter += 1
+            pepTotal.put(1)
             seq = str(record.seq)
             seqId = record.name
 
@@ -304,7 +307,7 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
                                                 csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfFlag))
 
 
-    pepTotal.put(counter)
+    #pepTotal.put(counter)
     pool.close()
     pool.join()
 
@@ -314,7 +317,7 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
 
 def memoryCheck(maxMem):
     process = psutil.Process(os.getpid())
-    print(process.memory_info().rss)
+    #print(process.memory_info().rss)
     if process.memory_info().rss > maxMem:
         return True
     else:
@@ -322,7 +325,7 @@ def memoryCheck(maxMem):
 
 def memoryCheck2():
     memUsed = psutil.virtual_memory()[2]
-    print(memUsed)
+    #print(memUsed)
     if memUsed > 60:
         return True
     else:

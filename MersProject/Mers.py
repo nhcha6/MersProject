@@ -128,6 +128,9 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
     #     pepTotal.put(1)
     #     splitsIndex = []
 
+    maxMem = psutil.virtual_memory()[1] / 2
+    print(maxMem)
+
     for i in range(0, math.ceil(splitLen / 2), procSize):
         if i + procSize > math.floor(splitLen / 2):
             for j in range(i, splitLen - i):
@@ -137,6 +140,11 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
                 splitsIndex.append(j)
                 splitsIndex.append(-(j + 1))
         print(splitsIndex)
+
+        while memoryCheck(maxMem):
+            time.sleep(1)
+            print('stuck in memory check')
+
         pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, outputPath, chargeFlags, mgfObj, mgfFlag))
         pepTotal.put(1)
         splitsIndex = []
@@ -314,9 +322,7 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
     writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
     writerProcess.start()
 
-    print(psutil.virtual_memory())
     maxMem = psutil.virtual_memory()[1] / 2
-    print(maxMem)
     with open(inputFile, "rU") as handle:
         #counter = 0
         for record in SeqIO.parse(handle, 'fasta'):
@@ -326,7 +332,7 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
             seqId = record.name
 
             while memoryCheck(maxMem):
-                time.sleep(0.1)
+                time.sleep(1)
                 logging.info('Memory Limit Reached')
 
             seqId = seqId.split('|')[1]

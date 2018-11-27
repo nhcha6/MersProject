@@ -52,7 +52,7 @@ class Fasta:
 
             transProcess = multiprocessing.Process(target=transOutput, args=(self.inputFile, TRANS, mined, maxed, maxDistance, overlapFlag,
                                                                              modList, outputPath[TRANS], chargeFlags,
-                                                                             mgfObj, modTable, mgfFlag, self.pepCompleted, self.pepTotal))
+                                                                             mgfObj, modTable, mgfFlag, self.pepCompleted, self.pepTotal, csvFlag))
             #allProcessList.append(transProcess)
             self.allProcessList.append(transProcess)
             transProcess.start()
@@ -82,8 +82,14 @@ class Fasta:
 
 # def transOutput(inputPath, mined, maxed, overlapFlag, modList, outputPath, chargeFlags, linearFlag=False):
 def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
-                modList, outputPath, chargeFlags, mgfObj, modTable, mgfFlag, pepCompleted, pepTotal):
+                modList, outputPath, chargeFlags, mgfObj, modTable, mgfFlag, pepCompleted, pepTotal, csvFlag):
 
+    finalPath = None
+
+    # Open the csv file if the csv file is selected
+    if csvFlag:
+        finalPath = getFinalPath(outputPath, spliceType)
+        open(finalPath, 'w')
 
     seqDict = addSequenceList(inputFile)
 
@@ -145,7 +151,7 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
             time.sleep(1)
             print('stuck in memory check')
 
-        pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, outputPath, chargeFlags, mgfObj, mgfFlag))
+        pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, finalPath, chargeFlags, mgfObj, mgfFlag, csvFlag))
         pepTotal.put(1)
         splitsIndex = []
 
@@ -155,8 +161,6 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
     toWriteQueue.put('stop')
     writerProcess.join()
     logging.info("All " + spliceType + " !joined")
-
-
 
     # Old code to Create processes by dividing up the splits.
     # iterCounter = math.ceil(splitLen/1000)
@@ -212,8 +216,8 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
 
 # takes splits index from the multiprocessing pool and adds to writer the output. Splits and SplitRef are global
 # variables within the pool.
-def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, outputPath,
-                 chargeFlags, mgfObj, mgfFlag):
+def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, finalPath,
+                 chargeFlags, mgfObj, mgfFlag, csvFlag):
 
     # Look to produce only trans spliced peptides - not linear or cis. Do so by not allowing combination of peptides
     # which originate from the same protein as opposed to solving for Cis and Linear and not including that
@@ -255,7 +259,7 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
         logging.info("Writing locked :(")
         lock.acquire()
 
-        writeToCsv(massDict, protId, finalPath, chargeFlags)
+        writeToCsv(massDict, TRANS, finalPath, chargeFlags)
         lock.release()
         logging.info("Writing released!")
 

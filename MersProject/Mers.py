@@ -92,10 +92,12 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
     splits, splitRef = splitDictPeptide(spliceType, finalPeptide, mined, maxed)
 
     splitLen = len(splits)
-    changeOver = []
-    for i in range(1, 5):
-        val = splitLen - math.ceil(splitLen / (2 ** i))
-        changeOver.append(val)
+
+    # Old code used to split up trans output differently
+    # changeOver = []
+    # for i in range(1, 5):
+    #     val = splitLen - math.ceil(splitLen / (2 ** i))
+    #     changeOver.append(val)
 
     # configure mutliprocessing functionality
     num_workers = multiprocessing.cpu_count()
@@ -111,32 +113,47 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
     writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
     writerProcess.start()
 
-    # Create processes by dividing up the splits.
-    iterCounter = math.ceil(splitLen/1000)
-    counter = 1
-    multiprocessIter = []
-    iterFlag = True
-    numOfProcesses = 0
-    while iterFlag:
-        splitsIndex = []
-        for i in range(0, iterCounter):
-            splitsIndex.append(counter + i)
-            if counter + i == splitLen - 1:
-                iterFlag = False
-                break
-        counter += iterCounter
-        #multiprocessIter.append(splitsIndex)
-        # start process for the relevant splits
-        pool.apply_async(transProcess, args=(spliceType,splitsIndex,mined, maxed,maxDistance,overlapFlag, modList, outputPath,chargeFlags, mgfObj, mgfFlag))
-
-        #pool.apply_async(tester, args=(iterCounter,))
-        #numOfProcesses += 1
+    # Create a process for pairs of splits, pairing element 0 with -1, 1 with -2 and so on.
+    splitsIndex = []
+    for i in range(0, math.ceil(splitLen / 2)):
+        if splitLen % 2 == 1 and i == math.floor(splitLen / 2):
+            splitsIndex.append(i)
+        else:
+            splitsIndex.append(i)
+            splitsIndex.append(-(i + 1))
+        print(splitsIndex)
+        pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, outputPath, chargeFlags, mgfObj, mgfFlag))
         pepTotal.put(1)
-        # change number of splits in each iteration when changeover point is reached
-        S1 = set(changeOver)
-        S2 = set(splitsIndex)
-        if len(S1.intersection(S2)) != 0:
-            iterCounter = iterCounter*2
+        splitsIndex = []
+
+
+
+    # Old code to Create processes by dividing up the splits.
+    # iterCounter = math.ceil(splitLen/1000)
+    # counter = 1
+    # multiprocessIter = []
+    # iterFlag = True
+    # numOfProcesses = 0
+    # while iterFlag:
+    #     splitsIndex = []
+    #     for i in range(0, iterCounter):
+    #         splitsIndex.append(counter + i)
+    #         if counter + i == splitLen - 1:
+    #             iterFlag = False
+    #             break
+    #     counter += iterCounter
+    #     #multiprocessIter.append(splitsIndex)
+    #     # start process for the relevant splits
+    #     pool.apply_async(transProcess, args=(spliceType,splitsIndex,mined, maxed,maxDistance,overlapFlag, modList, outputPath,chargeFlags, mgfObj, mgfFlag))
+    #
+    #     #pool.apply_async(tester, args=(iterCounter,))
+    #     #numOfProcesses += 1
+    #     pepTotal.put(1)
+    #     # change number of splits in each iteration when changeover point is reached
+    #     S1 = set(changeOver)
+    #     S2 = set(splitsIndex)
+    #     if len(S1.intersection(S2)) != 0:
+    #         iterCounter = iterCounter*2
 
     # massDictAll = {}
     # seenPeptides = {}

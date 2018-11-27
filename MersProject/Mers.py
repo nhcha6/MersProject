@@ -115,6 +115,7 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
 
     # Create a process for pairs of splits, pairing element 0 with -1, 1 with -2 and so on.
     splitsIndex = []
+    procSize = 5
 
     # for i in range(0, math.ceil(splitLen / 2)):
     #     if splitLen % 2 == 1 and i == math.floor(splitLen / 2):
@@ -127,15 +128,14 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
     #     pepTotal.put(1)
     #     splitsIndex = []
 
-    for i in range(0, math.ceil(splitLen / 2), 2):
-        if i + 2 > math.floor(splitLen / 2):
+    for i in range(0, math.ceil(splitLen / 2), procSize):
+        if i + procSize > math.floor(splitLen / 2):
             for j in range(i, splitLen - i):
                 splitsIndex.append(j)
         else:
-            splitsIndex.append(i)
-            splitsIndex.append(i + 1)
-            splitsIndex.append(-(i + 1))
-            splitsIndex.append(-(i + 2))
+            for j in range(i, i + procSize):
+                splitsIndex.append(j)
+                splitsIndex.append(-(j + 1))
         print(splitsIndex)
         pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, outputPath, chargeFlags, mgfObj, mgfFlag))
         pepTotal.put(1)
@@ -201,11 +201,6 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
 
 
     #pepTotal.put(numOfProcesses)
-
-
-def tester(var):
-    print(var)
-    print(splits)
 
 # takes splits index from the multiprocessing pool and adds to writer the output. Splits and SplitRef are global
 # variables within the pool.

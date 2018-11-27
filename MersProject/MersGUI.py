@@ -409,7 +409,7 @@ class MyTableWidget(QWidget):
             self.tab1.byIonAccText.setEnabled(False)
             self.tab1.byIonAccLabel.setEnabled(False)
             self.tab1.byIonFlag.setEnabled(False)
-            self.tab2.trans.setEnabled(True)
+            #self.tab2.trans.setEnabled(True)
             # self.tab1.ppmLabel.setEnabled(False)
         if not self.mgfFlag.isChecked():
             # set values true/false before calling enableControl to avoid bug of it being called again later
@@ -417,7 +417,7 @@ class MyTableWidget(QWidget):
             self.enableControl()
             self.mgfButton.setEnabled(True)
             self.mgfPlotFlag.setEnabled(True)
-            self.tab2.trans.setEnabled(False)
+            #self.tab2.trans.setEnabled(False)
 
 
     def confirmationFunction(self):

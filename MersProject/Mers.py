@@ -227,13 +227,38 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
     chargeIonMass(massDict, chargeFlags)
     # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
     massDict = editRefMassDict(massDict)
-    #return massDict
-    allPeptides = getAllPep(massDict)
-    allPeptidesDict = {}
-    #print(allPeptides)
-    for peptide in allPeptides:
-        allPeptidesDict[peptide] = TRANS
-    transProcess.toWriteQueue.put(allPeptidesDict)
+
+    # #return massDict
+    # allPeptides = getAllPep(massDict)
+    # allPeptidesDict = {}
+    # #print(allPeptides)
+    # for peptide in allPeptides:
+    #     allPeptidesDict[peptide] = TRANS
+    # transProcess.toWriteQueue.put(allPeptidesDict)
+    # transProcess.pepCompleted.put(1)
+
+    if mgfFlag:
+        allPeptides = getAllPep(massDict)
+        allPeptidesDict = {}
+        for peptide in allPeptides:
+            allPeptidesDict[peptide] = TRANS
+        transProcess.toWriteQueue.put(allPeptidesDict)
+
+    # If there is an mgf file AND there is a charge selected
+    elif mgfData is not None and True in chargeFlags:
+        #fulfillPpmReq(mgfObj, massDict)
+        matchedPeptides = generateMGFList(TRANS, mgfData, massDict, modList)
+        transProcess.toWriteQueue.put(matchedPeptides)
+
+    # If csv is selected, write to csv file
+    if csvFlag:
+        logging.info("Writing locked :(")
+        lock.acquire()
+
+        writeToCsv(massDict, protId, finalPath, chargeFlags)
+        lock.release()
+        logging.info("Writing released!")
+
     transProcess.pepCompleted.put(1)
 
 def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, combineLinearSet=None):

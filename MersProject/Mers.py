@@ -115,16 +115,38 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
 
     # Create a process for pairs of splits, pairing element 0 with -1, 1 with -2 and so on.
     splitsIndex = []
-    for i in range(0, math.ceil(splitLen / 2)):
-        if splitLen % 2 == 1 and i == math.floor(splitLen / 2):
-            splitsIndex.append(i)
+
+    # for i in range(0, math.ceil(splitLen / 2)):
+    #     if splitLen % 2 == 1 and i == math.floor(splitLen / 2):
+    #         splitsIndex.append(i)
+    #     else:
+    #         splitsIndex.append(i)
+    #         splitsIndex.append(-(i + 1))
+    #     print(splitsIndex)
+    #     pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, outputPath, chargeFlags, mgfObj, mgfFlag))
+    #     pepTotal.put(1)
+    #     splitsIndex = []
+
+    for i in range(0, math.ceil(splitLen / 2), 2):
+        if i + 2 > math.floor(splitLen / 2):
+            for j in range(i, splitLen - i):
+                splitsIndex.append(j)
         else:
             splitsIndex.append(i)
+            splitsIndex.append(i + 1)
             splitsIndex.append(-(i + 1))
+            splitsIndex.append(-(i + 2))
         print(splitsIndex)
         pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, outputPath, chargeFlags, mgfObj, mgfFlag))
         pepTotal.put(1)
         splitsIndex = []
+
+    pool.close()
+    pool.join()
+
+    toWriteQueue.put('stop')
+    writerProcess.join()
+    logging.info("All " + spliceType + " !joined")
 
 
 
@@ -179,12 +201,7 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
 
 
     #pepTotal.put(numOfProcesses)
-    pool.close()
-    pool.join()
 
-    toWriteQueue.put('stop')
-    writerProcess.join()
-    logging.info("All " + spliceType + " !joined")
 
 def tester(var):
     print(var)
@@ -431,7 +448,7 @@ def writer(queue, outputPath):
                 else:
                     if value not in seenPeptides[key]:
                         seenPeptides[key].append(value)
-                    seenPeptides[key].append(value)
+                    #seenPeptides[key].append(value)
 
                 # Come back to make this less ugly and more efficient
                 if value not in backwardsSeenPeptides.keys():

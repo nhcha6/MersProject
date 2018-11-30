@@ -269,6 +269,7 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
     transProcess.pepCompleted.put(1)
 
 def findOrigProt(combinedRef, protIndexList, protList):
+    proteinTups = []
     for i in range(0, len(combinedRef)):
         ref = combinedRef[i]
         protIndex1, protIter1 = findInitProt(ref[0] - 1, protIndexList)
@@ -280,10 +281,11 @@ def findOrigProt(combinedRef, protIndexList, protList):
                 protIndex2, protIter2 = findInitProt(ref[j] - 1, protIndexList)
                 print(protIndex2)
                 prot2 = protList[protIter2]
-                combinedRef[i].insert(j, prot2)
-                combinedRef[i].insert(0,prot1)
+                proteinTups.append([prot1,prot2])
+                # combinedRef[i].insert(j, prot2)
+                # combinedRef[i].insert(0,prot1)
                 break
-    return combinedRef
+    return proteinTups
 
 
 def findInitProt(index, protIndexList):

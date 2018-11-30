@@ -93,7 +93,7 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
 
     seqDict = addSequenceList(inputFile)
 
-    finalPeptide = combinePeptides(seqDict)
+    finalPeptide, protIndexDict = combinePeptides(seqDict)
 
     splits, splitRef = splitDictPeptide(spliceType, finalPeptide, mined, maxed)
 
@@ -910,11 +910,17 @@ def combinePeptides(seqDict):
     """
 
     dictlist = []
+    protIndexDict = {}
+    ind = 0
     for key, value in seqDict.items():
         dictlist.append(value)
+        protIndexDict[key] = [ind,ind + len(value) - 1]
+        ind += len(value)
+
+    print(protIndexDict)
 
     finalPeptide = ''.join(dictlist)
-    return finalPeptide
+    return finalPeptide, protIndexDict
 
 
 def removeDupsQuick(seq, seqRef):

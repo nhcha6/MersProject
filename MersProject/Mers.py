@@ -93,9 +93,9 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
 
     seqDict = addSequenceList(inputFile)
 
-    finalPeptide, protIndexDict = combinePeptides(seqDict)
+    finalPeptide, protIndexList = combinePeptides(seqDict)
 
-    splits, splitRef = splitDictPeptide(spliceType, finalPeptide, mined, maxed)
+    splits, splitRef = splitTransPeptide(spliceType, finalPeptide, mined, maxed, protIndexList)
 
     splitLen = len(splits)
 
@@ -151,7 +151,7 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
             time.sleep(1)
             print('stuck in memory check')
 
-        pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, finalPath, chargeFlags, mgfObj, mgfFlag, csvFlag))
+        pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, finalPath, chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList))
         pepTotal.put(1)
         splitsIndex = []
 
@@ -217,12 +217,14 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
 # takes splits index from the multiprocessing pool and adds to writer the output. Splits and SplitRef are global
 # variables within the pool.
 def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, finalPath,
-                 chargeFlags, mgfObj, mgfFlag, csvFlag):
+                 chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList):
 
     # Look to produce only trans spliced peptides - not linear or cis. Do so by not allowing combination of peptides
     # which originate from the same protein as opposed to solving for Cis and Linear and not including that
     # in the output
     combined, combinedRef = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex)
+    # update combineRef to include information on where the peptide originated from
+    # combinedRef = findOrigProt(combinedRef, protIndexList)
     # Convert it into a dictionary that has a mass
     massDict = combMass(combined, combinedRef)
     # Apply mods to the dictionary values and update the dictionary
@@ -264,6 +266,110 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
         logging.info("Writing released!")
 
     transProcess.pepCompleted.put(1)
+
+def findOrigProt(combinedRef, protIndexList):
+    print(combinedRef)
+    print(protIndexList)
+
+def findInitProt(index, protIndexList):
+    length = protIndexList[-1][-1]
+    print(length)
+    aveLen = math.ceil(length/len(protIndexList))
+    print(aveLen)
+    protIter = math.floor(index/aveLen)
+    print(protIndexList[protIter][0])
+    while True:
+        lower = protIndexList[protIter][0]
+        upper = protIndexList[protIter][1]
+        if lower <= index:
+            if upper >= index:
+                print(protIndexList[protIter])
+                return protIndexList[protIter]
+            else:
+                protIter += 1
+        else:
+            protIter -= 1
+
+def splitTransPeptide(spliceType, peptide, mined, maxed, protIndexList):
+
+    """
+    Inputs: peptide string, max length of split peptide.
+    Outputs: all possible splits that could be formed that are smaller in length than the maxed input
+    """
+
+    # Makes it easier to integrate with earlier iteration where linearFlag was being passed as an external flag
+    # instead of spliceType
+    linearFlag = spliceType == LINEAR
+    length = len(peptide)
+
+    # splits will hold all possible splits that can occur
+    splits = []
+    # splitRef will hold a direct reference to the characters making up each split string: for starting peptide ABC,
+    # the split AC = [0,2]
+    splitRef = []
+
+    # embedded for loops build all possible splits
+    for i in range(0, length):
+
+        character = peptide[i]
+        toAdd = ""
+
+        # figure out which protein the splits starts in, and the max index the splits can reach before it becomes
+        # a part of a second peptide
+        initProt = findInitProt(i, protIndexList)
+
+        # add and append first character and add and append reference number which indexes this character
+        toAdd += character
+        ref = list([i+1])
+        temp = list(ref)  # use list because otherwise shared memory overwrites
+
+        # linear flag to ensure min is correct for cis and trans
+        if linearFlag and minSize(toAdd, mined):
+
+            # Don't need to continue this run as first amino acid is unknown X
+            if 'X' in toAdd or 'U' in toAdd:
+                continue
+            else:
+                splits.append(toAdd)
+                splitRef.append(temp)
+
+        elif not linearFlag and 'X' not in toAdd and 'U' not in toAdd:
+            splits.append(toAdd)
+            splitRef.append(temp)
+
+        # iterates through every character after current and adds it to the most recent string if max size
+        # requirement is satisfied
+        for j in range(i + 1, length):
+            if j > initProt[1]:
+                break
+            toAdd += peptide[j]
+            if linearFlag:
+                ref.append(j+1)
+                if maxSize(toAdd, maxed):
+                    if minSize(toAdd, mined):
+
+                        # All future splits will contain X if an X is found in the current run, hence break
+                        if 'X' in toAdd or 'U' in toAdd:
+                            break
+                        splits.append(toAdd)
+                        temp = list(ref)
+                        splitRef.append(temp)
+                else:
+                    break
+
+            else:
+                if maxSize(toAdd, maxed-1):
+                    # All future splits will contain X if an X is found in the current run, hence break
+                    if 'X' in toAdd or 'U' in toAdd:
+                        break
+                    splits.append(toAdd)
+                    ref.append(j+1)
+                    temp = list(ref)
+                    splitRef.append(temp)
+                else:
+                    break
+
+    return splits, splitRef
 
 def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, combineLinearSet=None):
 
@@ -910,17 +1016,17 @@ def combinePeptides(seqDict):
     """
 
     dictlist = []
-    protIndexDict = {}
+    protIndexList = []
     ind = 0
     for key, value in seqDict.items():
         dictlist.append(value)
-        protIndexDict[key] = [ind,ind + len(value) - 1]
+        protIndexList.append([ind,ind + len(value) - 1])
         ind += len(value)
 
-    print(protIndexDict)
+    print(protIndexList)
 
     finalPeptide = ''.join(dictlist)
-    return finalPeptide, protIndexDict
+    return finalPeptide, protIndexList
 
 
 def removeDupsQuick(seq, seqRef):

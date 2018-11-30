@@ -283,7 +283,7 @@ def findInitProt(index, protIndexList):
         upper = protIndexList[protIter][1]
         if lower <= index:
             if upper >= index:
-                print(protIndexList[protIter])
+                #print(protIndexList[protIter])
                 return protIndexList[protIter]
             else:
                 protIter += 1

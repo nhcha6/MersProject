@@ -239,16 +239,6 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
     massDict = editRefMassDict(massDict)
     print(massDict)
 
-
-    # #return massDict
-    # allPeptides = getAllPep(massDict)
-    # allPeptidesDict = {}
-    # #print(allPeptides)
-    # for peptide in allPeptides:
-    #     allPeptidesDict[peptide] = TRANS
-    # transProcess.toWriteQueue.put(allPeptidesDict)
-    # transProcess.pepCompleted.put(1)
-
     if mgfFlag:
         allPeptides = getAllPep(massDict)
         allPeptidesDict = {}
@@ -256,7 +246,7 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
             origProt = massDict[peptide][3]
             string = origProt[0] + '-' + origProt[1]
             allPeptidesDict[peptide] = string
-            print(allPeptidesDict)
+            #print(allPeptidesDict)
         transProcess.toWriteQueue.put(allPeptidesDict)
 
     # If there is an mgf file AND there is a charge selected
@@ -276,18 +266,19 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
 
     transProcess.pepCompleted.put(1)
 
+# Only works if we presume Cis proteins aren't being created in the trans process.
 def findOrigProt(combinedRef, protIndexList, protList):
     proteinTups = []
     for i in range(0, len(combinedRef)):
         ref = combinedRef[i]
         protIndex1, protIter1 = findInitProt(ref[0] - 1, protIndexList)
-        print(protIndex1)
+        #print(protIndex1)
         prot1 = protList[protIter1]
         for j in range(1,len(ref)):
-            print(j)
+            #print(j)
             if ref[j] - 1 > protIndex1[1] or ref[j] - 1 < protIndex1[0]:
                 protIndex2, protIter2 = findInitProt(ref[j] - 1, protIndexList)
-                print(protIndex2)
+                #print(protIndex2)
                 prot2 = protList[protIter2]
                 proteinTups.append([prot1,prot2])
                 # combinedRef[i].insert(j, prot2)
@@ -299,10 +290,14 @@ def findOrigProt(combinedRef, protIndexList, protList):
 def findInitProt(index, protIndexList):
     length = protIndexList[-1][-1]
     #print(length)
-    aveLen = math.ceil(length/len(protIndexList))
+    # plus 1 needed for when Protein length is perfectly divisible by protein index length
+    aveLen = math.ceil(length/len(protIndexList)) + 1
     #print(aveLen)
     protIter = math.floor(index/aveLen)
     #print(protIndexList[protIter][0])
+    if protIter == len(protIndexList):
+        protIter -= 1
+        #print(protIter)
     while True:
         lower = protIndexList[protIter][0]
         upper = protIndexList[protIter][1]
@@ -766,6 +761,7 @@ def genericMod(combineModlessDict, character, massChange, modNo):
                     newMass = currentMass + (i + 1) * massChange
                     temp = nth_replace(temp, character, character.lower() + modNo, j + 1)
                     newValue = [newMass, currentRef]
+                    # if trans is running, the original protein tuple must be updated with the modified peptide
                     try:
                         newValue.append(combineModlessDict[string][2])
                     except IndexError:

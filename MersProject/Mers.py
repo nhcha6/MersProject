@@ -50,12 +50,12 @@ class Fasta:
         self.allProcessList = []
         if transFlag:
 
-            transProcess = multiprocessing.Process(target=transOutput, args=(self.inputFile, TRANS, mined, maxed, maxDistance, overlapFlag,
+            self.transProc = multiprocessing.Process(target=transOutput, args=(self.inputFile, TRANS, mined, maxed, maxDistance, overlapFlag,
                                                                              modList, outputPath[TRANS], chargeFlags,
                                                                              mgfObj, modTable, mgfFlag, self.pepCompleted, self.pepTotal, csvFlag))
             #allProcessList.append(transProcess)
-            self.allProcessList.append(transProcess)
-            transProcess.start()
+            self.allProcessList.append(self.transProc)
+            self.transProc.start()
 
         if cisFlag:
             cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, CIS, mined, maxed,
@@ -92,6 +92,10 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
         open(finalPath, 'w')
 
     seqDict = addSequenceList(inputFile)
+
+    if len(seqDict) <= 1:
+        logging.info('Only 1 protein, therefore trans not relevant')
+        return
 
     finalPeptide, protIndexList, protList = combinePeptides(seqDict)
 

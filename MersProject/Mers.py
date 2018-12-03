@@ -253,7 +253,10 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
         allPeptides = getAllPep(massDict)
         allPeptidesDict = {}
         for peptide in allPeptides:
-            allPeptidesDict[peptide] = TRANS
+            origProt = massDict[peptide][3]
+            string = origProt[0] + '-' + origProt[1]
+            allPeptidesDict[peptide] = string
+            print(allPeptidesDict)
         transProcess.toWriteQueue.put(allPeptidesDict)
 
     # If there is an mgf file AND there is a charge selected

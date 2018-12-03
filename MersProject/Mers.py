@@ -95,15 +95,19 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
 
     finalPeptide, protIndexList, protList = combinePeptides(seqDict)
 
+    # temporary creation of cis peptides
+    combineCisSet = set()
+    for value in seqDict.values():
+        splitsCis, splitRefCis = splitDictPeptide(CIS, value, mined, maxed)
+
+        combinedCis, combinedRefCis = combineOverlapPeptide(splitsCis, splitRefCis, mined, maxed, overlapFlag,
+                                                            maxDistance)
+
+        combineCisSet.update(combinedCis)
+
     splits, splitRef = splitTransPeptide(spliceType, finalPeptide, mined, maxed, protIndexList)
 
     splitLen = len(splits)
-
-    # Old code used to split up trans output differently
-    # changeOver = []
-    # for i in range(1, 5):
-    #     val = splitLen - math.ceil(splitLen / (2 ** i))
-    #     changeOver.append(val)
 
     # configure mutliprocessing functionality
     num_workers = multiprocessing.cpu_count()
@@ -151,7 +155,7 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
             time.sleep(1)
             print('stuck in memory check')
 
-        pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, finalPath, chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList, protList))
+        pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, finalPath, chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList, protList, combineCisSet))
         pepTotal.put(1)
         splitsIndex = []
 
@@ -217,12 +221,12 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
 # takes splits index from the multiprocessing pool and adds to writer the output. Splits and SplitRef are global
 # variables within the pool.
 def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, finalPath,
-                 chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList, protList):
+                 chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList, protList, combineCisSet):
 
     # Look to produce only trans spliced peptides - not linear or cis. Do so by not allowing combination of peptides
     # which originate from the same protein as opposed to solving for Cis and Linear and not including that
     # in the output
-    combined, combinedRef = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex)
+    combined, combinedRef = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, combineCisSet)
     # update combineRef to include information on where the peptide originated from
     origProtTups = findOrigProt(combinedRef, protIndexList, protList)
     print(origProtTups)

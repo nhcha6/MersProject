@@ -224,16 +224,21 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
     # in the output
     combined, combinedRef = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex)
     # update combineRef to include information on where the peptide originated from
-    combinedRef2 = findOrigProt(combinedRef, protIndexList, protList)
-    print(combinedRef2)
+    origProtTups = findOrigProt(combinedRef, protIndexList, protList)
+    print(origProtTups)
     # Convert it into a dictionary that has a mass
-    massDict = combMass(combined, combinedRef)
+    massDict = combMass(combined, combinedRef, origProtTups)
+    print(massDict)
     # Apply mods to the dictionary values and update the dictionary
     massDict = applyMods(massDict, modList)
+    print(massDict)
     # Add the charge information along with their masses
     chargeIonMass(massDict, chargeFlags)
+    print(massDict)
     # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
     massDict = editRefMassDict(massDict)
+    print(massDict)
+
 
     # #return massDict
     # allPeptides = getAllPep(massDict)
@@ -757,9 +762,12 @@ def genericMod(combineModlessDict, character, massChange, modNo):
                 for i in range(0, numOccur - j):
                     newMass = currentMass + (i + 1) * massChange
                     temp = nth_replace(temp, character, character.lower() + modNo, j + 1)
-
-                    modDict[temp] = [newMass, currentRef]
-
+                    newValue = [newMass, currentRef]
+                    try:
+                        newValue.append(combineModlessDict[string][2])
+                    except IndexError:
+                        print('')
+                    modDict[temp] = newValue
     return modDict
 
 
@@ -908,7 +916,7 @@ def chargeIonMass(massDict, chargeFlags):
             if chargeFlags[z]:
                 chargeMass = massCharge(value[0], z+1)  # +1 for actual value
                 chargeAssoc[z+1] = chargeMass
-        value.append(chargeAssoc)
+        value.insert(2,chargeAssoc)
 
 
 def massCharge(predictedMass, z):
@@ -1063,14 +1071,17 @@ def removeDupsQuick(seq, seqRef):
     return initial, initialRef
 
 
-def combMass(combine, combineRef):
+def combMass(combine, combineRef, origProtTups = None):
     massDict = {}
     for i in range(0, len(combine)):
         totalMass = 0
         for j in range(0, len(combine[i])):
             totalMass += monoAminoMass[combine[i][j]]
         totalMass += H20_MASS
-        massRefPair = [totalMass, combineRef[i]]
+        if origProtTups == None:
+            massRefPair = [totalMass, combineRef[i]]
+        else:
+            massRefPair = [totalMass, combineRef[i], origProtTups[i]]
         massDict[combine[i]] = massRefPair
     return massDict
 

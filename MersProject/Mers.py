@@ -229,19 +229,18 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
     combined, combinedRef = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, combineCisSet)
     # update combineRef to include information on where the peptide originated from
     origProtTups = findOrigProt(combinedRef, protIndexList, protList)
-    print(origProtTups)
+
     # Convert it into a dictionary that has a mass
     massDict = combMass(combined, combinedRef, origProtTups)
-    print(massDict)
+
     # Apply mods to the dictionary values and update the dictionary
     massDict = applyMods(massDict, modList)
-    print(massDict)
+
     # Add the charge information along with their masses
     chargeIonMass(massDict, chargeFlags)
-    print(massDict)
+
     # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
     massDict = editRefMassDict(massDict)
-    print(massDict)
 
     if mgfFlag:
         allPeptides = getAllPep(massDict)

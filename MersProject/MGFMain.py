@@ -37,6 +37,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
     Generates the list of unique peptides that have masses that match within the specified.
 
     """
+    print('in')
     if mgfObj.mgfDf:
 
         matchedPeptides = {}
@@ -95,7 +96,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                             if mgfObj.byIonFlag == False:
                                 # if it is trans, massDict[3] will exist and will hold the desired protId
                                 try:
-                                    origProt = massDict[3]
+                                    origProt = value[3]
                                     string = origProt[0] + '-' + origProt[1]
                                     matchedPeptides[alphaKey] = string
                                     matchAdded = True
@@ -111,13 +112,14 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                 if simIons(mzArray, byIonArray, mgfObj.byIonAccuracy, mgfObj.minSimBy):
                                     # if it is trans, massDict[3] will exist and will hold the desired protId
                                     try:
-                                        origProt = massDict[3]
+                                        origProt = value[3]
                                         string = origProt[0] + '-' + origProt[1]
                                         matchedPeptides[alphaKey] = string
                                         matchAdded = True
                                     except IndexError:
                                         matchedPeptides[alphaKey] = protId
                                         matchAdded = True
+                                    break
 
                                 # If they didn't match try the next one. Step will be 1 when traversing forward, -1
                                 # when traversing backward thus will be able to go up and down.

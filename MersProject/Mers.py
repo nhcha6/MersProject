@@ -143,7 +143,6 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
     #     splitsIndex = []
 
     maxMem = psutil.virtual_memory()[1] / 2
-    print(maxMem)
 
     for i in range(0, math.ceil(splitLen / 2), procSize):
         if i + procSize > math.floor(splitLen / 2):
@@ -233,7 +232,6 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
     combined, combinedRef = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, combineCisSet)
     # update combineRef to include information on where the peptide originated from
     origProtTups = findOrigProt(combinedRef, protIndexList, protList)
-    print(origProtTups)
 
     # Convert it into a dictionary that has a mass
     massDict = combMass(combined, combinedRef, origProtTups)

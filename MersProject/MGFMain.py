@@ -48,8 +48,13 @@ def generateMGFList(protId, mgfObj, massDict, modList):
             else:
                 alphaKey = key
 
+            # if alphaKey in matchedPeptides.keys() and we are not running trans:
+                # break
+
             for charge, chargeMass in value[2].items():
                 # Shift to outside for charge for loop
+                # matchAdded = False
+                # change this to if matchAdded == False
                 if alphaKey not in matchedPeptides.keys():
 
                     # define required data in a temporary form

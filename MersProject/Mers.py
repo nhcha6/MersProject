@@ -233,6 +233,7 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
     combined, combinedRef = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, combineCisSet)
     # update combineRef to include information on where the peptide originated from
     origProtTups = findOrigProt(combinedRef, protIndexList, protList)
+    print(origProtTups)
 
     # Convert it into a dictionary that has a mass
     massDict = combMass(combined, combinedRef, origProtTups)
@@ -252,7 +253,7 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
         for peptide in allPeptides:
             # create the string, with peptides sorted so all permutations are matched as similar
             origProt = sorted(massDict[peptide][3])
-            string = origProt[0] + '-' + origProt[1]
+            string = origProt[0][0] + origProt[0][1] + '|' + origProt[1][0] + origProt[1][1]
             allPeptidesDict[peptide] = string
             #print(allPeptidesDict)
         transProcess.toWriteQueue.put(allPeptidesDict)
@@ -278,6 +279,8 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
 def findOrigProt(combinedRef, protIndexList, protList):
     proteinTups = []
     for i in range(0, len(combinedRef)):
+        protRef1 = ""
+        protRef2 = ""
         ref = combinedRef[i]
         protIndex1, protIter1 = findInitProt(ref[0] - 1, protIndexList)
         #print(protIndex1)
@@ -285,10 +288,24 @@ def findOrigProt(combinedRef, protIndexList, protList):
         for j in range(1,len(ref)):
             #print(j)
             if ref[j] - 1 > protIndex1[1] or ref[j] - 1 < protIndex1[0]:
+                #check to see if the first split is at least 6 amino acids in length.
+                # if so append the location of the split within the peptide to prot1
+                if j > 5:
+                    protRef1 += ('(' + str(ref[0] - protIndex1[0]))
+                    for k in range(1,j):
+                        protRef1 += (',' + str(ref[k] - protIndex1[0]))
+                    protRef1+=')'
+
                 protIndex2, protIter2 = findInitProt(ref[j] - 1, protIndexList)
-                #print(protIndex2)
                 prot2 = protList[protIter2]
-                proteinTups.append([prot1,prot2])
+                # same as above, check if second split is at least 6 amino acids long
+                if len(ref) - j > 5:
+                    protRef2 += ('(' + str(ref[j] - protIndex2[0]))
+                    for n in range(j+1,len(ref)):
+                        protRef2 += (',' + str(ref[n] - protIndex2[0]))
+                    protRef2 += ')'
+
+                proteinTups.append([(prot1,protRef1),(prot2,protRef2)])
                 # combinedRef[i].insert(j, prot2)
                 # combinedRef[i].insert(0,prot1)
                 break

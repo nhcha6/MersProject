@@ -97,7 +97,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                 # if it is trans, massDict[3] will exist and will hold the desired protId
                                 try:
                                     origProt = sorted(value[3])
-                                    string = origProt[0] + '-' + origProt[1]
+                                    string = origProt[0][0] + origProt[0][1] + '|' + origProt[1][0] + origProt[1][1]
                                     matchedPeptides[alphaKey] = string
                                     matchAdded = True
                                 except IndexError:
@@ -113,7 +113,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                     # if it is trans, massDict[3] will exist and will hold the desired protId
                                     try:
                                         origProt = sorted(value[3])
-                                        string = origProt[0] + '-' + origProt[1]
+                                        string = origProt[0][0] + origProt[0][1] + '|' + origProt[1][0] + origProt[1][1]
                                         matchedPeptides[alphaKey] = string
                                         matchAdded = True
                                     except IndexError:

@@ -48,22 +48,25 @@ def generateMGFList(protId, mgfObj, massDict, modList):
             else:
                 alphaKey = key
 
-            # if alphaKey in matchedPeptides.keys() and we are not running trans:
-                # break
+            # must run alphaKey which has already been added again if trans, because it will be from a new combination
+            # of splits. Whereas with CIS/LIN, if the alphaKey has already been added, we will merely get the same
+            # peptide being generated twice from the same origin protein, which is arbitrary information
+            if alphaKey in matchedPeptides.keys() and protId is not TRANS:
+                break
 
+            # set matchAdded to false before we begin iterating through charges and comparing to the mgfObj.
+            matchAdded = False
             for charge, chargeMass in value[2].items():
-                # Shift to outside for charge for loop
-                # matchAdded = False
-                # change this to if matchAdded == False
-                if alphaKey not in matchedPeptides.keys():
+                # when the peptide in question is matched, matchAdded is set to True. Thus, we continue finding a match
+                # if matchAdded is false, but if it is True we go to the else statement which breaks from the for loop
+                if matchAdded == False:
+                #if alphaKey not in matchedPeptides.keys():
 
                     # define required data in a temporary form
                     pepMasses = mgfObj.mgfDf[charge]
-                    #closestIndex = takeClosest(pepMasses, chargeMass, True)
-                    #pepMass = pepMasses[closestIndex]
 
+                    # steps to iterate forward and backwards from the closest pepmass
                     steps = [1,-1]
-                    matchAdded = False
                     closestMatched = False
 
                     # need to iterate up and down from the closest to ensure all b/y ion comparison is run
@@ -74,7 +77,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                         if matchAdded == True:
                             break
 
-                        # if the closest pepmass doesn't bass the pepMatch test, closestMatched will still
+                        # if the closest pepmass doesn't pass the pepMatch test, closestMatched will still
                         # be false and we should break the loop to avoid running the code again.
                         if step == -1 and closestMatched == False:
                             break
@@ -133,7 +136,6 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                     pepMass = pepMasses[index]
                 else:
                     break
-            # check it passes max simcomparisons and then add alphakey to matchedpeptides!
         return matchedPeptides
 
 

@@ -158,7 +158,7 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
             time.sleep(1)
             print('stuck in memory check')
 
-        pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, finalPath, chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList, protList, combineCisSet))
+        pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, False, modList, finalPath, chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList, protList, combineCisSet))
         pepTotal.put(1)
         splitsIndex = []
 
@@ -230,6 +230,7 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
     # which originate from the same protein as opposed to solving for Cis and Linear and not including that
     # in the output
     combined, combinedRef = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, combineCisSet)
+
     # update combineRef to include information on where the peptide originated from
     origProtTups = findOrigProt(combinedRef, protIndexList, protList)
 
@@ -280,9 +281,16 @@ def findOrigProt(combinedRef, protIndexList, protList):
         protRef1 = ""
         protRef2 = ""
         ref = combinedRef[i]
+        print(ref)
         protIndex1, protIter1 = findInitProt(ref[0] - 1, protIndexList)
         #print(protIndex1)
         prot1 = protList[protIter1]
+
+        # special check if peptide is ovelap spliced
+        if len(set(ref)) != len(ref):
+            print(ref)
+            proteinTups.append([(prot1, ""),('Overlap',"")])
+
         for j in range(1,len(ref)):
             #print(j)
             if ref[j] - 1 > protIndex1[1] or ref[j] - 1 < protIndex1[0]:
@@ -459,7 +467,9 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
                             combModlessRef.append(addReverseRef)
 
                 else:
+                    print('here')
                     if linearCheck(toAddForward, combineLinearSet):
+                        print('in')
                         combModless.append(toAddForward)
                         combModlessRef.append(addForwardRef)
                     if linearCheck(toAddReverse, combineLinearSet):

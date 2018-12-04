@@ -250,7 +250,8 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
         allPeptides = getAllPep(massDict)
         allPeptidesDict = {}
         for peptide in allPeptides:
-            origProt = massDict[peptide][3]
+            # create the string, with peptides sorted so all permutations are matched as similar
+            origProt = sorted(massDict[peptide][3])
             string = origProt[0] + '-' + origProt[1]
             allPeptidesDict[peptide] = string
             #print(allPeptidesDict)
@@ -316,6 +317,11 @@ def findInitProt(index, protIndexList):
                 protIter += 1
         else:
             protIter -= 1
+
+def orderTransString(origProt):
+    list = sorted(origProt)
+    string = list[0] + '-' + list[1]
+    return string
 
 def splitTransPeptide(spliceType, peptide, mined, maxed, protIndexList):
 

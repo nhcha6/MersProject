@@ -1,5 +1,6 @@
 import numpy
 import pandas as pd
+from Mers import *
 from pyteomics import mgf
 import math
 from bisect import bisect_left
@@ -37,7 +38,6 @@ def generateMGFList(protId, mgfObj, massDict, modList):
     Generates the list of unique peptides that have masses that match within the specified.
 
     """
-    print('in')
     if mgfObj.mgfDf:
 
         matchedPeptides = {}
@@ -96,7 +96,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                             if mgfObj.byIonFlag == False:
                                 # if it is trans, massDict[3] will exist and will hold the desired protId
                                 try:
-                                    origProt = value[3]
+                                    origProt = sorted(value[3])
                                     string = origProt[0] + '-' + origProt[1]
                                     matchedPeptides[alphaKey] = string
                                     matchAdded = True
@@ -112,7 +112,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                 if simIons(mzArray, byIonArray, mgfObj.byIonAccuracy, mgfObj.minSimBy):
                                     # if it is trans, massDict[3] will exist and will hold the desired protId
                                     try:
-                                        origProt = value[3]
+                                        origProt = sorted(value[3])
                                         string = origProt[0] + '-' + origProt[1]
                                         matchedPeptides[alphaKey] = string
                                         matchAdded = True

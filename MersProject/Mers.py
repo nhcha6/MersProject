@@ -236,6 +236,7 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
 
     # Convert it into a dictionary that has a mass
     massDict = combMass(combined, combinedRef, origProtTups)
+    print(massDict)
 
     # Apply mods to the dictionary values and update the dictionary
     massDict = applyMods(massDict, modList)
@@ -1117,9 +1118,18 @@ def combMass(combine, combineRef, origProtTups = None):
         totalMass += H20_MASS
         if origProtTups == None:
             massRefPair = [totalMass, combineRef[i]]
+            massDict[combine[i]] = massRefPair
         else:
-            massRefPair = [totalMass, combineRef[i], origProtTups[i]]
-        massDict[combine[i]] = massRefPair
+            if combine[i] in massDict.keys():
+                print(massDict[combine[i]][2])
+                print(origProtTups[i][0])
+                print(origProtTups[i][1])
+                massDict[combine[i]][2].append(origProtTups[i][0])
+                massDict[combine[i]][2].append(origProtTups[i][1])
+            else:
+                print('single')
+                massRefPair = [totalMass, combineRef[i], origProtTups[i]]
+                massDict[combine[i]] = massRefPair
     return massDict
 
 

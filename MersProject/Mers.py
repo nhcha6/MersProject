@@ -151,7 +151,7 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
         else:
             for j in range(i, i + procSize):
                 splitsIndex.append(j)
-                splitsIndex.append(-(j + 1))
+                splitsIndex.append(splitLen - 1 - j)
 
         while memoryCheck(maxMem):
             time.sleep(1)
@@ -444,7 +444,6 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
         toAddForward = ""
 
         toAddReverse = ""
-
 
         for j in range(i + 1, len(splits)):
             # create forward combination of i and j

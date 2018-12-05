@@ -251,11 +251,16 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
         allPeptides = getAllPep(massDict)
         allPeptidesDict = {}
         for peptide in allPeptides:
-            # create the string, with peptides sorted so all permutations are matched as similar
-            origProt = sorted(massDict[peptide][3])
-            string = origProt[0][0] + origProt[0][1] + '|' + origProt[1][0] + origProt[1][1]
+            # create the string, with peptides sorted so all permutations are matched as similar. There may be multiple
+            # peptide locations in the list of tuples, hence the for loop. Tuples are listed in order, with consecutive
+            # tuples relating to a pair of splice locations.
+            string = ""
+            for i in range(0, len(massDict[peptide][3]), 2):
+                origProt = sorted(massDict[peptide][3][i:i+2])
+                print(origProt)
+                string += origProt[0][0] + origProt[0][1] + '-' + origProt[1][0] + origProt[1][1] + ';'
+            string = string[0:-1]
             allPeptidesDict[peptide] = string
-            #print(allPeptidesDict)
         transProcess.toWriteQueue.put(allPeptidesDict)
 
     # If there is an mgf file AND there is a charge selected
@@ -1119,11 +1124,10 @@ def combMass(combine, combineRef, origProtTups = None):
         if origProtTups == None:
             massRefPair = [totalMass, combineRef[i]]
             massDict[combine[i]] = massRefPair
+        # when trans is being run, peptide which have already been added to massDict need their original peptide location
+        # information updated so it is not lost in the running process.
         else:
             if combine[i] in massDict.keys():
-                print(massDict[combine[i]][2])
-                print(origProtTups[i][0])
-                print(origProtTups[i][1])
                 massDict[combine[i]][2].append(origProtTups[i][0])
                 massDict[combine[i]][2].append(origProtTups[i][1])
             else:

@@ -48,24 +48,17 @@ def generateMGFList(protId, mgfObj, massDict, modList):
             else:
                 alphaKey = key
 
-            # if the non modified version of a modded peptide as already been added to matchedPeptids, we need nt
-            # add it again.
-            if alphaKey in matchedPeptides.keys():
-                break
-
-            # set matchAdded to false before we begin iterating through charges and comparing to the mgfObj.
-            matchAdded = False
             for charge, chargeMass in value[2].items():
-                # when the peptide in question is matched, matchAdded is set to True. Thus, we continue finding a match
-                # if matchAdded is false, but if it is True we go to the else statement which breaks from the for loop
-                if matchAdded == False:
-                #if alphaKey not in matchedPeptides.keys():
+                # Shift to outside for charge for loop
+                if alphaKey not in matchedPeptides.keys():
 
                     # define required data in a temporary form
                     pepMasses = mgfObj.mgfDf[charge]
+                    #closestIndex = takeClosest(pepMasses, chargeMass, True)
+                    #pepMass = pepMasses[closestIndex]
 
-                    # steps to iterate forward and backwards from the closest pepmass
                     steps = [1,-1]
+                    matchAdded = False
                     closestMatched = False
 
                     # need to iterate up and down from the closest to ensure all b/y ion comparison is run

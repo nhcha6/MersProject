@@ -103,8 +103,12 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                             if mgfObj.byIonFlag == False:
                                 # if it is trans, massDict[3] will exist and will hold the desired protId
                                 try:
-                                    origProt = sorted(value[3])
-                                    string = origProt[0][0] + origProt[0][1] + '|' + origProt[1][0] + origProt[1][1]
+                                    string = ""
+                                    for i in range(0, len(value[3]), 2):
+                                        origProt = sorted(value[3][i:i + 2])
+                                        string += origProt[0][0] + origProt[0][1] + '-' + origProt[1][0] + \
+                                                  origProt[1][1] + ';'
+                                    string = string[0:-1]
                                     matchedPeptides[alphaKey] = string
                                     matchAdded = True
                                 except IndexError:
@@ -119,8 +123,12 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                 if simIons(mzArray, byIonArray, mgfObj.byIonAccuracy, mgfObj.minSimBy):
                                     # if it is trans, massDict[3] will exist and will hold the desired protId
                                     try:
-                                        origProt = sorted(value[3])
-                                        string = origProt[0][0] + origProt[0][1] + '|' + origProt[1][0] + origProt[1][1]
+                                        string = ""
+                                        for i in range(0, len(value[3]), 2):
+                                            origProt = sorted(value[3][i:i + 2])
+                                            string += origProt[0][0] + origProt[0][1] + '-' + origProt[1][0] + \
+                                                      origProt[1][1] + ';'
+                                        string = string[0:-1]
                                         matchedPeptides[alphaKey] = string
                                         matchAdded = True
                                     except IndexError:

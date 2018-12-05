@@ -564,10 +564,13 @@ class MyTableWidget(QWidget):
         self.tab2.output.setEnabled(False)
 
     def enableAllWidgets(self):
+
         self.enableTab1Widgets()
         self.enableTab2Widgets()
+        self.disableMaxDist()
         if self.mgfFlag.isChecked():
             self.controlMGFInput()
+
 
     def enableTab1Widgets(self):
         self.pushButton1.setEnabled(True)
@@ -626,18 +629,21 @@ class MyTableWidget(QWidget):
         self.progressBarUpdate.signals.disableButtons.connect(self.disableWidgets)
         self.threadpool.start(self.progressBarUpdate)
 
-    def disableMaxDist(self, state):
+    def disableMaxDist(self):
         """
         Called when trans is selected, it disables the use of the max distance function
         :param state: Whether trans flag is True or False
         :return:
         """
-        if state == Qt.Checked:
+        if self.tab2.trans.isChecked():
             index = self.tab2.maxDistCombo.findText('None')
             self.tab2.maxDistCombo.setCurrentIndex(index)
             self.tab2.maxDistCombo.setEnabled(False)
+            self.tab2.overlap.setChecked(True)
+            self.tab2.overlap.setEnabled(False)
         else:
             self.tab2.maxDistCombo.setEnabled(True)
+            self.tab2.overlap.setEnabled(True)
 
     def output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
                maxDistance, outputPath, chargeFlags, mgfFlag):

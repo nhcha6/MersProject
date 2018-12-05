@@ -257,7 +257,6 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
             string = ""
             for i in range(0, len(massDict[peptide][3]), 2):
                 origProt = sorted(massDict[peptide][3][i:i+2])
-                print(origProt)
                 string += origProt[0][0] + origProt[0][1] + '-' + origProt[1][0] + origProt[1][1] + ';'
             string = string[0:-1]
             allPeptidesDict[peptide] = string
@@ -294,7 +293,6 @@ def findOrigProt(combinedRef, protIndexList, protList):
 
         # special check if peptide is ovelap spliced
         if len(set(ref)) != len(ref):
-            print(ref)
             proteinTups.append([(prot1, ""),('Overlap',"")])
 
         for j in range(1,len(ref)):
@@ -473,9 +471,7 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
                             combModlessRef.append(addReverseRef)
 
                 else:
-                    print('here')
                     if linearCheck(toAddForward, combineLinearSet):
-                        print('in')
                         combModless.append(toAddForward)
                         combModlessRef.append(addForwardRef)
                     if linearCheck(toAddReverse, combineLinearSet):
@@ -1131,7 +1127,6 @@ def combMass(combine, combineRef, origProtTups = None):
                 massDict[combine[i]][2].append(origProtTups[i][0])
                 massDict[combine[i]][2].append(origProtTups[i][1])
             else:
-                print('single')
                 massRefPair = [totalMass, combineRef[i], origProtTups[i]]
                 massDict[combine[i]] = massRefPair
     return massDict

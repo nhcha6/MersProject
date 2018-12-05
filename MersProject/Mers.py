@@ -152,7 +152,6 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
             for j in range(i, i + procSize):
                 splitsIndex.append(j)
                 splitsIndex.append(-(j + 1))
-        print(splitsIndex)
 
         while memoryCheck(maxMem):
             time.sleep(1)
@@ -236,7 +235,6 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
 
     # Convert it into a dictionary that has a mass
     massDict = combMass(combined, combinedRef, origProtTups)
-    print(massDict)
 
     # Apply mods to the dictionary values and update the dictionary
     massDict = applyMods(massDict, modList)
@@ -286,7 +284,6 @@ def findOrigProt(combinedRef, protIndexList, protList):
         protRef1 = ""
         protRef2 = ""
         ref = combinedRef[i]
-        print(ref)
         protIndex1, protIter1 = findInitProt(ref[0] - 1, protIndexList)
         #print(protIndex1)
         prot1 = protList[protIter1]

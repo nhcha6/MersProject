@@ -48,10 +48,9 @@ def generateMGFList(protId, mgfObj, massDict, modList):
             else:
                 alphaKey = key
 
-            # must run alphaKey which has already been added again if trans, because it will be from a new combination
-            # of splits. Whereas with CIS/LIN, if the alphaKey has already been added, we will merely get the same
-            # peptide being generated twice from the same origin protein, which is arbitrary information
-            if alphaKey in matchedPeptides.keys() and protId is not TRANS:
+            # if the non modified version of a modded peptide as already been added to matchedPeptids, we need nt
+            # add it again.
+            if alphaKey in matchedPeptides.keys():
                 break
 
             # set matchAdded to false before we begin iterating through charges and comparing to the mgfObj.

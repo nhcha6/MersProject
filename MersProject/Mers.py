@@ -655,7 +655,7 @@ def writer(queue, outputPath, transFlag = False):
         logging.info("Writing to fasta")
         writeProtToPep(backwardsSeenPeptides, 'ProtToPep', outputPath)
         writeProtToPep(seenPeptides, 'PepToProt', outputPath)
-        SeqIO.write(createSeqObj(seenPeptides), output_handle, "fasta")
+        SeqIO.write(createSeqObj(seenPeptides, transFlag), output_handle, "fasta")
 
 def writeProtToPep(seenPeptides, groupedBy, outputPath):
     with open(outputPath+ groupedBy + '.csv', 'a', newline='') as csv_file:
@@ -700,7 +700,7 @@ def fulfillPpmReq(mgfObj, massDict):
     logging.info("Writing complete")
 
 
-def createSeqObj(matchedPeptides):
+def createSeqObj(matchedPeptides, transFlag):
     """
     Given the set of matchedPeptides, converts all of them into SeqRecord objects and passes back a generator
     """
@@ -710,8 +710,9 @@ def createSeqObj(matchedPeptides):
 
         finalId = "ipd|pep"+str(count)+';'
 
-        for protein in value:
-            finalId+=protein+';'
+        if transFlag == False:
+            for protein in value:
+                finalId+=protein+';'
 
         yield SeqRecord(Seq(sequence), id=finalId, description="")
 

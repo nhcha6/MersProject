@@ -907,7 +907,7 @@ class MyTableWidget(QWidget):
     def addFlagChecks(self):
 
         # initialise overlap, trans, cis and linear check boxes
-        self.tab2.overlap = QCheckBox('Overlap Off', self)
+        self.tab2.overlap = QCheckBox('Cis Overlap Off', self)
         self.tab2.trans = QCheckBox('Trans', self)
         self.tab2.trans.stateChanged.connect(self.disableMaxDist)  # connect trans check box to relevant function
         self.tab2.trans.stateChanged.connect(self.enableControl)

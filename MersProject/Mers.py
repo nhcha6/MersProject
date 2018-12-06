@@ -299,18 +299,14 @@ def findOrigProt(combinedRef, protIndexList, protList):
                 # if so append the location of the split within the peptide to prot1
                 if j > 5:
                     protRef1 += ('(' + str(ref[0] - protIndex1[0]))
-                    for k in range(1,j):
-                        protRef1 += (',' + str(ref[k] - protIndex1[0]))
-                    protRef1+=')'
+                    protRef1 += ('-' + str(ref[j-1] - protIndex1[0]) + ')')
 
                 protIndex2, protIter2 = findInitProt(ref[j] - 1, protIndexList)
                 prot2 = protList[protIter2]
                 # same as above, check if second split is at least 6 amino acids long
                 if len(ref) - j > 5:
                     protRef2 += ('(' + str(ref[j] - protIndex2[0]))
-                    for n in range(j+1,len(ref)):
-                        protRef2 += (',' + str(ref[n] - protIndex2[0]))
-                    protRef2 += ')'
+                    protRef2 += ('-' + str(ref[-1] - protIndex2[0]) + ')')
 
                 proteinTups.append([(prot1,protRef1),(prot2,protRef2)])
                 # combinedRef[i].insert(j, prot2)

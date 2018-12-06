@@ -124,7 +124,7 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockTrans, initargs=(lockVar, toWriteQueue, pepCompleted,
                                           splits, splitRef, mgfObj, modTable))
 
-    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
+    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath, True))
     writerProcess.start()
 
     # Create a process for pairs of splits, pairing element 0 with -1, 1 with -2 and so on.
@@ -619,7 +619,7 @@ def getAllPep(massDict):
         allPeptides.add(alphaKey)
     return allPeptides
 
-def writer(queue, outputPath):
+def writer(queue, outputPath, transFlag = False):
     seenPeptides = {}
     backwardsSeenPeptides = {}
     saveHandle = str(outputPath)
@@ -634,19 +634,27 @@ def writer(queue, outputPath):
             #     for peptide in matchedPeptides:
 
             for key, value in matchedPeptides.items():
+                origins = value.split(';')
                 if key not in seenPeptides.keys():
-
-                    seenPeptides[key] = [value]
+                    seenPeptides[key] = origins
                 else:
                     if value not in seenPeptides[key]:
-                        seenPeptides[key].append(value)
-                    #seenPeptides[key].append(value)
+                        seenPeptides[key] += origins
 
-                # Come back to make this less ugly and more efficient
-                if value not in backwardsSeenPeptides.keys():
-                    backwardsSeenPeptides[value] = [key]
+        # convert seen peptides to backwardsSeenPeptides
+        for key, value in seenPeptides.items():
+            # check if we are printing trans entries so that we can configure trans data
+            # before it goes into backwardsSeenPeptides
+            if transFlag:
+                origins = editTransOrigins(value)
+            else:
+                origins = value
+            # Come back to make this less ugly and more efficient
+            for entry in origins:
+                if entry not in backwardsSeenPeptides.keys():
+                    backwardsSeenPeptides[entry] = [key]
                 else:
-                    backwardsSeenPeptides[value].append(key)
+                    backwardsSeenPeptides[entry].append(key)
 
         logging.info("Writing to fasta")
         writeProtToPep(backwardsSeenPeptides, 'ProtToPep', outputPath)
@@ -668,6 +676,16 @@ def writeProtToPep(seenPeptides, groupedBy, outputPath):
             for peptide in value:
                 writer.writerow([peptide])
             writer.writerow([])
+
+def editTransOrigins(origins):
+    newOrigins = []
+    for entry in origins:
+        prots = entry.split('-')
+        for prot in prots:
+            if prot[-1] == ')':
+                newOrigins.append(prot)
+    return list(set(newOrigins))
+
 
 
 def fulfillPpmReq(mgfObj, massDict):

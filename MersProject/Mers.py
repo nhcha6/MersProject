@@ -900,7 +900,7 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
 
         toAddReverse = ""
 
-        for j in range(i + 1, len(splits)):
+        for j in range(i, len(splits)):
             # create forward combination of i and j
             toAddForward += splits[i]
             toAddForward += splits[j]

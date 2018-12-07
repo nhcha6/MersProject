@@ -338,11 +338,6 @@ def findInitProt(index, protIndexList):
         else:
             protIter -= 1
 
-def orderTransString(origProt):
-    list = sorted(origProt)
-    string = list[0] + '-' + list[1]
-    return string
-
 def splitTransPeptide(spliceType, peptide, mined, maxed, protIndexList):
 
     """
@@ -827,7 +822,6 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
     Inputs: peptide string, max length of split peptide.
     Outputs: all possible splits that could be formed that are smaller in length than the maxed input
     """
-
     # Makes it easier to integrate with earlier iteration where linearFlag was being passed as an external flag
     # instead of spliceType
     linearFlag = spliceType == LINEAR
@@ -1128,6 +1122,10 @@ def combMass(combine, combineRef, origProtTups = None):
         for j in range(0, len(combine[i])):
             totalMass += monoAminoMass[combine[i][j]]
         totalMass += H20_MASS
+        if totalMass > mgfData.maxMass:
+            print(combine[i])
+            print('too big')
+            continue
         if origProtTups == None:
             massRefPair = [totalMass, combineRef[i]]
             massDict[combine[i]] = massRefPair

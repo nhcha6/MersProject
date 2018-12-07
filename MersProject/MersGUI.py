@@ -236,13 +236,11 @@ class MyTableWidget(QWidget):
         maxMass = self.maxMgfMass(mgfDf, chargeFlags)
 
         self.mgf = MGF(mgfDf, pepmassIonArray, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag, maxMass)
-        print(self.mgf.maxMass)
 
     def maxMgfMass(self, mgfDf, chargeFlags):
         maxMass = 0
         for z, masses in mgfDf.items():
             if chargeFlags[int(z)-1]:
-                print(z)
                 maxChargeMass = max(masses)
                 maxMassTemp = maxChargeMass*int(z) - int(z)*1.00794
                 if maxMassTemp > maxMass:

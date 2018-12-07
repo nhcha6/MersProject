@@ -229,11 +229,27 @@ class MyTableWidget(QWidget):
         print("MGF FILE UPLOADED")
         QMessageBox.about(self, "Message", 'MGF file imported.')
 
-    def uploadMgf(self, input_path, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag):
+    def uploadMgf(self, input_path, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag, chargeFlags):
         print("UPLOADING MGF")
         mgfDf, pepmassIonArray = readMGF(input_path, intensityThreshold)
 
-        self.mgf = MGF(mgfDf, pepmassIonArray, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag)
+        maxMass = self.maxMgfMass(mgfDf, chargeFlags)
+
+        self.mgf = MGF(mgfDf, pepmassIonArray, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag, maxMass)
+        print(self.mgf.maxMass)
+
+    def maxMgfMass(self, mgfDf, chargeFlags):
+        maxMass = 0
+        for z, masses in mgfDf.items():
+            if chargeFlags[int(z)-1]:
+                print(z)
+                maxChargeMass = max(masses)
+                maxMassTemp = maxChargeMass*int(z) - int(z)*1.00794
+                if maxMassTemp > maxMass:
+                    maxMass = maxMassTemp
+        return maxMass
+
+
 
     def onlyImportMGF(self, ms2Thresh, intensityPoints):
 
@@ -466,7 +482,7 @@ class MyTableWidget(QWidget):
 
                 if self.mgfFlag.isChecked() == False:
                     mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, ppmVal, intensityThreshold, minSimBy,
-                                         byIonAccuracy, byIonFlag)
+                                         byIonAccuracy, byIonFlag, chargeFlags)
                     mgfGen.signals.finished.connect(functools.partial(self.importedMGF, mined, maxed, overlapFlag,
                                                                       transFlag, cisFlag, linearFlag, csvFlag,
                                                                       modList,

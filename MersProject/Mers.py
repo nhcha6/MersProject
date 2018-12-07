@@ -1117,12 +1117,18 @@ def removeDupsQuick(seq, seqRef):
 
 def combMass(combine, combineRef, origProtTups = None):
     massDict = {}
+    try:
+        maxMass = mgfData.maxMass
+        print('in maxmass')
+    except:
+        maxMass = 1000000
+        print('in except')
     for i in range(0, len(combine)):
         totalMass = 0
         for j in range(0, len(combine[i])):
             totalMass += monoAminoMass[combine[i][j]]
         totalMass += H20_MASS
-        if totalMass > mgfData.maxMass:
+        if totalMass > maxMass:
             print(combine[i])
             print('too big')
             continue

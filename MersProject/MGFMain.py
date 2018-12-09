@@ -17,13 +17,15 @@ class MGF:
     """
 
 
-    def __init__(self, mgfDf, pepmassIonArray, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag, maxMass):
+    def __init__(self, mgfDf, pepmassIonArray, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag, maxMass,
+                 chargeMaxDict):
 
         # mgfDf looks like: {'charge': [list of masses]}
         self.mgfDf = mgfDf
         self.pepmassIonArray = pepmassIonArray
         self.mgfEntries = len(mgfDf)
         self.maxMass = maxMass
+        self.chargeMaxDict = chargeMaxDict
 
         self.ppmVal = ppmVal
         self.intensityThreshold = intensityThreshold

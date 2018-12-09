@@ -230,26 +230,26 @@ class MyTableWidget(QWidget):
         QMessageBox.about(self, "Message", 'MGF file imported.')
 
     def uploadMgf(self, input_path, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag, chargeFlags):
-        print("UPLOADING MGF")
         mgfDf, pepmassIonArray = readMGF(input_path, intensityThreshold)
 
-        maxMass = self.maxMgfMass(mgfDf, chargeFlags)
+        maxMass, chargeMaxDict = self.maxMgfMass(mgfDf, chargeFlags)
 
-        self.mgf = MGF(mgfDf, pepmassIonArray, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag, maxMass)
+        self.mgf = MGF(mgfDf, pepmassIonArray, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag,
+                       maxMass, chargeMaxDict)
 
     def maxMgfMass(self, mgfDf, chargeFlags):
         maxMass = 0
+        chargeMaxDict = {}
         for z, masses in mgfDf.items():
             if chargeFlags[int(z)-1]:
                 maxChargeMass = max(masses)
-                print(z)
-                print(maxChargeMass)
+
+                chargeMaxDict[z] = maxChargeMass
                 maxMassTemp = maxChargeMass*int(z) - int(z)*1.00794
-                print(maxMassTemp)
                 if maxMassTemp > maxMass:
                     maxMass = maxMassTemp
 
-        return maxMass
+        return maxMass, chargeMaxDict
 
 
 

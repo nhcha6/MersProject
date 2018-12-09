@@ -959,16 +959,16 @@ def chargeIonMass(massDict, chargeFlags):
 
             if chargeFlags[z]:
                 chargeMass = massCharge(value[0], z+1)  # +1 for actual value
-                if chargeMass < mgfData.chargeMaxDict[z+1]:
+
+                # Make sure the chargemass is less than the maximum possible charge mass in the mgf
+                if chargeMass <= mgfData.chargeMaxDict[z+1]:
                     chargeAssoc[z+1] = chargeMass
         if chargeAssoc:
-            print("Charges to be added " + str(chargeAssoc))
-            value.insert(2,chargeAssoc)
+            # Add it to the 2 as the rest of code acceses it at index 2
+            value.insert(2, chargeAssoc)
         else:
             try:
-                print("ChargeMass Deleted " + str(chargeMass))
-                print("Maximum mass " + str(mgfData.chargeMaxDict[z+1]))
-                print("Peptide to remove " + str(massDict[key]))
+                # Delete the key if there are no charges that pass the max mass test
                 del massDict[key]
             except KeyError:
                 pass
@@ -1000,8 +1000,6 @@ def writeToCsv(massDict, header, finalPath, chargeFlags):
                 chargeMass = value[2][chargeIndex+1]
                 infoRow.append(str(chargeMass))
             writer.writerow(infoRow)
-            # BREAK FOR TESTING!!!!!
-            # break;
 
 
 def getChargeIndex(chargeFlags):

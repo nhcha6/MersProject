@@ -895,16 +895,18 @@ def chargeIonMass(massDict, chargeFlags):
     """
     chargeFlags: [True, False, True, False, True]
     """
-    print(mgfData.chargeMaxDict)
+
     for key, value in massDict.items():
         chargeAssoc = {}
         for z in range(0, len(chargeFlags)):
 
             if chargeFlags[z]:
                 chargeMass = massCharge(value[0], z+1)  # +1 for actual value
+                if mgfData is None:
+                    chargeAssoc[z+1] = chargeMass
 
                 # Make sure the chargemass is less than the maximum possible charge mass in the mgf
-                if chargeMass <= mgfData.chargeMaxDict[z+1]:
+                elif chargeMass <= mgfData.chargeMaxDict[z+1]:
                     chargeAssoc[z+1] = chargeMass
         if chargeAssoc:
             # Add it to the 2 as the rest of code acceses it at index 2

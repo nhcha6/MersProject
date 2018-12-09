@@ -15,6 +15,7 @@ from MGFMain import *
 import atexit
 import os
 import psutil
+import tempfile
 
 TRANS = "Trans"
 LINEAR = "Linear"
@@ -51,6 +52,7 @@ class Fasta:
         """
 
         self.allProcessList = []
+        # tempFiles = self.createTempFastaFiles(self.inputFile)
         if transFlag:
 
             transProc = multiprocessing.Process(target=transOutput, args=(self.inputFile, TRANS, mined, maxed,
@@ -83,6 +85,30 @@ class Fasta:
 
         for process in self.allProcessList:
             process.join()
+
+
+    def createTempFastaFiles(self, inputFile):
+
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            tempfile.tempdir = tmpdirname
+
+            temp = tempfile.NamedTemporaryFile(mode='w+t', suffix=".fasta")
+            print(tmpdirname)
+            print(tempfile.gettempdir())
+            print(temp.name)
+            try:
+                with open(inputFile, "rU") as handle:
+
+                    for record in SeqIO.parse(handle, 'fasta'):
+                        temp.writelines(record.description)
+                        temp.writelines(record.seq)
+                    temp.seek(0)
+                print(temp.read())
+
+            finally:
+                print("Donezo")
+
+        return 1
 
 
 def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
@@ -500,18 +526,24 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
 
     # Get the initial peptides and their positions
     combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
-
+    print("FINISHED COMINE")
     # Convert it into a dictionary that has a mass
     massDict = combMass(combined, combinedRef)
+    print("FINISHED massDict comb")
+
     # Apply mods to the dictionary values and update the dictionary
 
     massDict = applyMods(massDict, modList)
+    print("FINISHED massDict mods")
+
 
     # Add the charge information along with their masses
     chargeIonMass(massDict, chargeFlags)
+    print("FINISHED massDict IonMass")
 
     # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
     massDict = editRefMassDict(massDict)
+    print("editRefMassDict")
 
 
     if mgfFlag:

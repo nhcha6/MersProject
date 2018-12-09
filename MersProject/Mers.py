@@ -952,15 +952,26 @@ def chargeIonMass(massDict, chargeFlags):
     """
     chargeFlags: [True, False, True, False, True]
     """
-
+    print(mgfData.chargeMaxDict)
     for key, value in massDict.items():
         chargeAssoc = {}
         for z in range(0, len(chargeFlags)):
 
             if chargeFlags[z]:
                 chargeMass = massCharge(value[0], z+1)  # +1 for actual value
-                chargeAssoc[z+1] = chargeMass
-        value.insert(2,chargeAssoc)
+                if chargeMass < mgfData.chargeMaxDict[z+1]:
+                    chargeAssoc[z+1] = chargeMass
+        if chargeAssoc:
+            print("Charges to be added " + str(chargeAssoc))
+            value.insert(2,chargeAssoc)
+        else:
+            try:
+                print("ChargeMass Deleted " + str(chargeMass))
+                print("Maximum mass " + str(mgfData.chargeMaxDict[z+1]))
+                print("Peptide to remove " + str(massDict[key]))
+                del massDict[key]
+            except KeyError:
+                pass
 
 
 def massCharge(predictedMass, z):

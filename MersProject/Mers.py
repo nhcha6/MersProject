@@ -915,11 +915,12 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
                 if overlapFlag:
                     if overlapComp(splitRef[i], splitRef[j]):
                         #check if linear and add to linearSet if so
-                        linSet = addLinPeptides(toAddForward, addForwardRef, linSet)
+                        linSet = addLinPeptides(toAddForward, addForwardRef, linSet, False)
                         massDict[toAddForward] = addForwardRef
                         massDict[toAddReverse] = addReverseRef
 
                 else:
+                    linSet = addLinPeptides(toAddForward, addForwardRef, linSet, False)
                     massDict[toAddForward] = addForwardRef
                     massDict[toAddReverse] = addReverseRef
             elif not maxDistCheck(splitRef[i], splitRef[j], maxDistance):
@@ -938,15 +939,21 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
 
     return combModless, combModlessRef
 
-def addLinPeptides(peptide, refs, linSet):
+def addLinPeptides(peptide, refs, linCisSet, transFlag):
     prevRef = refs[0]
     for i in range(1,len(refs)):
         if refs[i] == prevRef + 1:
             prevRef = refs[i]
+        elif transFlag:
+            if len(set(refs)) != len(refs):
+                linCisSet.add(peptide)
+                return linCisSet
+            else:
+                return linCisSet
         else:
-            return linSet
-    linSet.add(peptide)
-    return linSet
+            return linCisSet
+    linCisSet.add(peptide)
+    return linCisSet
 
 def chargeIonMass(massDict, chargeFlags):
 

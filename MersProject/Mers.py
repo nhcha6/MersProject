@@ -727,27 +727,14 @@ def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance=100
     combined, combinedRef = None, None
 
     if spliceType == CIS:
-
-        # get the linear set to ensure no linear peptides are added to cis set. ( Redoing is a little redundant,
-        # need to find something better )
-        combineLinear, combineLinearRef = splitDictPeptide(LINEAR, peptide, mined, maxed)
-
-        combineLinearSet = set(combineLinear)
-
         # combined eg: ['ABC', 'BCA', 'ACD', 'DCA']
         # combinedRef eg: [[0,1,2], [1,0,2], [0,2,3], [3,2,0]]
         # pass splits through combined overlap peptide and then delete all duplicates
-
-        combined, combinedRef = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance,
-                                                      combineLinearSet)
-    elif spliceType == TRANS:
         combined, combinedRef = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
-    elif spliceType == LINEAR:
 
+    elif spliceType == LINEAR:
         # Explicit change for high visibility regarding what's happening
         combined, combinedRef = splits, splitRef
-
-    combined, combinedRef = removeDupsQuick(combined, combinedRef)
 
     return combined, combinedRef
 
@@ -892,7 +879,7 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
     return splits, splitRef
 
 
-def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance, combineLinearSet=None):
+def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance):
 
     """
     Input: splits: list of splits, splitRef: list of the character indexes for splits, mined/maxed: min and max

@@ -52,8 +52,8 @@ class Fasta:
         """
 
         self.allProcessList = []
-        tempFiles = self.createTempFastaFiles(self.inputFile)
-        print(tempFiles.name)
+        tempFiles = self.createTempFastaFiles(self.inputFile, 1000)
+        print(tempFiles[0])
         if transFlag:
 
             transProc = multiprocessing.Process(target=transOutput, args=(self.inputFile, TRANS, mined, maxed,
@@ -75,7 +75,7 @@ class Fasta:
             cisProcess.start()
 
         if linearFlag:
-            linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(tempFiles.name, LINEAR, mined,
+            linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(tempFiles[0], LINEAR, mined,
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      modList, maxDistance,
                                                                                      outputPath[LINEAR], chargeFlags,
@@ -86,28 +86,35 @@ class Fasta:
 
         for process in self.allProcessList:
             process.join()
-        tempFiles.close()
 
-    def createTempFastaFiles(self, inputFile):
-
-
-            temp = tempfile.NamedTemporaryFile(mode='w+t', suffix=".fasta", delete=False)
-
-            print(temp.name)
-            try:
-                with open(inputFile, "rU") as handle:
-
-                    for record in SeqIO.parse(handle, 'fasta'):
+    def createTempFastaFiles(self, inputFile, protPerFile):
+        allTempFiles = []
+        try:
+            with open(inputFile, "rU") as handle:
+                temp = tempfile.NamedTemporaryFile(mode='w+t', suffix=".fasta", delete=False)
+                allTempFiles.append(temp.name)
+                counter=0
+                for record in SeqIO.parse(handle, 'fasta'):
+                    if counter < protPerFile:
                         temp.writelines(">"+record.description)
                         temp.writelines("\n")
                         temp.writelines(record.seq)
                         temp.writelines("\n")
+                        counter+=1
+                    else:
+                        temp.close()
+                        counter=0
 
+                        temp = tempfile.NamedTemporaryFile(mode='w+t', suffix=".fasta", delete=False)
+                        allTempFiles.append(temp.name)
+                        temp.writelines(">" + record.description)
+                        temp.writelines("\n")
+                        temp.writelines(record.seq)
+                        temp.writelines("\n")
+        finally:
+            temp.close()
 
-            finally:
-                temp.close()
-                print("Donezo")
-                return temp
+            return allTempFiles
 
 
 def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag,

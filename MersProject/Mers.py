@@ -899,6 +899,8 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
     size requirements, overlapFlag: boolean value true if overlapping combinations are undesired.
     Output: all combinations of possible splits which meets criteria
     """
+    # initialise linSet
+    linSet = set()
     # initialise combinations array to hold the possible combinations from the input splits
     combModless = []
     combModlessRef = []
@@ -924,29 +926,37 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
                 # V. messy, need a way to get better visual
                 if overlapFlag:
                     if overlapComp(splitRef[i], splitRef[j]):
-                        if linearCheck(toAddForward, combineLinearSet):
-                            combModless.append(toAddForward)
-                            combModlessRef.append(addForwardRef)
-                        if linearCheck(toAddReverse, combineLinearSet):
-                            combModless.append(toAddReverse)
-                            combModlessRef.append(addReverseRef)
-
-                else:
-
-                    if linearCheck(toAddForward, combineLinearSet):
+                        #check if linear and add to linearSet if so
+                        linSet = addLinPeptides(toAddForward, addForwardRef, linSet)
                         combModless.append(toAddForward)
                         combModlessRef.append(addForwardRef)
-                    if linearCheck(toAddReverse, combineLinearSet):
+
                         combModless.append(toAddReverse)
                         combModlessRef.append(addReverseRef)
+
+                else:
+                    combModless.append(toAddForward)
+                    combModlessRef.append(addForwardRef)
+                    combModless.append(toAddReverse)
+                    combModlessRef.append(addReverseRef)
             elif not maxDistCheck(splitRef[i], splitRef[j], maxDistance):
                 break
 
             toAddForward = ""
             toAddReverse = ""
+    print(linSet)
 
     return combModless, combModlessRef
 
+def addLinPeptides(peptide, refs, linSet):
+    prevRef = refs[0]
+    for i in range(1,len(refs)):
+        if refs[i] == prevRef + 1:
+            prevRef = refs[i]
+        else:
+            return linSet
+    linSet.add(peptide)
+    return linSet
 
 def chargeIonMass(massDict, chargeFlags):
 

@@ -52,7 +52,8 @@ class Fasta:
         """
 
         self.allProcessList = []
-        # tempFiles = self.createTempFastaFiles(self.inputFile)
+        tempFiles = self.createTempFastaFiles(self.inputFile)
+        print(tempFiles.name)
         if transFlag:
 
             transProc = multiprocessing.Process(target=transOutput, args=(self.inputFile, TRANS, mined, maxed,
@@ -74,7 +75,7 @@ class Fasta:
             cisProcess.start()
 
         if linearFlag:
-            linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, LINEAR, mined,
+            linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(tempFiles.name, LINEAR, mined,
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      modList, maxDistance,
                                                                                      outputPath[LINEAR], chargeFlags,
@@ -85,31 +86,92 @@ class Fasta:
 
         for process in self.allProcessList:
             process.join()
-
+        tempFiles.close()
 
     def createTempFastaFiles(self, inputFile):
 
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            tempfile.tempdir = tmpdirname
 
-            temp = tempfile.NamedTemporaryFile(mode='w+t', suffix=".fasta")
-            print(tmpdirname)
-            print(tempfile.gettempdir())
+            temp = tempfile.NamedTemporaryFile(mode='w+t', suffix=".fasta", delete=False)
+
             print(temp.name)
             try:
                 with open(inputFile, "rU") as handle:
 
                     for record in SeqIO.parse(handle, 'fasta'):
                         temp.writelines(record.description)
+                        temp.writelines("\n")
                         temp.writelines(record.seq)
-                    temp.seek(0)
-                print(temp.read())
+                        temp.writelines("\n")
+
 
             finally:
+                temp.close()
                 print("Donezo")
+                return temp
 
-        return 1
 
+def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag,
+                       modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag, pepCompleted, pepTotal):
+
+    """
+    Process that is in charge for dealing with cis and linear. Creates sub processes for every protein to compute
+    their respective output
+    """
+
+    finalPath = None
+
+    # Open the csv file if the csv file is selected
+    if csvFlag:
+        finalPath = getFinalPath(outputPath, spliceType)
+        open(finalPath, 'w')
+
+    num_workers = multiprocessing.cpu_count()
+
+    # Don't need all processes for small file?
+    # if len(seqDict) < num_workers:
+    #     num_workers = len(seqDict)
+
+    # Used to lock write access to file
+    lockVar = multiprocessing.Lock()
+
+    toWriteQueue = multiprocessing.Queue()
+
+    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, toWriteQueue, pepCompleted,
+                                                                                              mgfObj, childTable))
+
+    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
+    writerProcess.start()
+
+    maxMem = psutil.virtual_memory()[1] / 2
+    with open(inputFile, "rU") as handle:
+        #counter = 0
+        for record in SeqIO.parse(handle, 'fasta'):
+            print(record.name)
+            print(record.seq)
+            #counter += 1
+            pepTotal.put(1)
+            seq = str(record.seq)
+            seqId = record.name
+
+            while memoryCheck(maxMem):
+                time.sleep(1)
+                logging.info('Memory Limit Reached')
+
+            seqId = seqId.split('|')[1]
+            logging.info(spliceType + " process started for: " + seq[0:5])
+            # Start the processes for each protein with the targe function being genMassDict
+            pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
+                                                csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfFlag))
+            break
+
+
+    #pepTotal.put(counter)
+    pool.close()
+    pool.join()
+
+    toWriteQueue.put('stop')
+    writerProcess.join()
+    logging.info("All " + spliceType + " !joined")
 
 def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
                 modList, outputPath, chargeFlags, mgfObj, modTable, mgfFlag, pepCompleted, pepTotal, csvFlag):
@@ -440,66 +502,6 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
 
     return combModless, combModlessRef
 
-def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag,
-                       modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag, pepCompleted, pepTotal):
-
-    """
-    Process that is in charge for dealing with cis and linear. Creates sub processes for every protein to compute
-    their respective output
-    """
-
-    finalPath = None
-
-    # Open the csv file if the csv file is selected
-    if csvFlag:
-        finalPath = getFinalPath(outputPath, spliceType)
-        open(finalPath, 'w')
-
-    num_workers = multiprocessing.cpu_count()
-
-    # Don't need all processes for small file?
-    # if len(seqDict) < num_workers:
-    #     num_workers = len(seqDict)
-
-    # Used to lock write access to file
-    lockVar = multiprocessing.Lock()
-
-    toWriteQueue = multiprocessing.Queue()
-
-    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, toWriteQueue, pepCompleted,
-                                                                                              mgfObj, childTable))
-
-    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
-    writerProcess.start()
-
-    maxMem = psutil.virtual_memory()[1] / 2
-    with open(inputFile, "rU") as handle:
-        #counter = 0
-        for record in SeqIO.parse(handle, 'fasta'):
-            #counter += 1
-            pepTotal.put(1)
-            seq = str(record.seq)
-            seqId = record.name
-
-            while memoryCheck(maxMem):
-                time.sleep(1)
-                logging.info('Memory Limit Reached')
-
-            seqId = seqId.split('|')[1]
-            logging.info(spliceType + " process started for: " + seq[0:5])
-            # Start the processes for each protein with the targe function being genMassDict
-            pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
-                                                csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfFlag))
-
-
-    #pepTotal.put(counter)
-    pool.close()
-    pool.join()
-
-    toWriteQueue.put('stop')
-    writerProcess.join()
-    logging.info("All " + spliceType + " !joined")
-
 def memoryCheck(maxMem):
     process = psutil.Process(os.getpid())
     #print(process.memory_info().rss)
@@ -526,24 +528,19 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
 
     # Get the initial peptides and their positions
     combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
-    print("FINISHED COMINE")
+
     # Convert it into a dictionary that has a mass
     massDict = combMass(combined, combinedRef)
-    print("FINISHED massDict comb")
 
     # Apply mods to the dictionary values and update the dictionary
-
     massDict = applyMods(massDict, modList)
-    print("FINISHED massDict mods")
 
 
     # Add the charge information along with their masses
     chargeIonMass(massDict, chargeFlags)
-    print("FINISHED massDict IonMass")
 
     # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
     massDict = editRefMassDict(massDict)
-    print("editRefMassDict")
 
 
     if mgfFlag:

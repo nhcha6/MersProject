@@ -640,7 +640,7 @@ def writer(queue, outputPath, transFlag = False):
                 origins = editTransOrigins(value)
             else:
                 origins = value
-                
+
             # Come back to make this less ugly and more efficient
             for entry in origins:
                 if entry not in backwardsSeenPeptides.keys():

@@ -255,7 +255,7 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
             string = ""
             for i in range(0, len(massDict[peptide][3]), 2):
                 origProt = sorted(massDict[peptide][3][i:i+2])
-                string += origProt[0][0] + origProt[0][1] + '-' + origProt[1][0] + origProt[1][1] + ';'
+                string += origProt[0][0] + origProt[0][1] + '/' + origProt[1][0] + origProt[1][1] + ';'
             string = string[0:-1]
             allPeptidesDict[peptide] = string
         transProcess.toWriteQueue.put(allPeptidesDict)
@@ -640,6 +640,7 @@ def writer(queue, outputPath, transFlag = False):
                 origins = editTransOrigins(value)
             else:
                 origins = value
+                
             # Come back to make this less ugly and more efficient
             for entry in origins:
                 if entry not in backwardsSeenPeptides.keys():
@@ -671,7 +672,7 @@ def writeProtToPep(seenPeptides, groupedBy, outputPath):
 def editTransOrigins(origins):
     newOrigins = []
     for entry in origins:
-        prots = entry.split('-')
+        prots = entry.split('/')
         for prot in prots:
             if prot[-1] == ')':
                 newOrigins.append(prot)
@@ -1122,7 +1123,6 @@ def combMass(combine, combineRef, origProtTups = None):
         print('in maxmass')
     except:
         maxMass = 1000000
-        print('in except')
     for i in range(0, len(combine)):
         totalMass = 0
         for j in range(0, len(combine[i])):
@@ -1130,7 +1130,6 @@ def combMass(combine, combineRef, origProtTups = None):
         totalMass += H20_MASS
         if totalMass > maxMass:
             print(combine[i])
-            print('too big')
             continue
         if origProtTups == None:
             massRefPair = [totalMass, combineRef[i]]

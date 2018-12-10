@@ -242,9 +242,13 @@ class MyTableWidget(QWidget):
         for z, masses in mgfDf.items():
             if chargeFlags[int(z)-1]:
                 maxChargeMass = max(masses)
+                print(z)
+                print(maxChargeMass)
                 maxMassTemp = maxChargeMass*int(z) - int(z)*1.00794
+                print(maxMassTemp)
                 if maxMassTemp > maxMass:
                     maxMass = maxMassTemp
+
         return maxMass
 
 

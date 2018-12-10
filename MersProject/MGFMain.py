@@ -100,7 +100,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                     string = ""
                                     for i in range(0, len(value[3]), 2):
                                         origProt = sorted(value[3][i:i + 2])
-                                        string += origProt[0][0] + origProt[0][1] + '-' + origProt[1][0] + \
+                                        string += origProt[0][0] + origProt[0][1] + '/' + origProt[1][0] + \
                                                   origProt[1][1] + ';'
                                     string = string[0:-1]
                                     matchedPeptides[alphaKey] = string
@@ -120,7 +120,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                         string = ""
                                         for i in range(0, len(value[3]), 2):
                                             origProt = sorted(value[3][i:i + 2])
-                                            string += origProt[0][0] + origProt[0][1] + '-' + origProt[1][0] + \
+                                            string += origProt[0][0] + origProt[0][1] + '/' + origProt[1][0] + \
                                                       origProt[1][1] + ';'
                                         string = string[0:-1]
                                         matchedPeptides[alphaKey] = string

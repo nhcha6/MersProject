@@ -902,6 +902,7 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
     # initialise linSet
     linSet = set()
     # initialise combinations array to hold the possible combinations from the input splits
+    massDict = {}
     combModless = []
     combModlessRef = []
     # iterate through all of the splits and build up combinations which meet min/max/overlap criteria
@@ -928,23 +929,25 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
                     if overlapComp(splitRef[i], splitRef[j]):
                         #check if linear and add to linearSet if so
                         linSet = addLinPeptides(toAddForward, addForwardRef, linSet)
-                        combModless.append(toAddForward)
-                        combModlessRef.append(addForwardRef)
-
-                        combModless.append(toAddReverse)
-                        combModlessRef.append(addReverseRef)
+                        massDict[toAddForward] = addForwardRef
+                        massDict[toAddReverse] = addReverseRef
 
                 else:
-                    combModless.append(toAddForward)
-                    combModlessRef.append(addForwardRef)
-                    combModless.append(toAddReverse)
-                    combModlessRef.append(addReverseRef)
+                    massDict[toAddForward] = addForwardRef
+                    massDict[toAddReverse] = addReverseRef
             elif not maxDistCheck(splitRef[i], splitRef[j], maxDistance):
                 break
 
             toAddForward = ""
             toAddReverse = ""
-    print(linSet)
+    print(massDict)
+
+    for peptide, ref in massDict.items():
+        if peptide in linSet:
+            continue
+        else:
+            combModless.append(peptide)
+            combModlessRef.append(ref)
 
     return combModless, combModlessRef
 

@@ -98,7 +98,7 @@ class Fasta:
                 with open(inputFile, "rU") as handle:
 
                     for record in SeqIO.parse(handle, 'fasta'):
-                        temp.writelines(record.description)
+                        temp.writelines(">"+record.description)
                         temp.writelines("\n")
                         temp.writelines(record.seq)
                         temp.writelines("\n")
@@ -146,8 +146,7 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
     with open(inputFile, "rU") as handle:
         #counter = 0
         for record in SeqIO.parse(handle, 'fasta'):
-            print(record.name)
-            print(record.seq)
+
             #counter += 1
             pepTotal.put(1)
             seq = str(record.seq)

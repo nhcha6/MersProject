@@ -52,7 +52,7 @@ class Fasta:
         """
 
         self.allProcessList = []
-        tempFiles = self.createTempFastaFiles(self.inputFile, 1000)
+        tempFiles = self.createTempFastaFiles(self.inputFile, 1)
         print(tempFiles[0])
         if transFlag:
 
@@ -75,7 +75,7 @@ class Fasta:
             cisProcess.start()
 
         if linearFlag:
-            linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(tempFiles[0], LINEAR, mined,
+            linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(tempFiles, LINEAR, mined,
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      modList, maxDistance,
                                                                                      outputPath[LINEAR], chargeFlags,
@@ -87,7 +87,7 @@ class Fasta:
         for process in self.allProcessList:
             process.join()
 
-        self.deleteTempFiles(tempFiles)
+        # self.deleteTempFiles(tempFiles)
     def deleteTempFiles(self, tempFiles):
         for file in tempFiles:
             os.remove(file)
@@ -121,7 +121,7 @@ class Fasta:
             return allTempFiles
 
 
-def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag,
+def cisAndLinearOutput(inputFiles, spliceType, mined, maxed, overlapFlag, csvFlag,
                        modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag, pepCompleted, pepTotal):
 
     """
@@ -147,37 +147,40 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
 
     toWriteQueue = multiprocessing.Queue()
 
-    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, toWriteQueue, pepCompleted,
-                                                                                              mgfObj, childTable))
-
     writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
     writerProcess.start()
 
+
     maxMem = psutil.virtual_memory()[1] / 2
-    with open(inputFile, "rU") as handle:
-        #counter = 0
-        for record in SeqIO.parse(handle, 'fasta'):
+    for file in inputFiles:
 
-            #counter += 1
-            pepTotal.put(1)
-            seq = str(record.seq)
-            seqId = record.name
+        pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit,
+                                    initargs=(lockVar, toWriteQueue, pepCompleted,
+                                              mgfObj, childTable))
+        with open(file, "rU") as handle:
+            #counter = 0
+            for record in SeqIO.parse(handle, 'fasta'):
 
-            while memoryCheck(maxMem):
-                time.sleep(1)
-                logging.info('Memory Limit Reached')
+                #counter += 1
+                pepTotal.put(1)
+                seq = str(record.seq)
+                seqId = record.name
 
-            seqId = seqId.split('|')[1]
-            logging.info(spliceType + " process started for: " + seq[0:5])
-            # Start the processes for each protein with the targe function being genMassDict
-            pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
-                                                csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfFlag))
-            break
+                while memoryCheck(maxMem):
+                    time.sleep(1)
+                    logging.info('Memory Limit Reached')
+
+                seqId = seqId.split('|')[1]
+                logging.info(spliceType + " process started for: " + seq[0:5])
+                # Start the processes for each protein with the targe function being genMassDict
+                pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
+                                                    csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfFlag))
+                break
 
 
-    #pepTotal.put(counter)
-    pool.close()
-    pool.join()
+        #pepTotal.put(counter)
+        pool.close()
+        pool.join()
 
     toWriteQueue.put('stop')
     writerProcess.join()

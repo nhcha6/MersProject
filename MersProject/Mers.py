@@ -228,7 +228,7 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
     # Look to produce only trans spliced peptides - not linear or cis. Do so by not allowing combination of peptides
     # which originate from the same protein as opposed to solving for Cis and Linear and not including that
     # in the output
-    combined, combinedRef = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex)
+    combined, combinedRef = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, protIndexList)
 
     # update combineRef to include information on where the peptide originated from
     origProtTups = findOrigProt(combinedRef, protIndexList, protList)
@@ -419,7 +419,7 @@ def splitTransPeptide(spliceType, peptide, mined, maxed, protIndexList):
 
     return splits, splitRef
 
-def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex):
+def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, protIndexList):
 
     """
     Input: splits: list of splits, splitRef: list of the character indexes for splits, mined/maxed: min and max
@@ -432,6 +432,7 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
     massDict = {}
     combModless = []
     combModlessRef = []
+
     # iterate through all of the splits and build up combinations which meet min/max/overlap criteria
     for i in splitsIndex:
         # toAdd variables hold temporary combinations for insertion in final matrix if it meets criteria
@@ -454,13 +455,15 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
                 if overlapFlag:
                     if overlapComp(splitRef[i], splitRef[j]):
                         # check if linear and add to linearSet if so
-                        linCisSet = addLinPeptides(toAddForward, addForwardRef, linCisSet, True)
+                        linCisSet = addLinPeptides(toAddForward, addForwardRef, linCisSet, protIndexList)
+                        linCisSet = addLinPeptides(toAddReverse, addReverseRef, linCisSet, protIndexList)
                         massDict[toAddForward] = addForwardRef
                         massDict[toAddReverse] = addReverseRef
 
                 else:
                     # check if linear and add to linearSet if so
-                    linCisSet = addLinPeptides(toAddForward, addForwardRef, linCisSet, True)
+                    linCisSet = addLinPeptides(toAddForward, addForwardRef, linCisSet, protIndexList)
+                    linCisSet = addLinPeptides(toAddReverse, addReverseRef, linCisSet, protIndexList)
                     massDict[toAddForward] = addForwardRef
                     massDict[toAddReverse] = addReverseRef
 
@@ -469,6 +472,14 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
 
             toAddForward = ""
             toAddReverse = ""
+
+
+    for peptide, ref in massDict.items():
+        # if peptide in linSet:
+        #     continue
+        # else:
+        combModless.append(peptide)
+        combModlessRef.append(ref)
 
     print(linCisSet)
 
@@ -624,8 +635,8 @@ def writer(queue, outputPath, linCisQueue, transFlag = False):
     with open(saveHandle, "w") as output_handle:
         while True:
             matchedPeptides = queue.get()
-            if not linCisQueue.empty():
-                linCisSet = linCisSet|linCisQueue.get()
+            #if not linCisQueue.empty():
+                #linCisSet = linCisSet|linCisQueue.get()
             if matchedPeptides == 'stop':
                 logging.info("ALL LINEAR COMPUTED, STOP MESSAGE SENT")
                 break
@@ -953,17 +964,20 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
 
     return combModless, combModlessRef, linSet
 
-def addLinPeptides(peptide, refs, linCisSet, transFlag):
+def addLinPeptides(peptide, refs, linCisSet, transOrigins):
     prevRef = refs[0]
     for i in range(1,len(refs)):
-        if refs[i] == prevRef + 1:
-            prevRef = refs[i]
-        elif transFlag:
-            if len(set(refs)) != len(refs):
-                linCisSet.add(peptide)
+        if transOrigins != False:
+            prot1, index1 = findInitProt(refs[0]-1, transOrigins)
+            prot2, index2 = findInitProt(refs[-1]-1, transOrigins)
+            if prot1 == prot2:
+                if len(set(refs)) == len(refs):
+                    linCisSet.add(peptide)
                 return linCisSet
             else:
                 return linCisSet
+        elif refs[i] == prevRef + 1:
+            prevRef = refs[i]
         else:
             return linCisSet
     linCisSet.add(peptide)

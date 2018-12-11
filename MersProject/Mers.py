@@ -21,6 +21,8 @@ TRANS = "Trans"
 LINEAR = "Linear"
 CIS = "Cis"
 
+TEMPFILECOUNT = 1
+
 logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 # logging.disable(logging.INFO)
 
@@ -52,8 +54,7 @@ class Fasta:
         """
 
         self.allProcessList = []
-        tempFiles = self.createTempFastaFiles(self.inputFile, 1)
-        print(tempFiles[0])
+        tempFiles = self.createTempFastaFiles(self.inputFile, TEMPFILECOUNT)
         if transFlag:
 
             transProc = multiprocessing.Process(target=transOutput, args=(self.inputFile, TRANS, mined, maxed,
@@ -65,7 +66,7 @@ class Fasta:
             transProc.start()
 
         if cisFlag:
-            cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, CIS, mined, maxed,
+            cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(tempFiles, CIS, mined, maxed,
                                                                                   overlapFlag, csvFlag, modList,
                                                                                   maxDistance, outputPath[CIS],
                                                                                   chargeFlags, mgfObj, modTable,
@@ -920,7 +921,7 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
 
             toAddForward = ""
             toAddReverse = ""
-    print(massDict)
+    # print(massDict)
 
     for peptide, ref in massDict.items():
         if peptide in linSet:
@@ -1099,7 +1100,7 @@ def combinePeptides(seqDict):
         protList.append(key)
         ind += len(value)
 
-    print(protIndexList)
+    # print(protIndexList)
 
     finalPeptide = ''.join(dictlist)
     return finalPeptide, protIndexList, protList

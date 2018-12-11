@@ -100,14 +100,14 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
     finalPeptide, protIndexList, protList = combinePeptides(seqDict)
 
     # temporary creation of cis peptides
-    combineCisSet = set()
-    for value in seqDict.values():
-        splitsCis, splitRefCis = splitDictPeptide(CIS, value, mined, maxed)
-
-        combinedCis, combinedRefCis = combineOverlapPeptide(splitsCis, splitRefCis, mined, maxed, overlapFlag,
-                                                            maxDistance)
-
-        combineCisSet.update(combinedCis)
+    # combineCisSet = set()
+    # for value in seqDict.values():
+    #     splitsCis, splitRefCis = splitDictPeptide(CIS, value, mined, maxed)
+    #
+    #     combinedCis, combinedRefCis = combineOverlapPeptide(splitsCis, splitRefCis, mined, maxed, overlapFlag,
+    #                                                         maxDistance)
+    #
+    #     combineCisSet.update(combinedCis)
 
     splits, splitRef = splitTransPeptide(spliceType, finalPeptide, mined, maxed, protIndexList)
 
@@ -157,7 +157,7 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
             time.sleep(1)
             print('stuck in memory check')
 
-        pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, False, modList, finalPath, chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList, protList, combineCisSet))
+        pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, False, modList, finalPath, chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList, protList))
         pepTotal.put(1)
         splitsIndex = []
 
@@ -223,12 +223,12 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
 # takes splits index from the multiprocessing pool and adds to writer the output. Splits and SplitRef are global
 # variables within the pool.
 def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, finalPath,
-                 chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList, protList, combineCisSet):
+                 chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList, protList):
 
     # Look to produce only trans spliced peptides - not linear or cis. Do so by not allowing combination of peptides
     # which originate from the same protein as opposed to solving for Cis and Linear and not including that
     # in the output
-    combined, combinedRef = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, combineCisSet)
+    combined, combinedRef = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex)
 
     # update combineRef to include information on where the peptide originated from
     origProtTups = findOrigProt(combinedRef, protIndexList, protList)
@@ -419,14 +419,17 @@ def splitTransPeptide(spliceType, peptide, mined, maxed, protIndexList):
 
     return splits, splitRef
 
-def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, combineLinearSet=None):
+def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex):
 
     """
     Input: splits: list of splits, splitRef: list of the character indexes for splits, mined/maxed: min and max
     size requirements, overlapFlag: boolean value true if overlapping combinations are undesired.
     Output: all combinations of possible splits which meets criteria
     """
+    # initialise linCisVariable holder.
+    linCisSet = set()
     # initialise combinations array to hold the possible combinations from the input splits
+    massDict = {}
     combModless = []
     combModlessRef = []
     # iterate through all of the splits and build up combinations which meet min/max/overlap criteria
@@ -450,25 +453,24 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
                 # V. messy, need a way to get better visual
                 if overlapFlag:
                     if overlapComp(splitRef[i], splitRef[j]):
-                        if linearCheck(toAddForward, combineLinearSet):
-                            combModless.append(toAddForward)
-                            combModlessRef.append(addForwardRef)
-                        if linearCheck(toAddReverse, combineLinearSet):
-                            combModless.append(toAddReverse)
-                            combModlessRef.append(addReverseRef)
+                        # check if linear and add to linearSet if so
+                        linCisSet = addLinPeptides(toAddForward, addForwardRef, linCisSet, True)
+                        massDict[toAddForward] = addForwardRef
+                        massDict[toAddReverse] = addReverseRef
 
                 else:
-                    if linearCheck(toAddForward, combineLinearSet):
-                        combModless.append(toAddForward)
-                        combModlessRef.append(addForwardRef)
-                    if linearCheck(toAddReverse, combineLinearSet):
-                        combModless.append(toAddReverse)
-                        combModlessRef.append(addReverseRef)
+                    # check if linear and add to linearSet if so
+                    linCisSet = addLinPeptides(toAddForward, addForwardRef, linCisSet, True)
+                    massDict[toAddForward] = addForwardRef
+                    massDict[toAddReverse] = addReverseRef
+
             elif not maxDistCheck(splitRef[i], splitRef[j], maxDistance):
                 break
 
             toAddForward = ""
             toAddReverse = ""
+
+    print(linCisSet)
 
     return combModless, combModlessRef
 

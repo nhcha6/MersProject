@@ -497,11 +497,12 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
     lockVar = multiprocessing.Lock()
 
     toWriteQueue = multiprocessing.Queue()
+    linSetQueue = multiprocessing.Queue()
 
     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, toWriteQueue, pepCompleted,
-                                                                                              mgfObj, childTable))
+                                                                                              mgfObj, childTable, linSetQueue))
 
-    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
+    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath, linSetQueue))
     writerProcess.start()
 
     maxMem = psutil.virtual_memory()[1] / 2
@@ -556,8 +557,11 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     """
     start = time.time()
 
-    # Get the initial peptides and their positions
-    combined, combinedRef = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
+    # Get the initial peptides and their positions, and the set of linear peptides produced for this protein
+    combined, combinedRef, linSet = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
+
+    # add this set of linear proteins to the linProt queue
+    genMassDict.linSetQueue.put(linSet)
 
     # Convert it into a dictionary that has a mass
     massDict = combMass(combined, combinedRef)
@@ -610,13 +614,16 @@ def getAllPep(massDict):
         allPeptides.add(alphaKey)
     return allPeptides
 
-def writer(queue, outputPath, transFlag = False):
+def writer(queue, outputPath, linCisQueue, transFlag = False):
     seenPeptides = {}
     backwardsSeenPeptides = {}
     saveHandle = str(outputPath)
+    linCisSet = set()
     with open(saveHandle, "w") as output_handle:
         while True:
             matchedPeptides = queue.get()
+            if not linCisQueue.empty():
+                linCisSet = linCisSet|linCisQueue.get()
             if matchedPeptides == 'stop':
                 logging.info("ALL LINEAR COMPUTED, STOP MESSAGE SENT")
                 break
@@ -632,6 +639,8 @@ def writer(queue, outputPath, transFlag = False):
                     if value not in seenPeptides[key]:
                         seenPeptides[key] += origins
 
+        print('writer')
+        print(linCisSet)
         # convert seen peptides to backwardsSeenPeptides
         for key, value in seenPeptides.items():
             # check if we are printing trans entries so that we can configure trans data
@@ -730,13 +739,16 @@ def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance=100
         # combined eg: ['ABC', 'BCA', 'ACD', 'DCA']
         # combinedRef eg: [[0,1,2], [1,0,2], [0,2,3], [3,2,0]]
         # pass splits through combined overlap peptide and then delete all duplicates
-        combined, combinedRef = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
+        combined, combinedRef, linSet = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
+        print('output create')
+        print(linSet)
 
     elif spliceType == LINEAR:
         # Explicit change for high visibility regarding what's happening
         combined, combinedRef = splits, splitRef
+        linSet = set()
 
-    return combined, combinedRef
+    return combined, combinedRef, linSet
 
 def applyMods(combineModlessDict, modList):
 
@@ -928,7 +940,6 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
 
             toAddForward = ""
             toAddReverse = ""
-    print(massDict)
 
     for peptide, ref in massDict.items():
         if peptide in linSet:
@@ -937,7 +948,7 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
             combModless.append(peptide)
             combModlessRef.append(ref)
 
-    return combModless, combModlessRef
+    return combModless, combModlessRef, linSet
 
 def addLinPeptides(peptide, refs, linCisSet, transFlag):
     prevRef = refs[0]
@@ -1219,7 +1230,7 @@ def nth_replace(string, old, new, n=1, option='only nth'):
     return new.join(nth_split)
 
 
-def processLockInit(lockVar, toWriteQueue, pepCompleted, mgfObj, childTable):
+def processLockInit(lockVar, toWriteQueue, pepCompleted, mgfObj, childTable, linSetQueue):
 
     """
     Designed to set up a global lock for a child processes (child per protein)
@@ -1233,6 +1244,7 @@ def processLockInit(lockVar, toWriteQueue, pepCompleted, mgfObj, childTable):
     finalModTable = childTable
     genMassDict.toWriteQueue = toWriteQueue
     genMassDict.pepCompleted = pepCompleted
+    genMassDict.linSetQueue = linSetQueue
 
 def processLockTrans(lockVar, toWriteQueue, pepCompleted, allSplits, allSplitRef, mgfObj, childTable):
 

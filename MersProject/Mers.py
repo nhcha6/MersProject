@@ -120,11 +120,12 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
     lockVar = multiprocessing.Lock()
 
     toWriteQueue = multiprocessing.Queue()
+    linCisQueue = multiprocessing.Queue()
 
     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockTrans, initargs=(lockVar, toWriteQueue, pepCompleted,
-                                          splits, splitRef, mgfObj, modTable))
+                                          splits, splitRef, mgfObj, modTable, linCisQueue))
 
-    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath, True))
+    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath, linCisQueue, True))
     writerProcess.start()
 
     # Create a process for pairs of splits, pairing element 0 with -1, 1 with -2 and so on.
@@ -228,7 +229,10 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
     # Look to produce only trans spliced peptides - not linear or cis. Do so by not allowing combination of peptides
     # which originate from the same protein as opposed to solving for Cis and Linear and not including that
     # in the output
-    combined, combinedRef = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, protIndexList)
+    combined, combinedRef, linCisSet = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, protIndexList)
+
+    # Put linCisSet to linCisQueue:
+    transProcess.linCisQueue.put(linCisSet)
 
     # update combineRef to include information on where the peptide originated from
     origProtTups = findOrigProt(combinedRef, protIndexList, protList)
@@ -475,15 +479,13 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
 
 
     for peptide, ref in massDict.items():
-        # if peptide in linSet:
-        #     continue
-        # else:
-        combModless.append(peptide)
-        combModlessRef.append(ref)
+        if peptide in linCisSet:
+            continue
+        else:
+            combModless.append(peptide)
+            combModlessRef.append(ref)
 
-    print(linCisSet)
-
-    return combModless, combModlessRef
+    return combModless, combModlessRef, linCisSet
 
 def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag,
                        modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag, pepCompleted, pepTotal):
@@ -635,8 +637,8 @@ def writer(queue, outputPath, linCisQueue, transFlag = False):
     with open(saveHandle, "w") as output_handle:
         while True:
             matchedPeptides = queue.get()
-            #if not linCisQueue.empty():
-                #linCisSet = linCisSet|linCisQueue.get()
+            if not linCisQueue.empty():
+                linCisSet = linCisSet|linCisQueue.get()
             if matchedPeptides == 'stop':
                 logging.info("ALL LINEAR COMPUTED, STOP MESSAGE SENT")
                 break
@@ -1263,7 +1265,7 @@ def processLockInit(lockVar, toWriteQueue, pepCompleted, mgfObj, childTable, lin
     genMassDict.pepCompleted = pepCompleted
     genMassDict.linSetQueue = linSetQueue
 
-def processLockTrans(lockVar, toWriteQueue, pepCompleted, allSplits, allSplitRef, mgfObj, childTable):
+def processLockTrans(lockVar, toWriteQueue, pepCompleted, allSplits, allSplitRef, mgfObj, childTable,linCisQueue):
 
     """
     Designed to set up a global lock for a child processes (child per protein)
@@ -1280,5 +1282,6 @@ def processLockTrans(lockVar, toWriteQueue, pepCompleted, allSplits, allSplitRef
     splitRef = allSplitRef
     transProcess.toWriteQueue = toWriteQueue
     transProcess.pepCompleted = pepCompleted
+    transProcess.linCisQueue = linCisQueue
 
 

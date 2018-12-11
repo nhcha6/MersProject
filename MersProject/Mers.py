@@ -87,7 +87,7 @@ class Fasta:
         for process in self.allProcessList:
             process.join()
 
-        # self.deleteTempFiles(tempFiles)
+        self.deleteTempFiles(tempFiles)
     def deleteTempFiles(self, tempFiles):
         for file in tempFiles:
             os.remove(file)
@@ -99,22 +99,18 @@ class Fasta:
                 allTempFiles.append(temp.name)
                 counter=0
                 for record in SeqIO.parse(handle, 'fasta'):
-                    if counter < protPerFile:
-                        temp.writelines(">"+record.description)
-                        temp.writelines("\n")
-                        temp.writelines(record.seq)
-                        temp.writelines("\n")
-                        counter+=1
-                    else:
+                    if counter == protPerFile:
                         temp.close()
-                        counter=0
-
                         temp = tempfile.NamedTemporaryFile(mode='w+t', suffix=".fasta", delete=False)
                         allTempFiles.append(temp.name)
-                        temp.writelines(">" + record.description)
-                        temp.writelines("\n")
-                        temp.writelines(record.seq)
-                        temp.writelines("\n")
+                        counter = 0
+
+                    temp.writelines(">" + record.description)
+                    temp.writelines("\n")
+                    temp.writelines(record.seq)
+                    temp.writelines("\n")
+                    counter += 1
+
         finally:
             temp.close()
 

@@ -639,8 +639,11 @@ def writer(queue, outputPath, linCisQueue, transFlag = False):
                     if value not in seenPeptides[key]:
                         seenPeptides[key] += origins
 
-        print('writer')
-        print(linCisSet)
+        # remove linear/cis peptides from seenPeptides:
+        commonPeptides = linCisSet.intersection(seenPeptides.keys())
+        for peptide in commonPeptides:
+            del seenPeptides[peptide]
+
         # convert seen peptides to backwardsSeenPeptides
         for key, value in seenPeptides.items():
             # check if we are printing trans entries so that we can configure trans data
@@ -740,8 +743,6 @@ def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance=100
         # combinedRef eg: [[0,1,2], [1,0,2], [0,2,3], [3,2,0]]
         # pass splits through combined overlap peptide and then delete all duplicates
         combined, combinedRef, linSet = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
-        print('output create')
-        print(linSet)
 
     elif spliceType == LINEAR:
         # Explicit change for high visibility regarding what's happening

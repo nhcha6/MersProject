@@ -87,6 +87,10 @@ class Fasta:
         for process in self.allProcessList:
             process.join()
 
+        self.deleteTempFiles(tempFiles)
+    def deleteTempFiles(self, tempFiles):
+        for file in tempFiles:
+            os.remove(file)
     def createTempFastaFiles(self, inputFile, protPerFile):
         allTempFiles = []
         try:

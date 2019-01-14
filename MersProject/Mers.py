@@ -21,7 +21,7 @@ TRANS = "Trans"
 LINEAR = "Linear"
 CIS = "Cis"
 
-TEMPFILECOUNT = 1
+TEMPFILECOUNT = 20347
 
 logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 # logging.disable(logging.INFO)
@@ -54,6 +54,9 @@ class Fasta:
         """
 
         self.allProcessList = []
+        inputFileSize = os.path.getsize(self.inputFile)
+        print(inputFileSize)
+
         tempFiles = self.createTempFastaFiles(self.inputFile, TEMPFILECOUNT)
         if transFlag:
 
@@ -89,9 +92,12 @@ class Fasta:
             process.join()
 
         self.deleteTempFiles(tempFiles)
+
+
     def deleteTempFiles(self, tempFiles):
         for file in tempFiles:
             os.remove(file)
+
     def createTempFastaFiles(self, inputFile, protPerFile):
         allTempFiles = []
         try:
@@ -148,7 +154,6 @@ def cisAndLinearOutput(inputFiles, spliceType, mined, maxed, overlapFlag, csvFla
     writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath, linSetQueue))
     writerProcess.start()
 
-
     maxMem = psutil.virtual_memory()[1] / 2
     for file in inputFiles:
 
@@ -156,24 +161,21 @@ def cisAndLinearOutput(inputFiles, spliceType, mined, maxed, overlapFlag, csvFla
                                     initargs=(lockVar, toWriteQueue, pepCompleted,
                                               mgfObj, childTable, linSetQueue))
         with open(file, "rU") as handle:
-            #counter = 0
             for record in SeqIO.parse(handle, 'fasta'):
 
-                #counter += 1
                 pepTotal.put(1)
                 seq = str(record.seq)
                 seqId = record.name
 
-                while memoryCheck(maxMem):
-                    time.sleep(1)
-                    logging.info('Memory Limit Reached')
+                # while memoryCheck(maxMem):
+                #     time.sleep(1)
+                #     logging.info('Memory Limit Reached')
 
                 seqId = seqId.split('|')[1]
                 logging.info(spliceType + " process started for: " + seq[0:5])
                 # Start the processes for each protein with the targe function being genMassDict
                 pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
                                                     csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfFlag))
-                break
 
 
         #pepTotal.put(counter)
@@ -1149,7 +1151,7 @@ def combMass(combine, combineRef, origProtTups = None):
     massDict = {}
     try:
         maxMass = mgfData.maxMass
-        print('in maxmass')
+        # print('in maxmass')
     except:
         maxMass = 1000000
     for i in range(0, len(combine)):

@@ -45,8 +45,8 @@ class Fasta:
         self.pepTotal = multiprocessing.Queue()
         self.pepCompleted = multiprocessing.Queue()
 
-    def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                       maxDistance, outputPath, chargeFlags, mgfObj, mgfFlag):
+    def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
+                       protToPepFlag, modList, maxDistance, outputPath, chargeFlags, mgfObj, mgfFlag):
 
         """
         Function that literally combines everything to generate output
@@ -60,13 +60,15 @@ class Fasta:
                                                                           maxDistance, overlapFlag, modList,
                                                                           outputPath[TRANS], chargeFlags, mgfObj,
                                                                           modTable, mgfFlag, self.pepCompleted,
-                                                                          self.pepTotal, csvFlag))
+                                                                          self.pepTotal, csvFlag, pepToProtFlag,
+                                                                          protToPepFlag))
             self.allProcessList.append(transProc)
             transProc.start()
 
         if cisFlag:
             cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, CIS, mined, maxed,
-                                                                                  overlapFlag, csvFlag, modList,
+                                                                                  overlapFlag, csvFlag, pepToProtFlag,
+                                                                                  protToPepFlag, modList,
                                                                                   maxDistance, outputPath[CIS],
                                                                                   chargeFlags, mgfObj, modTable,
                                                                                   mgfFlag, self.pepCompleted,
@@ -77,6 +79,7 @@ class Fasta:
         if linearFlag:
             linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, LINEAR, mined,
                                                                                      maxed, overlapFlag, csvFlag,
+                                                                                     pepToProtFlag, protToPepFlag,
                                                                                      modList, maxDistance,
                                                                                      outputPath[LINEAR], chargeFlags,
                                                                                      mgfObj, modTable, mgfFlag,
@@ -88,10 +91,9 @@ class Fasta:
             process.join()
 
 
-
-
 def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
-                modList, outputPath, chargeFlags, mgfObj, modTable, mgfFlag, pepCompleted, pepTotal, csvFlag):
+                modList, outputPath, chargeFlags, mgfObj, modTable, mgfFlag, pepCompleted, pepTotal, csvFlag,
+                pepToProtFlag, protToPepFlag):
 
     finalPath = None
 
@@ -131,10 +133,13 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
     toWriteQueue = multiprocessing.Queue()
     linCisQueue = multiprocessing.Queue()
 
-    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockTrans, initargs=(lockVar, toWriteQueue, pepCompleted,
-                                          splits, splitRef, mgfObj, modTable, linCisQueue))
+    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockTrans, initargs=(lockVar, toWriteQueue,
+                                                                                               pepCompleted, splits,
+                                                                                               splitRef, mgfObj,
+                                                                                               modTable, linCisQueue))
 
-    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath, linCisQueue, True))
+    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath, linCisQueue, pepToProtFlag,
+                                                                 protToPepFlag, True))
     writerProcess.start()
 
     # Create a process for pairs of splits, pairing element 0 with -1, 1 with -2 and so on.
@@ -156,7 +161,8 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
             time.sleep(1)
             print('stuck in memory check')
 
-        pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, False, modList, finalPath, chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList, protList))
+        pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, False, modList,
+                                             finalPath, chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList, protList))
         pepTotal.put(1)
         splitsIndex = []
 
@@ -175,7 +181,8 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
     # Look to produce only trans spliced peptides - not linear or cis. Do so by not allowing combination of peptides
     # which originate from the same protein as opposed to solving for Cis and Linear and not including that
     # in the output
-    combined, combinedRef, linCisSet = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, protIndexList)
+    combined, combinedRef, linCisSet = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance,
+                                                           overlapFlag, splitsIndex, protIndexList)
 
     # Put linCisSet to linCisQueue:
     transProcess.linCisQueue.put(linCisSet)
@@ -226,9 +233,6 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
         logging.info("Writing released!")
 
     transProcess.pepCompleted.put(1)
-
-
-
 
 
 # Only works if we presume Cis proteins aren't being created in the trans process.
@@ -373,6 +377,7 @@ def splitTransPeptide(spliceType, peptide, mined, maxed, protIndexList):
 
     return splits, splitRef
 
+
 def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, protIndexList):
 
     """
@@ -437,8 +442,9 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
 
     return combModless, combModlessRef, linCisSet
 
-def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag,
-                       modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag, pepCompleted, pepTotal):
+def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag, pepToProtFlag, protToPepFlag,
+                       modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag, pepCompleted,
+                       pepTotal):
 
     """
     Process that is in charge for dealing with cis and linear. Creates sub processes for every protein to compute
@@ -466,7 +472,8 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit,
                                 initargs=(lockVar, toWriteQueue, pepCompleted,
                                           mgfObj, childTable, linSetQueue))
-    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath, linSetQueue))
+    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath, linSetQueue, pepToProtFlag,
+                                                                 protToPepFlag))
     writerProcess.start()
 
     maxMem = psutil.virtual_memory()[1] / 2
@@ -581,7 +588,7 @@ def getAllPep(massDict):
         allPeptides.add(alphaKey)
     return allPeptides
 
-def writer(queue, outputPath, linCisQueue, transFlag = False):
+def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFlag = False):
     seenPeptides = {}
     backwardsSeenPeptides = {}
     saveHandle = str(outputPath)
@@ -611,25 +618,28 @@ def writer(queue, outputPath, linCisQueue, transFlag = False):
         for peptide in commonPeptides:
             del seenPeptides[peptide]
 
-        # convert seen peptides to backwardsSeenPeptides
-        for key, value in seenPeptides.items():
-            # check if we are printing trans entries so that we can configure trans data
-            # before it goes into backwardsSeenPeptides
-            if transFlag:
-                origins = editTransOrigins(value)
-            else:
-                origins = value
-
-            # Come back to make this less ugly and more efficient
-            for entry in origins:
-                if entry not in backwardsSeenPeptides.keys():
-                    backwardsSeenPeptides[entry] = [key]
+        if protToPepFlag:
+            # convert seen peptides to backwardsSeenPeptides
+            for key, value in seenPeptides.items():
+                # check if we are printing trans entries so that we can configure trans data
+                # before it goes into backwardsSeenPeptides
+                if transFlag:
+                    origins = editTransOrigins(value)
                 else:
-                    backwardsSeenPeptides[entry].append(key)
+                    origins = value
+
+                # Come back to make this less ugly and more efficient
+                for entry in origins:
+                    if entry not in backwardsSeenPeptides.keys():
+                        backwardsSeenPeptides[entry] = [key]
+                    else:
+                        backwardsSeenPeptides[entry].append(key)
+            writeProtToPep(backwardsSeenPeptides, 'ProtToPep', outputPath)
+            
+        if pepToProtFlag:
+            writeProtToPep(seenPeptides, 'PepToProt', outputPath)
 
         logging.info("Writing to fasta")
-        writeProtToPep(backwardsSeenPeptides, 'ProtToPep', outputPath)
-        writeProtToPep(seenPeptides, 'PepToProt', outputPath)
         SeqIO.write(createSeqObj(seenPeptides, transFlag), output_handle, "fasta")
 
 def writeProtToPep(seenPeptides, groupedBy, outputPath):

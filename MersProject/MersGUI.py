@@ -447,7 +447,8 @@ class MyTableWidget(QWidget):
         """
 
         ppmVal, intensityThreshold, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, \
-        modList, outputFlag, chargeFlags, minSimBy, byIonAccuracy, byIonFlag, mgfFlag = self.getInputParams()
+        pepToProtFlag, protToPepFlag,  modList, outputFlag, chargeFlags, minSimBy, byIonAccuracy, \
+        byIonFlag, mgfFlag = self.getInputParams()
 
         reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' +
                                      'Minimum Peptide Length: ' + str(mined) + '\n' +
@@ -459,6 +460,8 @@ class MyTableWidget(QWidget):
                                      'Cis Splicing: ' + str(cisFlag) + '\n' +
                                      'Trans Splicing: ' + str(transFlag) + '\n' +
                                      'Print Intial Combinations: ' + str(csvFlag) + '\n' +
+                                     'Write Peptide to Protein Fasta: ' + str(pepToProtFlag) + '\n' +
+                                     'Write Protein to Peptide Fasta: ' + str(pepToProtFlag) + '\n' +
                                      'Charge States: ' + str(chargeFlags) + '\n' +
                                      'No MGF Comparison: ' + str(mgfFlag) + '\n' +
                                      'PPM Value: ' + str(ppmVal) + '\n' +
@@ -480,28 +483,27 @@ class MyTableWidget(QWidget):
                     outputPath[CIS] = outputFile + '-' + CIS + now + ".fasta"
                 if transFlag:
                     outputPath[TRANS] = outputFile + '-' + TRANS + now + ".fasta"
-                    print(outputPath[TRANS])
+                    # print(outputPath[TRANS])
 
                 if self.mgfFlag.isChecked() == False:
                     mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, ppmVal, intensityThreshold, minSimBy,
                                          byIonAccuracy, byIonFlag, chargeFlags)
                     mgfGen.signals.finished.connect(functools.partial(self.importedMGF, mined, maxed, overlapFlag,
                                                                       transFlag, cisFlag, linearFlag, csvFlag,
-                                                                      modList,
+                                                                      pepToProtFlag, protToPepFlag, modList,
                                                                       maxDistance, outputPath, chargeFlags))
                     self.threadpool.start(mgfGen)
                 else:
-                    self.importedMGF(mined, maxed, overlapFlag,transFlag, cisFlag, linearFlag, csvFlag, modList,
-                                     maxDistance, outputPath, chargeFlags, True)
+                    self.importedMGF(mined, maxed, overlapFlag,transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
+                                     protToPepFlag, modList, maxDistance, outputPath, chargeFlags, True)
 
-    def importedMGF(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                    maxDistance, outputPath, chargeFlags, mgfFlag=False):
+    def importedMGF(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
+                    protToPepFlag, modList, maxDistance, outputPath, chargeFlags, mgfFlag=False):
 
         print("MGF FILE UPLOADED")
 
-        self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                           maxDistance, outputPath, chargeFlags, mgfFlag)
-
+        self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
+                           protToPepFlag, modList, maxDistance, outputPath, chargeFlags, mgfFlag)
     def outputFinished(self):
 
         """
@@ -621,8 +623,8 @@ class MyTableWidget(QWidget):
         self.tab2.csv.setEnabled(True)
         self.tab2.output.setEnabled(True)
 
-    def outputPreStep(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList, maxDistance,
-                      outputPath, chargeFlags, mgfFlag):
+    def outputPreStep(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
+                      protToPepFlag, modList, maxDistance, outputPath, chargeFlags, mgfFlag):
 
         """
         Begins the output by creating a threadpool to keep gui responsive. Called by the confirmation function; also
@@ -635,7 +637,7 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.progressBar, 16, 3, 1, 4)
 
         self.outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag,
-                                         csvFlag,
+                                         csvFlag, pepToProtFlag, protToPepFlag,
                                          modList, maxDistance, outputPath, chargeFlags, mgfFlag)
 
         self.outputGen.signals.finished.connect(self.outputFinished)
@@ -663,8 +665,8 @@ class MyTableWidget(QWidget):
             self.tab2.maxDistCombo.setEnabled(True)
             self.tab2.overlap.setEnabled(True)
 
-    def output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-               maxDistance, outputPath, chargeFlags, mgfFlag):
+    def output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag, protToPepFlag,
+               modList, maxDistance, outputPath, chargeFlags, mgfFlag):
 
         """
         called by output pre-step function, it runs the generateOutput function from Mers.py; This is shown to be
@@ -676,9 +678,8 @@ class MyTableWidget(QWidget):
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
 
-        print("ABOUT TO DO OUTPUT")
-        self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, modList,
-                                  maxDistance, outputPath, chargeFlags, self.mgf, mgfFlag)
+        self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
+                                  protToPepFlag, modList, maxDistance, outputPath, chargeFlags, self.mgf, mgfFlag)
         end = time.time()
 
         print(end - start)
@@ -882,6 +883,9 @@ class MyTableWidget(QWidget):
         linearFlag = self.tab2.linear.isChecked()
 
         csvFlag = self.tab2.csv.isChecked()
+        pepToProtFlag = self.tab2.pepToProt.isChecked()
+        protToPepFlag = self.tab2.protToPep.isChecked()
+
 
         outputFlag = cisFlag or linearFlag or transFlag
 
@@ -891,13 +895,16 @@ class MyTableWidget(QWidget):
         plusFourFlag = self.tab2.plusFour.isChecked()
         plusFiveFlag = self.tab2.plusFive.isChecked()
 
+
         chargeFlags = [plusOneFlag, plusTwoFlag, plusThreeFlag, plusFourFlag, plusFiveFlag]
 
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(),
                    self.tab2.mod3Combo.currentText()]
 
+
         return ppmVal, toleranceLevel, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, \
-               linearFlag, csvFlag, modList, outputFlag, chargeFlags, minByIon, byIonAccuracy, byIonFlag, mgfFlag
+               linearFlag, csvFlag, pepToProtFlag, protToPepFlag, modList, outputFlag, chargeFlags, minByIon,\
+               byIonAccuracy, byIonFlag, mgfFlag
 
     def addMinMaxAndDist(self):
 
@@ -1017,8 +1024,8 @@ class MyTableWidget(QWidget):
         self.mgfPlotFlag = QCheckBox('Produce Intensity Plot')
         self.nextTab = QPushButton("Next Tab")
         self.nextTab.clicked.connect(self.nextTabFunc)
-        self.nextTab.setEnabled(False)
-        self.tabs.setTabEnabled(1, False)
+        # self.nextTab.setEnabled(False)
+        # self.tabs.setTabEnabled(1, False)
         self.mgfFlag = QCheckBox("No MGF Comparison")
         self.mgfFlag.stateChanged.connect(self.controlMGFInput)
 
@@ -1107,6 +1114,8 @@ class MyTableWidget(QWidget):
 
         # AN EXTRA ADD "WRITE TO CSV FUNCTION CHECKBOX"
         self.tab2.csv = QCheckBox('Write To Csv')
+        self.tab2.pepToProt = QCheckBox('Pep to Prot.csv')
+        self.tab2.protToPep = QCheckBox('Prot to Pep.csv')
 
         # create generate output push button
         self.tab2.output = QPushButton('Generate Output!', self)
@@ -1129,11 +1138,15 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.mod1, 4, 3)
         self.tab2.layout.addWidget(self.tab2.mod2, 5, 3)
         self.tab2.layout.addWidget(self.tab2.mod3, 6, 3)
-        self.tab2.layout.addWidget(self.tab2.overlap, 7, 3)
-        self.tab2.layout.addWidget(self.tab2.linear, 8, 3)
-        self.tab2.layout.addWidget(self.tab2.cis, 9, 3)
-        self.tab2.layout.addWidget(self.tab2.trans, 10, 3)
-        self.tab2.layout.addWidget(self.tab2.csv, 11, 3)
+        self.tab2.layout.addWidget(self.tab2.linear, 7, 3)
+        self.tab2.layout.addWidget(self.tab2.cis, 8, 3)
+        self.tab2.layout.addWidget(self.tab2.trans, 9, 3)
+        self.tab2.layout.addWidget(self.tab2.overlap, 10, 3)
+
+        self.tab2.layout.addWidget(self.tab2.csv, 7, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.pepToProt, 8, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.protToPep, 9, 4, 1, 3)
+
         self.tab2.layout.addWidget(self.tab2.chargeLabel, 12, 3)
 
         # all dynamic elements added to the grid layout of tab 2

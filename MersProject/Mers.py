@@ -588,22 +588,29 @@ def getAllPep(massDict):
         allPeptides.add(alphaKey)
     return allPeptides
 
+def memory_usage_psutil():
+    # return the memory usage in percentage like top
+    process = psutil.Process(os.getpid())
+    mem = process.memory_percent()
+    return mem
+
 def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFlag = False):
+
     seenPeptides = {}
     backwardsSeenPeptides = {}
-    saveHandle = str(outputPath)
     linCisSet = set()
+    saveHandle = str(outputPath)
+
+    outputTempFiles = []
+
     with open(saveHandle, "w") as output_handle:
         while True:
             matchedPeptides = queue.get()
             if not linCisQueue.empty():
                 linCisSet = linCisSet|linCisQueue.get()
             if matchedPeptides == 'stop':
-                logging.info("ALL LINEAR COMPUTED, STOP MESSAGE SENT")
+                logging.info("Everything computed, stop message has been sent")
                 break
-
-            # if type(matchedPeptides) == set:
-            #     for peptide in matchedPeptides:
 
             for key, value in matchedPeptides.items():
                 origins = value.split(';')
@@ -612,6 +619,40 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
                 else:
                     if value not in seenPeptides[key]:
                         seenPeptides[key] += origins
+
+            if memory_usage_psutil() > 102:
+                # remove linear/cis peptides from seenPeptides:
+                commonPeptides = linCisSet.intersection(seenPeptides.keys())
+                for peptide in commonPeptides:
+                    del seenPeptides[peptide]
+
+                if protToPepFlag:
+                    # convert seen peptides to backwardsSeenPeptides
+                    for key, value in seenPeptides.items():
+                        # check if we are printing trans entries so that we can configure trans data
+                        # before it goes into backwardsSeenPeptides
+                        if transFlag:
+                            origins = editTransOrigins(value)
+                        else:
+                            origins = value
+
+                        # Come back to make this less ugly and more efficient
+                        for entry in origins:
+                            if entry not in backwardsSeenPeptides.keys():
+                                backwardsSeenPeptides[entry] = [key]
+                            else:
+                                backwardsSeenPeptides[entry].append(key)
+                    writeProtToPep(backwardsSeenPeptides, 'ProtToPep', outputPath)
+
+                if pepToProtFlag:
+                    writeProtToPep(seenPeptides, 'PepToProt', outputPath)
+
+                logging.info("Writing to fasta")
+                SeqIO.write(createSeqObj(seenPeptides, transFlag), output_handle, "fasta")
+                seenPeptides = {}
+                backwardsSeenPeptides = {}
+                linCisSet = set()
+                outputHandle = 'a' + saveHandle
 
         # remove linear/cis peptides from seenPeptides:
         commonPeptides = linCisSet.intersection(seenPeptides.keys())
@@ -635,7 +676,7 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
                     else:
                         backwardsSeenPeptides[entry].append(key)
             writeProtToPep(backwardsSeenPeptides, 'ProtToPep', outputPath)
-            
+
         if pepToProtFlag:
             writeProtToPep(seenPeptides, 'PepToProt', outputPath)
 

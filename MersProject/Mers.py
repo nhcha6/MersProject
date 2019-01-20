@@ -16,6 +16,7 @@ import atexit
 import os
 import psutil
 import tempfile
+from queue import Queue
 
 TRANS = "Trans"
 LINEAR = "Linear"
@@ -601,13 +602,13 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
     linCisSet = set()
     saveHandle = str(outputPath)
 
-    outputTempFiles = []
+    outputTempFiles = Queue()
 
     with open(saveHandle, "w") as output_handle:
         while True:
             matchedPeptides = queue.get()
             if not linCisQueue.empty():
-                linCisSet = linCisSet|linCisQueue.get()
+                linCisSet = linCisSet | linCisQueue.get()
             if matchedPeptides == 'stop':
                 logging.info("Everything computed, stop message has been sent")
                 break
@@ -620,42 +621,25 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
                     if value not in seenPeptides[key]:
                         seenPeptides[key] += origins
 
-            # If current memory is above threshold write
-            if memory_usage_psutil() > 60:
+            # If current memory is above threshold write to a tempfile and add that to the outputTempFiles queue
+            if memory_usage_psutil() > 0.2:
                 # remove linear/cis peptides from seenPeptides:
                 commonPeptides = linCisSet.intersection(seenPeptides.keys())
                 for peptide in commonPeptides:
                     del seenPeptides[peptide]
+                tempName = writeTempFasta(seenPeptides)
 
-                temp = tempfile.NamedTemporaryFile(mode='w+t', suffix=".fasta", delete=False)
-                for key, value in seenPeptides.items():
-                    temp.writelines(">")
-                    for protein in value:
-                        temp.writelines(str(protein) + ";")
-                    temp.writelines("\n")
-                    temp.writelines(str(key))
-                    temp.writelines("\n")
-                logging.info("Writing to temp")
-                outputTempFiles.append(temp.name)
+                outputTempFiles.put(tempName)
                 seenPeptides = {}
                 backwardsSeenPeptides = {}
-                linCisSet = set()
 
-        # remove linear/cis peptides from seenPeptides:
+        # Was not over memory threshold but last few items left are also written to tempFile
         commonPeptides = linCisSet.intersection(seenPeptides.keys())
         for peptide in commonPeptides:
             del seenPeptides[peptide]
 
-        temp = tempfile.NamedTemporaryFile(mode='w+t', suffix=".fasta", delete=False)
-        for key, value in seenPeptides.items():
-            temp.writelines(">")
-            for protein in value:
-                temp.writelines(str(protein) + ";")
-            temp.writelines("\n")
-            temp.writelines(str(key))
-            temp.writelines("\n")
-        logging.info("Writing to temp")
-        outputTempFiles.append(temp.name)
+        tempName = writeTempFasta(seenPeptides)
+        outputTempFiles.put(tempName)
 
         if protToPepFlag:
             # convert seen peptides to backwardsSeenPeptides
@@ -678,11 +662,69 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
         if pepToProtFlag:
             writeProtToPep(seenPeptides, 'PepToProt', outputPath)
 
-        # logging.info("Writing to fasta")
-        # SeqIO.write(createSeqObj(seenPeptides, transFlag), output_handle, "fasta")
+        finalSeenPeptides = combineAllTempFasta(linCisSet, outputTempFiles)
+        logging.info("Writing to fasta")
+        SeqIO.write(createSeqObj(finalSeenPeptides, transFlag), output_handle, "fasta")
 
-    def tempFileMerger(outptuTempfiles):
-        return 1
+
+
+def combineAllTempFasta(linCisSet, outputTempFiles):
+
+    seenPeptides = {}
+    while not outputTempFiles.empty():
+
+        fileOne = outputTempFiles.get()
+        fileTwo = outputTempFiles.get()
+
+        if outputTempFiles.empty():
+            break
+
+        seenPeptides = combineTempFile(linCisSet, fileOne, fileTwo)
+
+        tempName = writeTempFasta(seenPeptides)
+        outputTempFiles.put(tempName)
+    # Return the last combination of two files remaining
+    return combineTempFile(linCisSet, fileOne, fileTwo)
+
+def combineTempFile(linCisSet, fileOne, fileTwo):
+    logging.info("Combining two files !")
+    seenPeptides = {}
+    with open(fileOne, 'rU') as handle:
+        for record in SeqIO.parse(handle, 'fasta'):
+
+            peptide = str(record.seq)
+            protein = str(record.name)
+            if peptide not in seenPeptides.keys():
+                seenPeptides[peptide] = [protein]
+            else:
+                seenPeptides[peptide].append(protein)
+    with open(fileTwo, 'rU') as handle:
+        for record in SeqIO.parse(handle, 'fasta'):
+
+            peptide = str(record.seq)
+            protein = str(record.name)
+            if peptide not in seenPeptides.keys():
+                seenPeptides[peptide] = [protein]
+            else:
+                seenPeptides[peptide].append(protein)
+    commonPeptides = linCisSet.intersection(seenPeptides.keys())
+    for peptide in commonPeptides:
+        del seenPeptides[peptide]
+
+    return seenPeptides
+
+
+def writeTempFasta(seenPeptides):
+    logging.info("Writing to temp")
+    temp = tempfile.NamedTemporaryFile(mode='w+t', suffix=".fasta", delete=False)
+    for key, value in seenPeptides.items():
+        temp.writelines(">")
+        for protein in value:
+            temp.writelines(str(protein) + ";")
+        temp.writelines("\n")
+        temp.writelines(str(key))
+        temp.writelines("\n")
+    return temp.name
 
 def writeProtToPep(seenPeptides, groupedBy, outputPath):
     with open(outputPath+ groupedBy + '.csv', 'a', newline='') as csv_file:
@@ -708,7 +750,6 @@ def editTransOrigins(origins):
             if prot[-1] == ')':
                 newOrigins.append(prot)
     return list(set(newOrigins))
-
 
 
 def fulfillPpmReq(mgfObj, massDict):

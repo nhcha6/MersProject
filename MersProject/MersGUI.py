@@ -338,7 +338,6 @@ class MyTableWidget(QWidget):
                 outputPath = outputFile + '/' + text
             else:
                 return False
-        print(outputPath)
         return outputPath
 
     def stopFunction(self):

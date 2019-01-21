@@ -580,7 +580,8 @@ class MyTableWidget(QWidget):
         self.tab1.byIonAccText.setEnabled(False)
         self.tab1.byIonFlag.setEnabled(False)
         self.tab2.csv.setEnabled(False)
-        self.tab2.output.setEnabled(False)
+        self.tab2.pepToProt.setEnabled(False)
+        self.tab2.protToPep.setEnabled(False)
 
     def enableAllWidgets(self):
 
@@ -620,6 +621,8 @@ class MyTableWidget(QWidget):
         self.tab2.mod2Combo.setEnabled(True)
         self.tab2.mod3Combo.setEnabled(True)
         self.tab2.csv.setEnabled(True)
+        self.tab2.pepToProt.setEnabled(True)
+        self.tab2.protToPep.setEnabled(False)
         self.tab2.output.setEnabled(True)
 
     def outputPreStep(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,

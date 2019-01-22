@@ -602,13 +602,18 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
 
     with open(saveHandle, "w") as output_handle:
         while True:
+            # get from cisLinQueue and from matchedPeptide Queue
             matchedPeptides = queue.get()
             if not linCisQueue.empty():
                 linCisSet = linCisSet | linCisQueue.get()
+            # if stop is sent to the matchedPeptide Queue, everything has been output,
+            # so we exit the while loop.
             if matchedPeptides == 'stop':
                 logging.info("Everything computed, stop message has been sent")
                 break
 
+            # each queue.get() returns the matchedPeptides from an individual process.
+            # Add  the matchedPeptides from the given process to seenPeptides.
             for key, value in matchedPeptides.items():
                 origins = value.split(';')
                 if key not in seenPeptides.keys():
@@ -633,13 +638,19 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
         commonPeptides = linCisSet.intersection(seenPeptides.keys())
         for peptide in commonPeptides:
             del seenPeptides[peptide]
+
+        # if no tempFiles have been generated so far, meaning the memory limit was never exceded,
+        # seenPeptides already contains all the peptides generated.
         if outputTempFiles.empty():
             finalSeenPeptides = seenPeptides
+        # if we have created at least one tempFile, write the remaining sequences to tempFile
+        # then combine all temp files.
         else:
             tempName = writeTempFasta(seenPeptides)
             outputTempFiles.put(tempName)
             finalSeenPeptides = combineAllTempFasta(linCisSet, outputTempFiles)
 
+        # generate backwardSeenPeptides if protToPep is selected
         if protToPepFlag:
             # convert seen peptides to backwardsSeenPeptides
             for key, value in finalSeenPeptides.items():
@@ -672,16 +683,26 @@ def combineAllTempFasta(linCisSet, outputTempFiles):
     seenPeptides = {}
     while not outputTempFiles.empty():
 
+        # Get the two files at the top of the tempFiles queue for combination.
+        # Note that there will never be one temp file in the queue when the
+        # while loop is being checked, so you will always be able to get two
+        # temp files from the queue if it passes the not empty check.
         fileOne = outputTempFiles.get()
         fileTwo = outputTempFiles.get()
 
+        # if this reduces the queue to empty, break the loop. We do this to avoid merging
+        # the last two temp files, adding the result to the queue and then passing a queue with
+        # only one temp file in it into the while loop.
         if outputTempFiles.empty():
             break
 
+        # when there are still more temp files in the queue, extract seenPeptides from the
+        # current two temp files, write them to a new tempFile and add it to the temp file Queue.
         seenPeptides = combineTempFile(linCisSet, fileOne, fileTwo)
-
         tempName = writeTempFasta(seenPeptides)
         outputTempFiles.put(tempName)
+
+    # once the while loop breaks, return the finalSeenPetides from the remaining two tempFiles.
     finalSeenPeptides = combineTempFile(linCisSet, fileOne, fileTwo)
 
     # Return the last combination of two files remaining

@@ -390,7 +390,6 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
     # initialise linCisVariable holder.
     linCisSet = set()
     # initialise combinations array to hold the possible combinations from the input splits
-    massDict = {}
     combModless = []
     combModlessRef = []
 
@@ -418,29 +417,25 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
                         # check if linear and add to linearSet if so
                         linCisSet = addLinPeptides(toAddForward, addForwardRef, linCisSet, protIndexList)
                         linCisSet = addLinPeptides(toAddReverse, addReverseRef, linCisSet, protIndexList)
-                        massDict[toAddForward] = addForwardRef
-                        massDict[toAddReverse] = addReverseRef
+                        combModless.append(toAddForward)
+                        combModlessRef.append(addForwardRef)
+                        combModless.append(toAddReverse)
+                        combModlessRef.append(addReverseRef)
 
                 else:
                     # check if linear and add to linearSet if so
                     linCisSet = addLinPeptides(toAddForward, addForwardRef, linCisSet, protIndexList)
                     linCisSet = addLinPeptides(toAddReverse, addReverseRef, linCisSet, protIndexList)
-                    massDict[toAddForward] = addForwardRef
-                    massDict[toAddReverse] = addReverseRef
+                    combModless.append(toAddForward)
+                    combModlessRef.append(addForwardRef)
+                    combModless.append(toAddReverse)
+                    combModlessRef.append(addReverseRef)
 
             elif not maxDistCheck(splitRef[i], splitRef[j], maxDistance):
                 break
 
             toAddForward = ""
             toAddReverse = ""
-
-
-    for peptide, ref in massDict.items():
-        if peptide in linCisSet:
-            continue
-        else:
-            combModless.append(peptide)
-            combModlessRef.append(ref)
 
     return combModless, combModlessRef, linCisSet
 
@@ -668,7 +663,7 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
             writeProtToPep(finalSeenPeptides, 'PepToProt', outputPath)
 
         logging.info("Writing to fasta")
-        SeqIO.write(createSeqObj(finalSeenPeptides, transFlag), output_handle, "fasta")
+        SeqIO.write(createSeqObj(finalSeenPeptides), output_handle, "fasta")
 
 
 
@@ -777,7 +772,7 @@ def fulfillPpmReq(mgfObj, massDict):
     logging.info("Writing complete")
 
 
-def createSeqObj(matchedPeptides, transFlag):
+def createSeqObj(matchedPeptides):
     """
     Given the set of matchedPeptides, converts all of them into SeqRecord objects and passes back a generator
     """
@@ -787,9 +782,8 @@ def createSeqObj(matchedPeptides, transFlag):
 
         finalId = "ipd|pep"+str(count)+';'
 
-        if transFlag == False:
-            for protein in value:
-                finalId+=protein+';'
+        for protein in value:
+            finalId+=protein+';'
 
         yield SeqRecord(Seq(sequence), id=finalId, description="")
 

@@ -63,23 +63,28 @@ class Fasta:
         if linearFlag:
 
             smallSeqDict = {}
-            counter = 0
+            counter = 1
             fileNumb = 1
             for key, value in self.seqDict.items():
-                if counter == 50:
-                    print('in')
-                    linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(smallSeqDict, LINEAR, mined,
-                                                                                     maxed, overlapFlag, csvFlag,
-                                                                                     modList, maxDistance,
-                                                                                     outputPath, chargeFlags, mgfObj, modTable, fileNumb))
+                if counter % 50 == 0:
+                    print('Starting file number ' + str(fileNumb))
+                    # linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(smallSeqDict, LINEAR, mined,
+                    #                                                                  maxed, overlapFlag, csvFlag,
+                    #                                                                  modList, maxDistance,
+                    #                                                                  outputPath, chargeFlags, mgfObj, modTable, fileNumb))
+                    cisAndLinearOutput(smallSeqDict, LINEAR, mined, maxed, overlapFlag, csvFlag,
+                                        modList, maxDistance, outputPath, chargeFlags, mgfObj, modTable, fileNumb)
                     #self.allProcessList.append(linearProcess)
-                    linearProcess.start()
-                    linearProcess.join()
-                    counter+=1
+                    # linearProcess.start()
+                    # linearProcess.join()
+                    print('wooooooo')
                     fileNumb+=1
                     smallSeqDict = {}
+
                 smallSeqDict[key] = value
                 counter+=1
+            cisAndLinearOutput(smallSeqDict, LINEAR, mined, maxed, overlapFlag, csvFlag,
+                               modList, maxDistance, outputPath, chargeFlags, mgfObj, modTable, fileNumb)
 
 
         # for process in self.allProcessList:

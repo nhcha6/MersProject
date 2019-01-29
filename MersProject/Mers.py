@@ -62,19 +62,31 @@ class Fasta:
 
         if linearFlag:
 
-            linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.seqDict, LINEAR, mined,
+            smallSeqDict = {}
+            counter = 0
+            fileNumb = 1
+            for key, value in self.seqDict.items():
+                if counter == 50:
+                    linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(smallSeqDict, LINEAR, mined,
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      modList, maxDistance,
-                                                                                     outputPath, chargeFlags, mgfObj, modTable))
-            self.allProcessList.append(linearProcess)
-            linearProcess.start()
+                                                                                     outputPath, chargeFlags, mgfObj, modTable, fileNumb))
+                    #self.allProcessList.append(linearProcess)
+                    linearProcess.start()
+                    linearProcess.join()
+                    counter+=1
+                    fileNumb+=1
+                    smallSeqDict = {}
+                smallSeqDict[key] = value
+                counter+=1
 
-        for process in self.allProcessList:
-            process.join()
+
+        # for process in self.allProcessList:
+        #     process.join()
 
 
 def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
-                       modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable):
+                       modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable, fileNumb):
 
     """
     Process that is in charge for dealing with cis and linear. Creates sub processes for every protein to compute
@@ -103,7 +115,7 @@ def cisAndLinearOutput(seqDict, spliceType, mined, maxed, overlapFlag, csvFlag,
     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit, initargs=(lockVar, toWriteQueue,
                                                                                               mgfObj, childTable))
 
-    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath))
+    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath, fileNumb))
     writerProcess.start()
 
     for key, value in seqDict.items():
@@ -167,9 +179,9 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
 
 
-def writer(queue, outputPath):
+def writer(queue, outputPath, fileNumb):
     seenPeptides = {}
-    saveHandle = str(outputPath) + "/NewOutput1.fasta"
+    saveHandle = str(outputPath) + "/NewOutput" + str(fileNumb) + ".fasta"
     print(saveHandle)
     with open(saveHandle, "w") as output_handle:
         while True:

@@ -22,7 +22,8 @@ TRANS = "Trans"
 LINEAR = "Linear"
 CIS = "Cis"
 
-MEMORY_THRESHOLD = 0.2
+MEMORY_THRESHOLD = 80
+MEMORY_THRESHOLD_COMBINE = 90
 
 logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 # logging.disable(logging.INFO)
@@ -730,7 +731,7 @@ def combineTempFile(fileOne, fileTwo, linCisSet, counter, outputPath):
                 seenPeptides[peptide] = [protein]
             else:
                 seenPeptides[peptide].append(protein)
-            if memory_usage_psutil() > 0.2:
+            if memory_usage_psutil() > MEMORY_THRESHOLD_COMBINE:
                 outputPath = outputPath.split('.fasta')[0]
                 finalPath = outputPath + "-file" + str(counter) + '.fasta'
                 with open(finalPath, 'w') as output_handle:

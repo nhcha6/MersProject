@@ -871,13 +871,14 @@ def genericMod(combineModlessDict, character, massChange, modNo, maxMod):
     key of the output is simply the modified peptide, and the value is the mass which
     results as set by massChange
     """
+
     print(maxMod)
+
     # A, B, C  convert to ai, bi, ci where i is the modNo
     modDict = {}
 
     # Go through each combination and mod it if necessary
     for string in combineModlessDict.keys():
-
         currentMass = combineModlessDict[string][0]
         currentRef = combineModlessDict[string][1]
 
@@ -885,12 +886,19 @@ def genericMod(combineModlessDict, character, massChange, modNo, maxMod):
         if character in string:
 
             numOccur = string.count(character)
+            seqToIter = [string]
             # Generate all permutations with the mods
-            for j in range(0, numOccur):
-                temp = string
-                for i in range(0, numOccur - j):
-                    newMass = currentMass + (i + 1) * massChange
-                    temp = nth_replace(temp, character, character.lower() + modNo, j + 1)
+            for j in range(numOccur, 0, -1):
+                newMods = []
+                for seq in seqToIter:
+                    #print(seq)
+                    noOfMods = seq.count(modNo) + 1
+                    if noOfMods>maxMods:
+                        continue
+                    newMass = currentMass + noOfMods * massChange
+                    temp = nth_replace(seq, character, character.lower() + modNo, j)
+                    newMods.append(temp)
+                    #print(newMods)
                     newValue = [newMass, currentRef]
                     # if trans is running, the original protein tuple must be updated with the modified peptide
                     try:
@@ -898,8 +906,8 @@ def genericMod(combineModlessDict, character, massChange, modNo, maxMod):
                     except IndexError:
                         print('')
                     modDict[temp] = newValue
+                seqToIter += newMods
     return modDict
-
 
 def splitDictPeptide(spliceType, peptide, mined, maxed):
 

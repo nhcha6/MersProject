@@ -48,7 +48,7 @@ class Fasta:
         self.pepCompleted = multiprocessing.Queue()
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
-                       protToPepFlag, modList, maxDistance, outputPath, chargeFlags, mgfObj, mgfFlag):
+                       protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfObj, mgfFlag):
 
         """
         Function that literally combines everything to generate output
@@ -59,7 +59,7 @@ class Fasta:
         if transFlag:
 
             transProc = multiprocessing.Process(target=transOutput, args=(self.inputFile, TRANS, mined, maxed,
-                                                                          maxDistance, overlapFlag, modList,
+                                                                          maxDistance, overlapFlag, modList, maxMod,
                                                                           outputPath[TRANS], chargeFlags, mgfObj,
                                                                           modTable, mgfFlag, self.pepCompleted,
                                                                           self.pepTotal, csvFlag, pepToProtFlag,
@@ -70,7 +70,7 @@ class Fasta:
         if cisFlag:
             cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, CIS, mined, maxed,
                                                                                   overlapFlag, csvFlag, pepToProtFlag,
-                                                                                  protToPepFlag, modList,
+                                                                                  protToPepFlag, modList, maxMod,
                                                                                   maxDistance, outputPath[CIS],
                                                                                   chargeFlags, mgfObj, modTable,
                                                                                   mgfFlag, self.pepCompleted,
@@ -82,7 +82,7 @@ class Fasta:
             linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, LINEAR, mined,
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      pepToProtFlag, protToPepFlag,
-                                                                                     modList, maxDistance,
+                                                                                     modList, maxMod, maxDistance,
                                                                                      outputPath[LINEAR], chargeFlags,
                                                                                      mgfObj, modTable, mgfFlag,
                                                                                      self.pepCompleted, self.pepTotal))
@@ -94,7 +94,7 @@ class Fasta:
 
 
 def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
-                modList, outputPath, chargeFlags, mgfObj, modTable, mgfFlag, pepCompleted, pepTotal, csvFlag,
+                modList, maxMod, outputPath, chargeFlags, mgfObj, modTable, mgfFlag, pepCompleted, pepTotal, csvFlag,
                 pepToProtFlag, protToPepFlag):
 
     finalPath = None
@@ -163,7 +163,7 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
             time.sleep(1)
             print('stuck in memory check')
 
-        pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, False, modList,
+        pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, False, modList, maxMod,
                                              finalPath, chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList, protList))
         pepTotal.put(1)
         splitsIndex = []
@@ -177,7 +177,7 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
 
 # takes splits index from the multiprocessing pool and adds to writer the output. Splits and SplitRef are global
 # variables within the pool.
-def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, finalPath,
+def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, maxMod, finalPath,
                  chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList, protList):
 
     # Look to produce only trans spliced peptides - not linear or cis. Do so by not allowing combination of peptides
@@ -196,7 +196,7 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
     massDict = combMass(combined, combinedRef, origProtTups)
 
     # Apply mods to the dictionary values and update the dictionary
-    massDict = applyMods(massDict, modList)
+    massDict = applyMods(massDict, modList, maxMod)
 
     # Add the charge information along with their masses
     chargeIonMass(massDict, chargeFlags)
@@ -440,7 +440,7 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
     return combModless, combModlessRef, linCisSet
 
 def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag, pepToProtFlag, protToPepFlag,
-                       modList, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag, pepCompleted,
+                       modList, maxMod, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag, pepCompleted,
                        pepTotal):
 
     """
@@ -492,7 +492,7 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
             logging.info(spliceType + " process started for: " + seq[0:5])
             # Start the processes for each protein with the targe function being genMassDict
             pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
-                                                    csvFlag, modList, maxDistance, finalPath, chargeFlags, mgfFlag))
+                                                    csvFlag, modList, maxMod, maxDistance, finalPath, chargeFlags, mgfFlag))
 
 
         #pepTotal.put(counter)
@@ -519,7 +519,7 @@ def memoryCheck2():
     else:
         return False
 
-def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList,
+def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList, maxMod,
                 maxDistance, finalPath, chargeFlags, mgfFlag):
 
     """
@@ -537,8 +537,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     massDict = combMass(combined, combinedRef)
 
     # Apply mods to the dictionary values and update the dictionary
-    massDict = applyMods(massDict, modList)
-
+    massDict = applyMods(massDict, modList, maxMod)
 
     # Add the charge information along with their masses
     chargeIonMass(massDict, chargeFlags)
@@ -835,7 +834,7 @@ def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance=100
 
     return combined, combinedRef, linSet
 
-def applyMods(combineModlessDict, modList):
+def applyMods(combineModlessDict, modList, maxMod):
 
     """
     Calls the genericMod function and accesses the modification table to
@@ -858,13 +857,13 @@ def applyMods(combineModlessDict, modList):
                 char = aminoList[i]
                 massChange = aminoList[-1]
                 # get the dictionary of mods and their mass
-                modDict = genericMod(combineModlessDict, char, massChange, str(modNo))
+                modDict = genericMod(combineModlessDict, char, massChange, str(modNo), maxMod)
                 # Add it to the current list!
                 combineModlessDict.update(modDict)
     return combineModlessDict
 
 
-def genericMod(combineModlessDict, character, massChange, modNo):
+def genericMod(combineModlessDict, character, massChange, modNo, maxMod):
 
     """
     From the modless dictionary of possible combinations, this function returns a
@@ -872,6 +871,7 @@ def genericMod(combineModlessDict, character, massChange, modNo):
     key of the output is simply the modified peptide, and the value is the mass which
     results as set by massChange
     """
+    print(maxMod)
     # A, B, C  convert to ai, bi, ci where i is the modNo
     modDict = {}
 

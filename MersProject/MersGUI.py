@@ -446,7 +446,7 @@ class MyTableWidget(QWidget):
         """
 
         ppmVal, intensityThreshold, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, \
-        pepToProtFlag, protToPepFlag,  modList, outputFlag, chargeFlags, minSimBy, byIonAccuracy, \
+        pepToProtFlag, protToPepFlag,  modList, maxMod, outputFlag, chargeFlags, minSimBy, byIonAccuracy, \
         byIonFlag, mgfFlag = self.getInputParams()
 
         reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' +
@@ -454,6 +454,7 @@ class MyTableWidget(QWidget):
                                      'Maximum Peptide Length: ' + str(maxed) + '\n' +
                                      'Maximum Distance: ' + str(maxDistance) + '\n' +
                                      'Modifications: ' + str(modList) + '\n' +
+                                     'Max Mods Per Pep: ' + str(maxMod) + '\n' +
                                      'No Overlap: ' + str(overlapFlag) + '\n' +
                                      'Linear Splicing: ' + str(linearFlag) + '\n' +
                                      'Cis Splicing: ' + str(cisFlag) + '\n' +
@@ -494,15 +495,15 @@ class MyTableWidget(QWidget):
                     self.threadpool.start(mgfGen)
                 else:
                     self.importedMGF(mined, maxed, overlapFlag,transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
-                                     protToPepFlag, modList, maxDistance, outputPath, chargeFlags, True)
+                                     protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, True)
 
     def importedMGF(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
-                    protToPepFlag, modList, maxDistance, outputPath, chargeFlags, mgfFlag=False):
+                    protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag=False):
 
         print("MGF FILE UPLOADED")
 
         self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
-                           protToPepFlag, modList, maxDistance, outputPath, chargeFlags, mgfFlag)
+                           protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag)
     def outputFinished(self):
 
         """
@@ -570,6 +571,7 @@ class MyTableWidget(QWidget):
         self.tab2.mod1Combo.setEnabled(False)
         self.tab2.mod2Combo.setEnabled(False)
         self.tab2.mod3Combo.setEnabled(False)
+        self.tab2.maxModCombo.setEnabled(False)
         self.pushButton1.setEnabled(False)
         self.mgfButton.setEnabled(False)
         self.mgfPlotFlag.setEnabled(False)
@@ -620,13 +622,14 @@ class MyTableWidget(QWidget):
         self.tab2.mod1Combo.setEnabled(True)
         self.tab2.mod2Combo.setEnabled(True)
         self.tab2.mod3Combo.setEnabled(True)
+        self.tab2.maxModCombo.setEnabled(True)
         self.tab2.csv.setEnabled(True)
         self.tab2.pepToProt.setEnabled(True)
         self.tab2.protToPep.setEnabled(False)
         self.tab2.output.setEnabled(True)
 
     def outputPreStep(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
-                      protToPepFlag, modList, maxDistance, outputPath, chargeFlags, mgfFlag):
+                      protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag):
 
         """
         Begins the output by creating a threadpool to keep gui responsive. Called by the confirmation function; also
@@ -640,7 +643,7 @@ class MyTableWidget(QWidget):
 
         self.outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag,
                                          csvFlag, pepToProtFlag, protToPepFlag,
-                                         modList, maxDistance, outputPath, chargeFlags, mgfFlag)
+                                         modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag)
 
         self.outputGen.signals.finished.connect(self.outputFinished)
         self.threadpool.start(self.outputGen)
@@ -668,7 +671,7 @@ class MyTableWidget(QWidget):
             self.tab2.overlap.setEnabled(True)
 
     def output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag, protToPepFlag,
-               modList, maxDistance, outputPath, chargeFlags, mgfFlag):
+               modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag):
 
         """
         called by output pre-step function, it runs the generateOutput function from Mers.py; This is shown to be
@@ -681,7 +684,7 @@ class MyTableWidget(QWidget):
             maxDistance = int(maxDistance)
 
         self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
-                                  protToPepFlag, modList, maxDistance, outputPath, chargeFlags, self.mgf, mgfFlag)
+                                  protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, self.mgf, mgfFlag)
         end = time.time()
 
         print(end - start)
@@ -903,9 +906,11 @@ class MyTableWidget(QWidget):
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(),
                    self.tab2.mod3Combo.currentText()]
 
+        maxMod = self.tab2.maxModCombo.currentText()
+
 
         return ppmVal, toleranceLevel, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, \
-               linearFlag, csvFlag, pepToProtFlag, protToPepFlag, modList, outputFlag, chargeFlags, minByIon,\
+               linearFlag, csvFlag, pepToProtFlag, protToPepFlag, modList, maxMod, outputFlag, chargeFlags, minByIon,\
                byIonAccuracy, byIonFlag, mgfFlag
 
     def addMinMaxAndDist(self):
@@ -966,12 +971,14 @@ class MyTableWidget(QWidget):
         self.tab2.mod1 = QLabel('Modification 1 : ')
         self.tab2.mod2 = QLabel('Modification 2 : ')
         self.tab2.mod3 = QLabel('Modification 3 : ')
+        self.tab2.maxMod = QLabel('Max Mods Per Pep: ')
         self.tab2.mod1Combo = QComboBox(self)
         self.tab2.mod1Combo.activated[str].connect(self.modSelected)
         self.tab2.mod2Combo = QComboBox(self)
         self.tab2.mod2Combo.activated[str].connect(self.modSelected)
         self.tab2.mod3Combo = QComboBox(self)
         self.tab2.mod3Combo.activated[str].connect(self.modSelected)
+        self.tab2.maxModCombo = QComboBox(self)
 
         # Adding values to modification combo boxes
         self.tab2.mod1Combo.addItem("None")
@@ -984,6 +991,11 @@ class MyTableWidget(QWidget):
         self.tab2.mod1Combo.addItem('Custom Modification')
         self.tab2.mod2Combo.addItem('Custom Modification')
         self.tab2.mod3Combo.addItem('Custom Modification')
+
+        # Add values to maxMod combo box:
+        self.tab2.maxModCombo.addItem('None')
+        for i in range(1,6):
+            self.tab2.maxModCombo.addItem(str(i))
 
     def textBoxSender(self, sender):
         if sender == self.tab1.byIonAccText:
@@ -1140,16 +1152,17 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.mod1, 4, 3)
         self.tab2.layout.addWidget(self.tab2.mod2, 5, 3)
         self.tab2.layout.addWidget(self.tab2.mod3, 6, 3)
-        self.tab2.layout.addWidget(self.tab2.linear, 7, 3)
-        self.tab2.layout.addWidget(self.tab2.cis, 8, 3)
-        self.tab2.layout.addWidget(self.tab2.trans, 9, 3)
-        self.tab2.layout.addWidget(self.tab2.overlap, 10, 3)
+        self.tab2.layout.addWidget(self.tab2.maxMod, 7, 3)
+        self.tab2.layout.addWidget(self.tab2.linear, 8, 3)
+        self.tab2.layout.addWidget(self.tab2.cis, 9, 3)
+        self.tab2.layout.addWidget(self.tab2.trans, 10, 3)
+        self.tab2.layout.addWidget(self.tab2.overlap, 11, 3)
 
-        self.tab2.layout.addWidget(self.tab2.csv, 7, 4, 1, 3)
-        self.tab2.layout.addWidget(self.tab2.pepToProt, 8, 4, 1, 3)
-        self.tab2.layout.addWidget(self.tab2.protToPep, 9, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.csv, 8, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.pepToProt, 9, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.protToPep, 10, 4, 1, 3)
 
-        self.tab2.layout.addWidget(self.tab2.chargeLabel, 12, 3)
+        self.tab2.layout.addWidget(self.tab2.chargeLabel, 13, 3)
 
         # all dynamic elements added to the grid layout of tab 2
         self.tab2.layout.addWidget(self.tab2.minimumCombo, 1, 4, 1, 3)
@@ -1158,13 +1171,14 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.mod1Combo, 4, 4, 1, 3)
         self.tab2.layout.addWidget(self.tab2.mod2Combo, 5, 4, 1, 3)
         self.tab2.layout.addWidget(self.tab2.mod3Combo, 6, 4, 1, 3)
-        self.tab2.layout.addWidget(self.tab2.plusOne, 12, 4)
-        self.tab2.layout.addWidget(self.tab2.plusTwo, 12, 5)
-        self.tab2.layout.addWidget(self.tab2.plusThree, 12, 6)
-        self.tab2.layout.addWidget(self.tab2.plusFour, 13, 4)
-        self.tab2.layout.addWidget(self.tab2.plusFive, 13, 5)
-        self.tab2.layout.addWidget(self.tab2.output, 14, 5, 1, 2)
-        self.tab2.layout.addWidget(self.tab2.stop, 14, 3)
+        self.tab2.layout.addWidget(self.tab2.maxModCombo, 7, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.plusOne, 13, 4)
+        self.tab2.layout.addWidget(self.tab2.plusTwo, 13, 5)
+        self.tab2.layout.addWidget(self.tab2.plusThree, 13, 6)
+        self.tab2.layout.addWidget(self.tab2.plusFour, 14, 4)
+        self.tab2.layout.addWidget(self.tab2.plusFive, 14, 5)
+        self.tab2.layout.addWidget(self.tab2.output, 15, 5, 1, 2)
+        self.tab2.layout.addWidget(self.tab2.stop, 15, 3)
 
     def setDefaultParameters(self):
 

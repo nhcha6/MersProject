@@ -113,6 +113,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                 break
                             else:
                                 # Check the similarity of the byIons as was being done previously
+                                # if closestMatched == False: create byIonArray, ptherwise it has already been created
                                 byIonArray = initIonMass(key, modList)
                                 mzArray = mgfObj.pepmassIonArray[(charge, pepMass)]
                                 # If they match in accordance with the input minimum requirement, add them to the list

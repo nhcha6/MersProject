@@ -225,10 +225,6 @@ class MyTableWidget(QWidget):
         self.finishedPeptides = 0
         self.totalSize = 0
 
-    def importedMGF(self):
-        print("MGF FILE UPLOADED")
-        QMessageBox.about(self, "Message", 'MGF file imported.')
-
     def uploadMgf(self, input_path, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag, chargeFlags):
         mgfDf, pepmassIonArray = readMGF(input_path, intensityThreshold)
 

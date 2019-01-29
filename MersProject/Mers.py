@@ -77,12 +77,12 @@ class Fasta:
                     #self.allProcessList.append(linearProcess)
                     # linearProcess.start()
                     # linearProcess.join()
-                    print('wooooooo')
                     fileNumb+=1
                     smallSeqDict = {}
 
                 smallSeqDict[key] = value
                 counter+=1
+            print('Starting file number ' + str(fileNumb))
             cisAndLinearOutput(smallSeqDict, LINEAR, mined, maxed, overlapFlag, csvFlag,
                                modList, maxDistance, outputPath, chargeFlags, mgfObj, modTable, fileNumb)
 

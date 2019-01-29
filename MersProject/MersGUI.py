@@ -637,9 +637,9 @@ class MyTableWidget(QWidget):
         """
 
         self.progressLabel = QLabel('Collating Combinations. Please Wait: ')
-        self.tab2.layout.addWidget(self.progressLabel, 15, 3, 1, 2)
+        self.tab2.layout.addWidget(self.progressLabel, 16, 3, 1, 2)
         self.progressBar = QProgressBar(self)
-        self.tab2.layout.addWidget(self.progressBar, 16, 3, 1, 4)
+        self.tab2.layout.addWidget(self.progressBar, 17, 3, 1, 4)
 
         self.outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag,
                                          csvFlag, pepToProtFlag, protToPepFlag,

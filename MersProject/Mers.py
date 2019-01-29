@@ -67,6 +67,7 @@ class Fasta:
             fileNumb = 1
             for key, value in self.seqDict.items():
                 if counter == 50:
+                    print('in')
                     linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(smallSeqDict, LINEAR, mined,
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      modList, maxDistance,

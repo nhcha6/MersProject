@@ -872,7 +872,10 @@ def genericMod(combineModlessDict, character, massChange, modNo, maxMod):
     results as set by massChange
     """
 
-    print(maxMod)
+    if maxMod == 'None':
+        maxMod = 100
+    else:
+        maxMod = int(maxMod)
 
     # A, B, C  convert to ai, bi, ci where i is the modNo
     modDict = {}
@@ -893,7 +896,7 @@ def genericMod(combineModlessDict, character, massChange, modNo, maxMod):
                 for seq in seqToIter:
                     #print(seq)
                     noOfMods = seq.count(modNo) + 1
-                    if noOfMods>maxMods:
+                    if noOfMods>maxMod:
                         continue
                     newMass = currentMass + noOfMods * massChange
                     temp = nth_replace(seq, character, character.lower() + modNo, j)

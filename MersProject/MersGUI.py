@@ -490,7 +490,7 @@ class MyTableWidget(QWidget):
                                          byIonAccuracy, byIonFlag, chargeFlags)
                     mgfGen.signals.finished.connect(functools.partial(self.importedMGF, mined, maxed, overlapFlag,
                                                                       transFlag, cisFlag, linearFlag, csvFlag,
-                                                                      pepToProtFlag, protToPepFlag, modList,
+                                                                      pepToProtFlag, protToPepFlag, modList, maxMod,
                                                                       maxDistance, outputPath, chargeFlags))
                     self.threadpool.start(mgfGen)
                 else:

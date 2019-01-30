@@ -13,6 +13,7 @@ import json
 import logging
 from MGFMain import *
 import atexit
+from pathlib import Path
 
 TRANS = "Trans"
 LINEAR = "Linear"
@@ -169,7 +170,9 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
 
 def writer(queue, outputPath):
     seenPeptides = {}
-    saveHandle = str(outputPath) + "/NewOutput1.fasta"
+    #saveHandle = "C:\Users\Administrators\Desktop\desktopA2HardCoded.fasta"
+    saveHandle = outputPath + '/' + 'desktopA2HardCoded.fasta'
+    saveHandle = Path(saveHandle)
     print(saveHandle)
     with open(saveHandle, "w") as output_handle:
         while True:
@@ -188,10 +191,21 @@ def writer(queue, outputPath):
                 else:
                     seenPeptides[key].append(value)
 
-
-
         logging.info("Writing to fasta")
+
+        # counter = 1
+        # seenPepSubset = {}
+        # for key, value in seenPeptides.items():
+        #     if counter % 100000 == 0:
+        #         SeqIO.write(createSeqObj(seenPepSubset), output_handle, "fasta")
+        #         seenPepSubset = {}
+        #     seenPepSubset[key] = value
+        #     counter+=1
+        # SeqIO.write(createSeqObj(seenPepSubset), output_handle, "fasta")
+
         SeqIO.write(createSeqObj(seenPeptides), output_handle, "fasta")
+
+
 
 
 def fulfillPpmReq(mgfObj, massDict):

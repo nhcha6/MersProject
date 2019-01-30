@@ -113,16 +113,6 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
 
     finalPeptide, protIndexList, protList = combinePeptides(seqDict)
 
-    # temporary creation of cis peptides
-    # combineCisSet = set()
-    # for value in seqDict.values():
-    #     splitsCis, splitRefCis = splitDictPeptide(CIS, value, mined, maxed)
-    #
-    #     combinedCis, combinedRefCis = combineOverlapPeptide(splitsCis, splitRefCis, mined, maxed, overlapFlag,
-    #                                                         maxDistance)
-    #
-    #     combineCisSet.update(combinedCis)
-
     splits, splitRef = splitTransPeptide(spliceType, finalPeptide, mined, maxed, protIndexList)
 
     splitLen = len(splits)
@@ -709,7 +699,6 @@ def combineAllTempFasta(linCisSet, outputTempFiles, outputPath):
 
 
 def combineTempFile(fileOne, fileTwo, linCisSet, counter, outputPath):
-    logging.info("Combining two files !")
     seenPeptides = {}
     with open(fileOne, 'rU') as handle:
         for record in SeqIO.parse(handle, 'fasta'):
@@ -731,6 +720,11 @@ def combineTempFile(fileOne, fileTwo, linCisSet, counter, outputPath):
             else:
                 seenPeptides[peptide].append(protein)
             if memory_usage_psutil() > MEMORY_THRESHOLD_COMBINE:
+                if seenPeptides:
+                    commonPeptides = linCisSet.intersection(seenPeptides.keys())
+                    for peptide in commonPeptides:
+                        del seenPeptides[peptide]
+
                 outputPath = outputPath.split('.fasta')[0]
                 finalPath = outputPath + "-file" + str(counter) + '.fasta'
                 with open(finalPath, 'w') as output_handle:
@@ -751,7 +745,6 @@ def combineTempFile(fileOne, fileTwo, linCisSet, counter, outputPath):
 
 
 def writeTempFasta(seenPeptides):
-    logging.info("Writing to temp")
     temp = tempfile.NamedTemporaryFile(mode='w+t', suffix=".fasta", delete=False)
     for key, value in seenPeptides.items():
         temp.writelines(">")

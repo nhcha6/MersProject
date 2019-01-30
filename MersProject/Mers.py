@@ -200,7 +200,7 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
     massDict = applyMods(massDict, modList, maxMod)
 
     # Add the charge information along with their masses
-    chargeIonMass(massDict, chargeFlags)
+    massDict = chargeIonMass(massDict, chargeFlags)
 
     # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
     massDict = editRefMassDict(massDict)
@@ -541,11 +541,10 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     massDict = applyMods(massDict, modList, maxMod)
 
     # Add the charge information along with their masses
-    chargeIonMass(massDict, chargeFlags)
+    massDict = chargeIonMass(massDict, chargeFlags)
 
     # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
     massDict = editRefMassDict(massDict)
-
 
     if mgfFlag:
         allPeptides = getAllPep(massDict)
@@ -924,7 +923,7 @@ def genericMod(combineModlessDict, character, massChange, modNo, maxMod):
                     try:
                         newValue.append(combineModlessDict[string][2])
                     except IndexError:
-                        print('')
+                        pass
                     modDict[temp] = newValue
                 seqToIter += newMods
     return modDict
@@ -1088,10 +1087,11 @@ def chargeIonMass(massDict, chargeFlags):
     chargeFlags: [True, False, True, False, True]
     """
 
+    chargeMassDict = {}
+
     for key, value in massDict.items():
         chargeAssoc = {}
         for z in range(0, len(chargeFlags)):
-
             if chargeFlags[z]:
                 chargeMass = massCharge(value[0], z+1)  # +1 for actual value
                 if mgfData is None:
@@ -1100,16 +1100,13 @@ def chargeIonMass(massDict, chargeFlags):
                 # Make sure the chargemass is less than the maximum possible charge mass in the mgf
                 elif chargeMass <= mgfData.chargeMaxDict[z+1]:
                     chargeAssoc[z+1] = chargeMass
+        # if ChargeAssoc has been added to, we update the value and add both the key and newVal to an updated dict
         if chargeAssoc:
             # Add it to the 2 as the rest of code acceses it at index 2
-            value.insert(2, chargeAssoc)
-        else:
-            try:
-                # Delete the key if there are no charges that pass the max mass test
-                del massDict[key]
-            except KeyError:
-                pass
-
+            newVal = value
+            newVal.insert(2, chargeAssoc)
+            chargeMassDict[key] = newVal
+    return chargeMassDict
 
 def massCharge(predictedMass, z):
     chargeMass = (predictedMass + (z * 1.00794))/z

@@ -1211,7 +1211,7 @@ class MyTableWidget(QWidget):
 
     @pyqtSlot()
     def on_click(self):
-        print("\n")
+        # print("\n")
         for currentQTableWidgetItem in self.tableWidget.selectedItems():
             print(currentQTableWidgetItem.row(), currentQTableWidgetItem.column(), currentQTableWidgetItem.text())
 

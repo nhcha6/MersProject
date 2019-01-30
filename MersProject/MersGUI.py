@@ -18,6 +18,7 @@ from MGFMain import *
 import functools
 from functools import partial
 from datetime import datetime
+from pathlib import Path
 
 
 class WorkerSignals(QObject):
@@ -474,11 +475,14 @@ class MyTableWidget(QWidget):
             outputFile = self.getOutputPath()
             if outputFile is not False:
                 if linearFlag:
-                    outputPath[LINEAR] = outputFile + '-' + LINEAR + now + ".fasta"
+                    linPath = outputFile + '-' + LINEAR + now + ".fasta"
+                    outputPath[LINEAR] = Path(linPath)
                 if cisFlag:
-                    outputPath[CIS] = outputFile + '-' + CIS + now + ".fasta"
+                    cisPath = outputFile + '-' + CIS + now + ".fasta"
+                    outputPath[CIS] = Path(cisPath)
                 if transFlag:
-                    outputPath[TRANS] = outputFile + '-' + TRANS + now + ".fasta"
+                    transPath = outputFile + '-' + TRANS + now + ".fasta"
+                    outputPath[TRANS] = Path(transPath)
                     # print(outputPath[TRANS])
 
                 if self.mgfFlag.isChecked() == False:

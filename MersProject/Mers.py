@@ -826,7 +826,7 @@ def createSeqObj(matchedPeptides):
         print(str(matchedPeptides))
 
 
-    return seqRecords
+    # return seqRecords
 
 
 # set default maxDistance to be absurdly high incase of trans

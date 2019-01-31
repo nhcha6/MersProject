@@ -430,6 +430,7 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
 
     return combModless, combModlessRef, linCisSet
 
+
 def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag, pepToProtFlag, protToPepFlag,
                        modList, maxMod, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag, pepCompleted,
                        pepTotal):
@@ -447,10 +448,6 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
         open(finalPath, 'w')
 
     num_workers = multiprocessing.cpu_count()
-
-    # Don't need all processes for small file?
-    # if len(seqDict) < num_workers:
-    #     num_workers = len(seqDict)
 
     # Used to lock write access to file
     lockVar = multiprocessing.Lock()

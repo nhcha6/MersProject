@@ -573,9 +573,9 @@ def getAllPep(massDict):
 
 def memory_usage_psutil():
     # return the memory usage in percentage like top
-    process = psutil.Process(os.getpid())
-    mem = process.memory_percent()
-    return mem
+    mem = psutil.virtual_memory()
+
+    return mem.percent
 
 def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFlag = False):
 

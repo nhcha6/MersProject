@@ -868,9 +868,7 @@ def applyMods(combineModlessDict, modList, maxMod):
                 combineModlessDict.update(modDict)
     return combineModlessDict
 
-
 def genericMod(combineModlessDict, character, massChange, modNo, maxMod):
-
     """
     From the modless dictionary of possible combinations, this function returns a
     dictionary containing all the modifications that arise from changing character. The
@@ -889,6 +887,7 @@ def genericMod(combineModlessDict, character, massChange, modNo, maxMod):
     # Go through each combination and mod it if necessary
     for string in combineModlessDict.keys():
         currentMass = combineModlessDict[string][0]
+        modsInOrig = string.count(modNo)
         currentRef = combineModlessDict[string][1]
 
         # Only need to mod it if it exists (ie : A in ABC)
@@ -900,14 +899,14 @@ def genericMod(combineModlessDict, character, massChange, modNo, maxMod):
             for j in range(numOccur, 0, -1):
                 newMods = []
                 for seq in seqToIter:
-                    #print(seq)
+                    # print(seq)
                     noOfMods = seq.count(modNo) + 1
-                    if noOfMods>maxMod:
+                    if noOfMods > maxMod:
                         continue
-                    newMass = currentMass + noOfMods * massChange
+                    newMass = currentMass + massChange * (noOfMods - modsInOrig)
                     temp = nth_replace(seq, character, character.lower() + modNo, j)
                     newMods.append(temp)
-                    #print(newMods)
+                    # print(newMods)
                     newValue = [newMass, currentRef]
                     # if trans is running, the original protein tuple must be updated with the modified peptide
                     try:

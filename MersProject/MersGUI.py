@@ -828,20 +828,23 @@ class MyTableWidget(QWidget):
                                         "directly before to signify mass loss."))
         self.custAminoInput = QLineEdit()
         self.custMassInput = QLineEdit()
+        self.modName = QLineEdit()
         self.addModButton = QPushButton("Create Modification")
         # partial method allows variable to be passed to connected function on click
         self.addCustToModListSender = partial(self.addCustToModlist, sender)
         self.addModButton.clicked.connect(self.addCustToModListSender)
         self.formLayout.addRow(QLabel("Modified Amino Acids: "), self.custAminoInput)
         self.formLayout.addRow(QLabel("Mass Change: "), self.custMassInput)
+        self.formLayout.addRow(QLabel("Modification Name: "), self.modName)
         self.formLayout.addRow(self.addModButton)
         self.formGroupBox.setLayout(self.formLayout)
         self.formGroupBox.show()
 
     def addCustToModlist(self, sender):
-        aminoAcids = self.custAminoInput.text()
-        massChange = self.custMassInput.text()
-        modKey = "Custom " + aminoAcids
+        aminoAcids = self.custAminoInput.text().strip()
+        massChange = self.custMassInput.text().strip()
+        modName = self.modName.text().strip()
+        modKey = "Custom " + modName + " (" + aminoAcids + ")"
         modValue = []
 
         # validity checks
@@ -853,12 +856,13 @@ class MyTableWidget(QWidget):
             else:
                 modValue.append(char)
 
-
+        # if not float (accounts for +/- at start) return error message.
         try:
             float(massChange[1:])
         except ValueError:
             QMessageBox.about(self, "Message", 'Mass Change is not a valid decimal number!')
             return
+
 
         # update modTable and GUI
         modValue.append(float(massChange))

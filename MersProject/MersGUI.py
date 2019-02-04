@@ -824,7 +824,8 @@ class MyTableWidget(QWidget):
         self.formGroupBox = QGroupBox('Custom Modification')
         self.formLayout = QFormLayout()
         self.formLayout.addRow(QLabel("Input modified amino acids without spaces: TGN \n" +
-                                      "Input mass change as a decimal number"))
+                                      "Input mass change as a decimal number. Place a minus (-) \n" +
+                                        "directly before to signify mass loss."))
         self.custAminoInput = QLineEdit()
         self.custMassInput = QLineEdit()
         self.addModButton = QPushButton("Create Modification")
@@ -851,8 +852,10 @@ class MyTableWidget(QWidget):
                 return
             else:
                 modValue.append(char)
+
+
         try:
-            float(massChange)
+            float(massChange[1:])
         except ValueError:
             QMessageBox.about(self, "Message", 'Mass Change is not a valid decimal number!')
             return

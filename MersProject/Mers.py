@@ -8,7 +8,6 @@ import multiprocessing
 from multiprocessing import Queue
 import time
 import sys
-# import h5py
 import json
 import logging
 from MGFMain import *
@@ -18,15 +17,20 @@ import psutil
 import tempfile
 from queue import Queue
 
+# Splice types
 TRANS = "Trans"
 LINEAR = "Linear"
 CIS = "Cis"
 
+# Stop flag for the writer
+STOP_FLAG = "STOP"
+
+# The threshold at which writing to the temp file should commence
 MEMORY_THRESHOLD = 80
+# The threshold at which you just output files instead of trying to combine them
 MEMORY_THRESHOLD_COMBINE = 90
 
 logging.basicConfig(level=logging.DEBUG, format='%(message)s')
-# logging.disable(logging.INFO)
 
 mgfData = None
 
@@ -42,9 +46,14 @@ class Fasta:
     """
 
     def __init__(self, inputFile):
+        """
+
+        :param inputFile: The path to fasta file
+        """
 
         self.inputFile = inputFile
         self.allProcessList = []
+        # For progress bar
         self.pepTotal = multiprocessing.Queue()
         self.pepCompleted = multiprocessing.Queue()
 
@@ -52,13 +61,39 @@ class Fasta:
                        protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfObj, mgfFlag):
 
         """
-        Function that literally combines everything to generate output
+
+        :param mined:                   The minimum length of peptides to be produced
+        :param maxed:                   The maximum length of peptides to be proudced
+        :param overlapFlag:             True if don't want overlap between cis peptides. Only relevant for cis
+        :param transFlag:               True if want trans output for the current input
+        :param cisFlag:                 True if want cis output for the current input
+        :param linearFlag:              True if want linear output for the current input
+        :param csvFlag:                 True if want a csv output for the current input for eavh spliceType
+        :param pepToProtFlag:           True if want a peptide mapped to the protein origins in a csv file
+        :param protToPepFlag:           True if want a protein mapped to all of their peptides in a csv file
+        :param modList:                 A list of all of the modifications to be applied to each peptide.
+                                        Mods are specified in MonoAminoAndMods.py file. Custom mods can also be added
+                                        via GUI interface
+        :param maxMod:                  The max number of mods that should be applied to each peptide
+        :param maxDistance:             The max distance between any two amino acids (first and last)
+        :param outputPath:              The path where the output for each splice type will be stored
+        :param chargeFlags:             A list of charges to be applied to each peptide
+        :param mgfObj:                  The object that stores mgfData
+        :param mgfFlag:                 Flag expressing if mgf comparision is wanted
+
+
+        :purpose: The main point of this function is to serve as a connecting point between the Graphical User
+                  Interface and the logic behind the program.
+                  This function starts a process for each splice type, providing those functions the required
+                  inputs. For the program to be deemed complete, all of these initial processes must be completed and
+                  joined.
         """
 
+        # Holds all the processes that are started and the ones that must be joined.
         self.allProcessList = []
 
         if transFlag:
-
+            # Start a process for TRANS
             transProc = multiprocessing.Process(target=transOutput, args=(self.inputFile, TRANS, mined, maxed,
                                                                           maxDistance, overlapFlag, modList, maxMod,
                                                                           outputPath[TRANS], chargeFlags, mgfObj,
@@ -69,6 +104,7 @@ class Fasta:
             transProc.start()
 
         if cisFlag:
+            # Start a process for CIS
             cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, CIS, mined, maxed,
                                                                                   overlapFlag, csvFlag, pepToProtFlag,
                                                                                   protToPepFlag, modList, maxMod,
@@ -80,6 +116,7 @@ class Fasta:
             cisProcess.start()
 
         if linearFlag:
+            # Start a process for LINEAR
             linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, LINEAR, mined,
                                                                                      maxed, overlapFlag, csvFlag,
                                                                                      pepToProtFlag, protToPepFlag,
@@ -97,7 +134,28 @@ class Fasta:
 def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
                 modList, maxMod, outputPath, chargeFlags, mgfObj, modTable, mgfFlag, pepCompleted, pepTotal, csvFlag,
                 pepToProtFlag, protToPepFlag):
+    """
 
+    :param mined:                   The minimum length of peptides to be produced
+    :param maxed:                   The maximum length of peptides to be proudced
+    :param overlapFlag:             True if don't want overlap between cis peptides. Only relevant for cis
+    :param transFlag:               True if want trans output for the current input
+    :param cisFlag:                 True if want cis output for the current input
+    :param linearFlag:              True if want linear output for the current input
+    :param csvFlag:                 True if want a csv output for the current input for eavh spliceType
+    :param pepToProtFlag:           True if want a peptide mapped to the protein origins in a csv file
+    :param protToPepFlag:           True if want a protein mapped to all of their peptides in a csv file
+    :param modList:                 A list of all of the modifications to be applied to each peptide.
+                                    Mods are specified in MonoAminoAndMods.py file. Custom mods can also be added
+                                    via GUI interface
+    :param maxMod:                  The max number of mods that should be applied to each peptide
+    :param maxDistance:             The max distance between any two amino acids (first and last)
+    :param outputPath:              The path where the output for each splice type will be stored
+    :param chargeFlags:             A list of charges to be applied to each peptide
+    :param mgfObj:                  The object that stores mgfData
+    :param mgfFlag:                 Flag expressing if mgf comparision is wanted
+
+    """
     finalPath = None
 
     # Open the csv file if the csv file is selected

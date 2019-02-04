@@ -17,6 +17,7 @@ import os
 import psutil
 import tempfile
 from queue import Queue
+from pathlib import Path
 
 TRANS = "Trans"
 LINEAR = "Linear"
@@ -1311,9 +1312,9 @@ def editRefMassDict(massDict):
 
 
 def getFinalPath(outputPath, spliceType):
-    outputPathSmall = outputPath[0:-6]
+    outputPathSmall = str(outputPath)[0:-6]
     newPath = str(outputPathSmall) + '-' + spliceType + '.csv'
-    return newPath
+    return Path(newPath)
 
 def nth_replace(string, old, new, n=1, option='only nth'):
 

@@ -407,7 +407,7 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
             if combineCheck(toAddForward, mined, maxed, splitRef[i], splitRef[j], maxDistance):
                 # V. messy, need a way to get better visual
                 # check if linear and add to linearSet if so
-                if addLinPeptides(toAddForward, addForwardRef, linCisSet, protIndexList):
+                if addLinPeptides(addForwardRef, protIndexList):
                     linCisSet.add(toAddForward)
                     linCisSet.add(toAddReverse)
                 else:
@@ -1021,15 +1021,22 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
                 # V. messy, need a way to get better visual
                 if overlapFlag:
                     if overlapComp(splitRef[i], splitRef[j]):
-                        #check if linear and add to linearSet if so
-                        linSet = addLinPeptides(toAddForward, addForwardRef, linSet, False)
-                        massDict[toAddForward] = addForwardRef
                         massDict[toAddReverse] = addReverseRef
+                        #check if toAdd forward is linear and add to linearSet if so
+                        if addLinPeptides(addForwardRef, False):
+                            linSet.add(toAddForward)
+                        else:
+                            massDict[toAddForward] = addForwardRef
+
 
                 else:
-                    linSet = addLinPeptides(toAddForward, addForwardRef, linSet, False)
-                    massDict[toAddForward] = addForwardRef
                     massDict[toAddReverse] = addReverseRef
+                    # check if toAddForward is linear and add to linearSet if so
+                    if addLinPeptides(addForwardRef, False):
+                        linSet.add(toAddForward)
+                    else:
+                        massDict[toAddForward] = addForwardRef
+
             elif not maxDistCheck(splitRef[i], splitRef[j], maxDistance):
                 break
 
@@ -1045,22 +1052,22 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
 
     return combModless, combModlessRef, linSet
 
-def addLinPeptides(peptide, refs, linCisSet, transOrigins):
-    prevRef = refs[0]
-    for i in range(1,len(refs)):
-        if transOrigins != False:
-            prot1, index1 = findInitProt(refs[0]-1, transOrigins)
-            prot2, index2 = findInitProt(refs[-1]-1, transOrigins)
-            if prot1 == prot2:
-                if len(set(refs)) == len(refs):
-                    return True
-            return False
-        elif refs[i] == prevRef + 1:
-            prevRef = refs[i]
-        else:
-            return linCisSet
-    linCisSet.add(peptide)
-    return linCisSet
+def addLinPeptides(refs, transOrigins):
+    if transOrigins != False:
+        prot1, index1 = findInitProt(refs[0] - 1, transOrigins)
+        prot2, index2 = findInitProt(refs[-1] - 1, transOrigins)
+        if prot1 == prot2:
+            if len(set(refs)) == len(refs):
+                return True
+        return False
+    else:
+        prevRef = refs[0]
+        for i in range(1,len(refs)):
+            if refs[i] == prevRef + 1:
+                prevRef = refs[i]
+            else:
+                return False
+        return True
 
 def chargeIonMass(massDict, chargeFlags):
 

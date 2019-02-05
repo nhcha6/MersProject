@@ -44,7 +44,7 @@ class Fasta:
 
     def __init__(self, inputFile):
 
-        self.inputFile = inputFile
+        self.inputFile = [inputFile]
         self.allProcessList = []
         self.pepTotal = multiprocessing.Queue()
         self.pepCompleted = multiprocessing.Queue()

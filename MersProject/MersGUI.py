@@ -296,6 +296,7 @@ class MyTableWidget(QWidget):
         """
         Called from the Upload Fasta File button. Opens a window to select a file, and check if the file ends in fasta
         """
+        sender = self.sender()
 
         fname = QFileDialog.getOpenFileName(self, 'Open File', '/home/')
 
@@ -303,14 +304,19 @@ class MyTableWidget(QWidget):
 
         # Ensure opening fasta extension file by checking last five chars
         if fastaTest == 'fasta':
-            self.fasta = Fasta(fname[0])
-            #self.enableControl()
-            self.controlMGFInput()
-            QMessageBox.about(self, "Message", 'Fasta file imported.')
+            if sender == self.pushButton1:
+                self.fasta = Fasta(fname[0])
+                #self.enableControl()
+                self.controlMGFInput()
+                QMessageBox.about(self, "Message", 'Fasta file imported.')
+            else:
+                self.fasta.inputFile.append(fname[0])
+                QMessageBox.about(self, "Message", 'Additional Fasta file imported.')
+            #print(self.fasta.inputFile)
 
         # Ensuring program does not crash if no file is selected
         elif fname[0] == '':
-            print('')
+            pass
 
         # Wrong extension selected! Try Again!
         else:
@@ -377,6 +383,7 @@ class MyTableWidget(QWidget):
 
     def enableControl(self):
         if self.fasta is not None:
+            self.addMultipleFasta.setEnabled(True)
             if self.mgfPath is not None or self.mgfFlag.isChecked() == True:
                 self.tab1.toleranceText.setEnabled(True)
                 self.tab1.toleranceLabel.setEnabled(True)
@@ -406,6 +413,8 @@ class MyTableWidget(QWidget):
             else:
                 self.tabs.setTabEnabled(1, False)
                 self.nextTab.setEnabled(False)
+        else:
+            self.addMultipleFasta.setEnabled(False)
 
     def controlMGFInput(self):
         if self.mgfFlag.isChecked():
@@ -841,6 +850,7 @@ class MyTableWidget(QWidget):
         self.formGroupBox.show()
 
     def addCustToModlist(self, sender):
+        # strip inputs so that leading or lagging whitespace does not void the tests.
         aminoAcids = self.custAminoInput.text().strip()
         massChange = self.custMassInput.text().strip()
         modName = self.modName.text().strip()
@@ -1057,6 +1067,9 @@ class MyTableWidget(QWidget):
     def createTab1ParameterWidgets(self):
         self.pushButton1 = QPushButton("Select Fasta File")
         self.pushButton1.clicked.connect(self.uploadFasta)
+        self.addMultipleFasta = QPushButton("Add Another Fasta")
+        self.addMultipleFasta.clicked.connect(self.uploadFasta)
+        self.addMultipleFasta.setEnabled(False)
         self.mgfButton = QPushButton("Select MGF File")
         self.mgfButton.clicked.connect(self.uploadMgfPreStep)
         self.mgfPlotFlag = QCheckBox('Produce Intensity Plot')
@@ -1124,24 +1137,25 @@ class MyTableWidget(QWidget):
         self.tab1.layout.setRowStretch(0, 1)
         self.tab1.layout.setRowStretch(5, 1)
         self.tab1.layout.addWidget(self.pushButton1, 1, 2)
+        self.tab1.layout.addWidget(self.addMultipleFasta, 3, 2)
         self.tab1.layout.addWidget(self.mgfButton, 2, 2)
         self.tab1.layout.addWidget(self.mgfFlag, 1, 3)
         self.tab1.layout.addWidget(self.mgfPlotFlag, 2, 3)
-        self.tab1.layout.addWidget(self.tab1.ppmLabel, 3, 2)
-        self.tab1.layout.addWidget(self.tab1.ppmText, 3, 3)
-        self.tab1.layout.addWidget(self.tab1.ppmStatus, 3, 4)
-        self.tab1.layout.addWidget(self.tab1.toleranceLabel, 4, 2)
-        self.tab1.layout.addWidget(self.tab1.toleranceText, 4, 3)
-        self.tab1.layout.addWidget(self.tab1.toleranceStatus, 4, 4)
+        self.tab1.layout.addWidget(self.tab1.ppmLabel, 4, 2)
+        self.tab1.layout.addWidget(self.tab1.ppmText, 4, 3)
+        self.tab1.layout.addWidget(self.tab1.ppmStatus, 4, 4)
+        self.tab1.layout.addWidget(self.tab1.toleranceLabel, 5, 2)
+        self.tab1.layout.addWidget(self.tab1.toleranceText, 5, 3)
+        self.tab1.layout.addWidget(self.tab1.toleranceStatus, 5, 4)
 
-        self.tab1.layout.addWidget(self.tab1.minByIonLabel, 5, 2)
-        self.tab1.layout.addWidget(self.tab1.minByIonText, 5, 3)
-        self.tab1.layout.addWidget(self.tab1.minByIonStatus, 5, 4)
-        self.tab1.layout.addWidget(self.tab1.byIonAccLabel, 6, 2)
-        self.tab1.layout.addWidget(self.tab1.byIonAccText, 6, 3)
-        self.tab1.layout.addWidget(self.tab1.byIonAccStatus, 6, 4)
-        self.tab1.layout.addWidget(self.tab1.byIonFlag, 7, 2)
-        self.tab1.layout.addWidget(self.nextTab, 7, 3)
+        self.tab1.layout.addWidget(self.tab1.minByIonLabel, 6, 2)
+        self.tab1.layout.addWidget(self.tab1.minByIonText, 6, 3)
+        self.tab1.layout.addWidget(self.tab1.minByIonStatus, 6, 4)
+        self.tab1.layout.addWidget(self.tab1.byIonAccLabel, 7, 2)
+        self.tab1.layout.addWidget(self.tab1.byIonAccText, 7, 3)
+        self.tab1.layout.addWidget(self.tab1.byIonAccStatus, 7, 4)
+        self.tab1.layout.addWidget(self.tab1.byIonFlag, 8, 2)
+        self.tab1.layout.addWidget(self.nextTab, 8, 3)
 
     def createTab2ParameterWidgets(self):
 

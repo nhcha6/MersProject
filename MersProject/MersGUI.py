@@ -459,10 +459,17 @@ class MyTableWidget(QWidget):
         if transFlag:
             strng = ""
             maxAminos = 2000
+            counter = 0
             for inputFile in self.fasta.inputFile:
                 with open(inputFile, "rU") as handle:
                     for record in SeqIO.parse(handle, 'fasta'):
+                        # add to strng and counter
+                        counter += 1
                         strng += str(record.seq)
+                        # we do not want to measure the length of strng until we are sure that more than one protein has been uploaded.
+                        # thus, we continue if counter == 1.
+                        if counter == 1:
+                            continue
                         # if running trans and the number of aminos in the fasta exceeds 2000, block input.
                         if len(strng) > maxAminos:
                             response = QMessageBox.question(self, 'Message', 'You have selected to compute trans splicing on a file containing over ' +
@@ -472,6 +479,10 @@ class MyTableWidget(QWidget):
                                 break
                             else:
                                 return
+            # block output if counter is less than two
+            if counter < 2:
+                QMessageBox.about(self, "Message", 'Trans output requires at least two proteins to have been uploaded! Please review the input accordingly.')
+                return
 
         reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' +
                                      'Minimum Peptide Length: ' + str(mined) + '\n' +

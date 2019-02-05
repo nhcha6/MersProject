@@ -111,9 +111,9 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
         seqDict.update(addSequenceList(file))
 
 
-    if len(seqDict) <= 1:
-        logging.info('Only 1 protein, therefore trans not relevant')
-        return
+    # if len(seqDict) <= 1:
+    #     logging.info('Only 1 protein, therefore trans not relevant')
+    #     return
 
     finalPeptide, protIndexList, protList = combinePeptides(seqDict)
 

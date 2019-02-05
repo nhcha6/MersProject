@@ -107,10 +107,8 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
         open(finalPath, 'w')
 
     seqDict = {}
-    print(inputFile)
     for file in inputFile:
         seqDict.update(addSequenceList(file))
-        print(seqDict)
 
 
     if len(seqDict) <= 1:
@@ -118,12 +116,10 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
         return
 
     finalPeptide, protIndexList, protList = combinePeptides(seqDict)
-    print(finalPeptide)
 
     splits, splitRef = splitTransPeptide(spliceType, finalPeptide, mined, maxed, protIndexList)
 
     splitLen = len(splits)
-    print(len(splits))
 
     # configure mutliprocessing functionality
     num_workers = multiprocessing.cpu_count()
@@ -471,28 +467,28 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
     maxMem = psutil.virtual_memory()[1] / 2
 
 
+    for file in inputFile:
+        with open(file, "rU") as handle:
+            for record in SeqIO.parse(handle, 'fasta'):
 
-    with open(inputFile, "rU") as handle:
-        for record in SeqIO.parse(handle, 'fasta'):
+                pepTotal.put(1)
+                seq = str(record.seq)
+                seqId = record.name
 
-            pepTotal.put(1)
-            seq = str(record.seq)
-            seqId = record.name
+                # while memoryCheck(maxMem):
+                #     time.sleep(1)
+                #     logging.info('Memory Limit Reached')
 
-            # while memoryCheck(maxMem):
-            #     time.sleep(1)
-            #     logging.info('Memory Limit Reached')
-
-            seqId = seqId.split('|')[1]
-            logging.info(spliceType + " process started for: " + seq[0:5])
-            # Start the processes for each protein with the targe function being genMassDict
-            pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
-                                                    csvFlag, modList, maxMod, maxDistance, finalPath, chargeFlags, mgfFlag))
+                seqId = seqId.split('|')[1]
+                logging.info(spliceType + " process started for: " + seq[0:5])
+                # Start the processes for each protein with the targe function being genMassDict
+                pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
+                                                        csvFlag, modList, maxMod, maxDistance, finalPath, chargeFlags, mgfFlag))
 
 
-        #pepTotal.put(counter)
-        pool.close()
-        pool.join()
+    #pepTotal.put(counter)
+    pool.close()
+    pool.join()
 
     toWriteQueue.put('stop')
     writerProcess.join()
@@ -543,8 +539,8 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     if mgfFlag:
         allPeptides = getAllPep(massDict)
         allPeptidesDict = {}
-        for peptide in allPeptides:
-            allPeptidesDict[peptide] = protId
+        for pep in allPeptides:
+            allPeptidesDict[pep] = protId
         genMassDict.toWriteQueue.put(allPeptidesDict)
     # If there is an mgf file AND there is a charge selected
     elif mgfData is not None and True in chargeFlags:

@@ -406,20 +406,11 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
             # max, min and max distance checks combined into one function for clarity for clarity
             if combineCheck(toAddForward, mined, maxed, splitRef[i], splitRef[j], maxDistance):
                 # V. messy, need a way to get better visual
-                if overlapFlag:
-                    if overlapComp(splitRef[i], splitRef[j]):
-                        # check if linear and add to linearSet if so
-                        linCisSet = addLinPeptides(toAddForward, addForwardRef, linCisSet, protIndexList)
-                        linCisSet = addLinPeptides(toAddReverse, addReverseRef, linCisSet, protIndexList)
-                        combModless.append(toAddForward)
-                        combModlessRef.append(addForwardRef)
-                        combModless.append(toAddReverse)
-                        combModlessRef.append(addReverseRef)
-
+                # check if linear and add to linearSet if so
+                if addLinPeptides(toAddForward, addForwardRef, linCisSet, protIndexList):
+                    linCisSet.add(toAddForward)
+                    linCisSet.add(toAddReverse)
                 else:
-                    # check if linear and add to linearSet if so
-                    linCisSet = addLinPeptides(toAddForward, addForwardRef, linCisSet, protIndexList)
-                    linCisSet = addLinPeptides(toAddReverse, addReverseRef, linCisSet, protIndexList)
                     combModless.append(toAddForward)
                     combModlessRef.append(addForwardRef)
                     combModless.append(toAddReverse)
@@ -1062,10 +1053,8 @@ def addLinPeptides(peptide, refs, linCisSet, transOrigins):
             prot2, index2 = findInitProt(refs[-1]-1, transOrigins)
             if prot1 == prot2:
                 if len(set(refs)) == len(refs):
-                    linCisSet.add(peptide)
-                return linCisSet
-            else:
-                return linCisSet
+                    return True
+            return False
         elif refs[i] == prevRef + 1:
             prevRef = refs[i]
         else:

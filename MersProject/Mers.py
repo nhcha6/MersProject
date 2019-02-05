@@ -106,17 +106,24 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
         finalPath = getFinalPath(outputPath, spliceType)
         open(finalPath, 'w')
 
-    seqDict = addSequenceList(inputFile)
+    seqDict = {}
+    print(inputFile)
+    for file in inputFile:
+        seqDict.update(addSequenceList(file))
+        print(seqDict)
+
 
     if len(seqDict) <= 1:
         logging.info('Only 1 protein, therefore trans not relevant')
         return
 
     finalPeptide, protIndexList, protList = combinePeptides(seqDict)
+    print(finalPeptide)
 
     splits, splitRef = splitTransPeptide(spliceType, finalPeptide, mined, maxed, protIndexList)
 
     splitLen = len(splits)
+    print(len(splits))
 
     # configure mutliprocessing functionality
     num_workers = multiprocessing.cpu_count()
@@ -227,7 +234,6 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
         logging.info("Writing released!")
 
     transProcess.pepCompleted.put(1)
-
 
 # Only works if we presume Cis proteins aren't being created in the trans process.
 def findOrigProt(combinedRef, protIndexList, protList):

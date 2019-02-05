@@ -457,20 +457,21 @@ class MyTableWidget(QWidget):
 
         # if transFlag is selected, we check the size of the input to avoid the user unknowingly starting a huge computation.
         if transFlag:
-            with open(self.fasta.inputFile, "rU") as handle:
-                strng = ""
-                maxAminos = 2000
-                for record in SeqIO.parse(handle, 'fasta'):
-                    strng += str(record.seq)
-                    # if running trans and the number of aminos in the fasta exceeds 2000, block input.
-                    if len(strng) > maxAminos:
-                        response = QMessageBox.question(self, 'Message', 'You have selected to compute trans splicing on a file containing over ' +
-                        str(maxAminos) + ' amino acids. We do not recommend you persist with this input as it is likely to take a very long time to compute.' +
-                        ' Do you still wish to continue with the input?')
-                        if response == QMessageBox.Yes:
-                            break
-                        else:
-                            return
+            strng = ""
+            maxAminos = 2000
+            for inputFile in self.fasta.inputFile:
+                with open(inputFile, "rU") as handle:
+                    for record in SeqIO.parse(handle, 'fasta'):
+                        strng += str(record.seq)
+                        # if running trans and the number of aminos in the fasta exceeds 2000, block input.
+                        if len(strng) > maxAminos:
+                            response = QMessageBox.question(self, 'Message', 'You have selected to compute trans splicing on a file containing over ' +
+                            str(maxAminos) + ' amino acids. We do not recommend you persist with this input as it is likely to take a very long time to compute.' +
+                            ' Do you still wish to continue with the input?')
+                            if response == QMessageBox.Yes:
+                                break
+                            else:
+                                return
 
         reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' +
                                      'Minimum Peptide Length: ' + str(mined) + '\n' +

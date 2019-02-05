@@ -1268,8 +1268,16 @@ def combMass(combine, combineRef, origProtTups = None):
         # information updated so it is not lost in the running process.
         else:
             if combine[i] in massDict.keys():
-                massDict[combine[i]][2].append(origProtTups[i][0])
-                massDict[combine[i]][2].append(origProtTups[i][1])
+                currentProtTups = massDict[combine[i]][2]
+                addFlag = True
+                for j in range(0,len(currentProtTups), 2):
+                    print(currentProtTups[j:j+2])
+                    print(origProtTups[i])
+                    if currentProtTups[j:j+2] == origProtTups[i]:
+                        addFlag = False
+                if addFlag:
+                    massDict[combine[i]][2].append(origProtTups[i][0])
+                    massDict[combine[i]][2].append(origProtTups[i][1])
             else:
                 massRefPair = [totalMass, combineRef[i], origProtTups[i]]
                 massDict[combine[i]] = massRefPair

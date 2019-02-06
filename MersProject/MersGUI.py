@@ -377,17 +377,17 @@ class MyTableWidget(QWidget):
         outputFile = self.outputPath
         outputFile = outputFile + '/' + self.fileName.text()
         print(outputFile)
-        outputPath = {}
+        outputFiles = {}
         now = datetime.now().strftime("%d%m%y_%H%M")
         if self.linearFlag:
             linPath = outputFile + '-' + LINEAR + now + ".fasta"
-            outputPath[LINEAR] = Path(linPath)
+            outputFiles[LINEAR] = Path(linPath)
         if self.cisFlag:
             cisPath = outputFile + '-' + CIS + now + ".fasta"
-            outputPath[CIS] = Path(cisPath)
+            outputFiles[CIS] = Path(cisPath)
         if self.transFlag:
             transPath = outputFile + '-' + TRANS + now + ".fasta"
-            outputPath[TRANS] = Path(transPath)
+            outputFiles[TRANS] = Path(transPath)
             # print(outputPath[TRANS])
 
         if self.mgfFlag.isChecked() == False:
@@ -396,11 +396,11 @@ class MyTableWidget(QWidget):
             mgfGen.signals.finished.connect(functools.partial(self.importedMGF, self.mined, self.maxed, self.overlapFlag,
                                                               self.transFlag, self.cisFlag, self.linearFlag, self.csvFlag,
                                                               self.pepToProtFlag, self.protToPepFlag, self.modList, self.maxMod,
-                                                              self.maxDistance, outputPath, self.chargeFlags))
+                                                              self.maxDistance, outputFiles, self.chargeFlags))
             self.threadpool.start(mgfGen)
         else:
             self.importedMGF(self.mined, self.maxed, self.overlapFlag, self.transFlag, self.cisFlag, self.linearFlag, self.csvFlag, self.pepToProtFlag,
-                             self.protToPepFlag, self.modList, self.maxMod, self.maxDistance, outputPath, self.chargeFlags, True)
+                             self.protToPepFlag, self.modList, self.maxMod, self.maxDistance, outputFiles, self.chargeFlags, True)
 
     def stopFunction(self):
         print('in stop function')

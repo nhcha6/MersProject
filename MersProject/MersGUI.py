@@ -178,6 +178,7 @@ class MyTableWidget(QWidget):
         self.fasta = None
         self.mgf = None
         self.mgfPath = None
+        self.outputPath = None
 
         # Init threading
         self.threadpool = QThreadPool()
@@ -225,6 +226,8 @@ class MyTableWidget(QWidget):
         # variables to count the total number of processes and those which have finished
         self.finishedPeptides = 0
         self.totalSize = 0
+
+        #self.getOutputPath()
 
     def uploadMgf(self, input_path, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag, chargeFlags):
         mgfDf, pepmassIonArray = readMGF(input_path, intensityThreshold)
@@ -329,19 +332,75 @@ class MyTableWidget(QWidget):
         Returns False if no path is selected, otherwise returns the selected path.
         """
 
-        outputFile = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+        self.outputPath = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
 
-        if outputFile == '':
-            return False
+        if self.outputPath == '':
+            #self.outputPath == False
+            return
         else:
-            text, ok = QInputDialog.getText(self, 'Input Dialog',
-                                            'Enter your file name:')
+            # text, ok = QInputDialog.getText(self, 'Input Dialog',
+            #                                 'Enter your file name:')
+            #
+            # if ok:
+            #     outputPath = outputFile + '/' + text
+            # else:
+            #     return False
+            self.filePathDialog()
 
-            if ok:
-                outputPath = outputFile + '/' + text
-            else:
-                return False
-        return outputPath
+    def filePathDialog(self):
+        self.formGroupBox = QGroupBox('Output Name')
+        self.formLayout = QFormLayout()
+        self.formLayout.addRow(QLabel("Add a name for the output file."))
+        self.formLayout.addRow(QLabel('Banned characters: \ / : * " < > |'))
+        self.fileName = QLineEdit()
+        self.fileName.textChanged[str].connect(self.nameChecker)
+        self.button = QPushButton("Create Output")
+        self.valid = QLabel("Valid")
+        self.button.clicked.connect(self.returnPath)
+        self.formLayout.addRow(self.fileName, self.valid)
+        self.formLayout.addRow(self.button)
+        self.formGroupBox.setLayout(self.formLayout)
+        self.formGroupBox.show()
+
+    def nameChecker(self, input):
+        bannedCharacters = set('\/:*"<>|')
+        if len(set(input).intersection(bannedCharacters)) == 0:
+            self.valid.setText("Valid")
+        else:
+            self.valid.setText("Invalid")
+        if self.valid.text() == 'Invalid':
+            self.button.setEnabled(False)
+        else:
+            self.button.setEnabled(True)
+
+    def returnPath(self):
+        outputFile = self.outputPath
+        outputFile = outputFile + '/' + self.fileName.text()
+        print(outputFile)
+        outputPath = {}
+        now = datetime.now().strftime("%d%m%y_%H%M")
+        if self.linearFlag:
+            linPath = outputFile + '-' + LINEAR + now + ".fasta"
+            outputPath[LINEAR] = Path(linPath)
+        if self.cisFlag:
+            cisPath = outputFile + '-' + CIS + now + ".fasta"
+            outputPath[CIS] = Path(cisPath)
+        if self.transFlag:
+            transPath = outputFile + '-' + TRANS + now + ".fasta"
+            outputPath[TRANS] = Path(transPath)
+            # print(outputPath[TRANS])
+
+        if self.mgfFlag.isChecked() == False:
+            mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, self.ppmVal, self.intensityThreshold, self.minSimBy,
+                                 self.byIonAccuracy, self.byIonFlag, self.chargeFlags)
+            mgfGen.signals.finished.connect(functools.partial(self.importedMGF, self.mined, self.maxed, self.overlapFlag,
+                                                              self.transFlag, self.cisFlag, self.linearFlag, self.csvFlag,
+                                                              self.pepToProtFlag, self.protToPepFlag, self.modList, self.maxMod,
+                                                              self.maxDistance, outputPath, self.chargeFlags))
+            self.threadpool.start(mgfGen)
+        else:
+            self.importedMGF(self.mined, self.maxed, self.overlapFlag, self.transFlag, self.cisFlag, self.linearFlag, self.csvFlag, self.pepToProtFlag,
+                             self.protToPepFlag, self.modList, self.maxMod, self.maxDistance, outputPath, self.chargeFlags, True)
 
     def stopFunction(self):
         print('in stop function')
@@ -451,12 +510,12 @@ class MyTableWidget(QWidget):
         called which begins generating results
         """
 
-        ppmVal, intensityThreshold, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, \
-        pepToProtFlag, protToPepFlag,  modList, maxMod, outputFlag, chargeFlags, minSimBy, byIonAccuracy, \
-        byIonFlag, mgfFlag = self.getInputParams()
+        self.ppmVal, self.intensityThreshold, self.mined, self.maxed, self.maxDistance, self.overlapFlag, self.transFlag, self.cisFlag, self.linearFlag, self.csvFlag, \
+        self.pepToProtFlag, self.protToPepFlag,  self.modList, self.maxMod, self.outputFlag, self.chargeFlags, self.minSimBy, self.byIonAccuracy, \
+        self.byIonFlag, self.useMgf = self.getInputParams()
 
         # if transFlag is selected, we check the size of the input to avoid the user unknowingly starting a huge computation.
-        if transFlag:
+        if self.transFlag:
             strng = ""
             maxAminos = 2000
             counter = 0
@@ -485,55 +544,56 @@ class MyTableWidget(QWidget):
                 return
 
         reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' +
-                                     'Minimum Peptide Length: ' + str(mined) + '\n' +
-                                     'Maximum Peptide Length: ' + str(maxed) + '\n' +
-                                     'Maximum Distance: ' + str(maxDistance) + '\n' +
-                                     'Modifications: ' + str(modList) + '\n' +
-                                     'Max Mods Per Pep: ' + str(maxMod) + '\n' +
-                                     'No Overlap: ' + str(overlapFlag) + '\n' +
-                                     'Linear Splicing: ' + str(linearFlag) + '\n' +
-                                     'Cis Splicing: ' + str(cisFlag) + '\n' +
-                                     'Trans Splicing: ' + str(transFlag) + '\n' +
-                                     'Print Intial Combinations: ' + str(csvFlag) + '\n' +
-                                     'Write Peptide to Protein Fasta: ' + str(pepToProtFlag) + '\n' +
-                                     'Write Protein to Peptide Fasta: ' + str(pepToProtFlag) + '\n' +
-                                     'Charge States: ' + str(chargeFlags) + '\n' +
-                                     'No MGF Comparison: ' + str(mgfFlag) + '\n' +
-                                     'PPM Value: ' + str(ppmVal) + '\n' +
-                                     'Intensity Threshold: ' + str(intensityThreshold) + '\n' +
-                                     'Apply b/y Ion Comparison: ' + str(byIonFlag) + '\n' +
-                                     'Min b/y Ion %: ' + str(minSimBy) + '\n' +
-                                     'b/y Ion Accuracy: ' + str(byIonAccuracy) + '\n',
+                                     'Minimum Peptide Length: ' + str(self.mined) + '\n' +
+                                     'Maximum Peptide Length: ' + str(self.maxed) + '\n' +
+                                     'Maximum Distance: ' + str(self.maxDistance) + '\n' +
+                                     'Modifications: ' + str(self.modList) + '\n' +
+                                     'Max Mods Per Pep: ' + str(self.maxMod) + '\n' +
+                                     'No Overlap: ' + str(self.overlapFlag) + '\n' +
+                                     'Linear Splicing: ' + str(self.linearFlag) + '\n' +
+                                     'Cis Splicing: ' + str(self.cisFlag) + '\n' +
+                                     'Trans Splicing: ' + str(self.transFlag) + '\n' +
+                                     'Print Intial Combinations: ' + str(self.csvFlag) + '\n' +
+                                     'Write Peptide to Protein Fasta: ' + str(self.pepToProtFlag) + '\n' +
+                                     'Write Protein to Peptide Fasta: ' + str(self.pepToProtFlag) + '\n' +
+                                     'Charge States: ' + str(self.chargeFlags) + '\n' +
+                                     'No MGF Comparison: ' + str(self.useMgf) + '\n' +
+                                     'PPM Value: ' + str(self.ppmVal) + '\n' +
+                                     'Intensity Threshold: ' + str(self.intensityThreshold) + '\n' +
+                                     'Apply b/y Ion Comparison: ' + str(self.byIonFlag) + '\n' +
+                                     'Min b/y Ion %: ' + str(self.minSimBy) + '\n' +
+                                     'b/y Ion Accuracy: ' + str(self.byIonAccuracy) + '\n',
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
 
-            outputPath = {}
-            now = datetime.now().strftime("%d%m%y_%H%M")
-            outputFile = self.getOutputPath()
-            if outputFile is not False:
-                if linearFlag:
-                    linPath = outputFile + '-' + LINEAR + now + ".fasta"
-                    outputPath[LINEAR] = Path(linPath)
-                if cisFlag:
-                    cisPath = outputFile + '-' + CIS + now + ".fasta"
-                    outputPath[CIS] = Path(cisPath)
-                if transFlag:
-                    transPath = outputFile + '-' + TRANS + now + ".fasta"
-                    outputPath[TRANS] = Path(transPath)
-                    # print(outputPath[TRANS])
-
-                if self.mgfFlag.isChecked() == False:
-                    mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, ppmVal, intensityThreshold, minSimBy,
-                                         byIonAccuracy, byIonFlag, chargeFlags)
-                    mgfGen.signals.finished.connect(functools.partial(self.importedMGF, mined, maxed, overlapFlag,
-                                                                      transFlag, cisFlag, linearFlag, csvFlag,
-                                                                      pepToProtFlag, protToPepFlag, modList, maxMod,
-                                                                      maxDistance, outputPath, chargeFlags))
-                    self.threadpool.start(mgfGen)
-                else:
-                    self.importedMGF(mined, maxed, overlapFlag,transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
-                                     protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, True)
+            # outputPath = {}
+            # now = datetime.now().strftime("%d%m%y_%H%M")
+            self.getOutputPath()
+            # outputFile = self.outputPath
+            # if outputFile is not False:
+            #     if linearFlag:
+            #         linPath = outputFile + '-' + LINEAR + now + ".fasta"
+            #         outputPath[LINEAR] = Path(linPath)
+            #     if cisFlag:
+            #         cisPath = outputFile + '-' + CIS + now + ".fasta"
+            #         outputPath[CIS] = Path(cisPath)
+            #     if transFlag:
+            #         transPath = outputFile + '-' + TRANS + now + ".fasta"
+            #         outputPath[TRANS] = Path(transPath)
+            #         # print(outputPath[TRANS])
+            #
+            #     if self.mgfFlag.isChecked() == False:
+            #         mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, ppmVal, intensityThreshold, minSimBy,
+            #                              byIonAccuracy, byIonFlag, chargeFlags)
+            #         mgfGen.signals.finished.connect(functools.partial(self.importedMGF, mined, maxed, overlapFlag,
+            #                                                           transFlag, cisFlag, linearFlag, csvFlag,
+            #                                                           pepToProtFlag, protToPepFlag, modList, maxMod,
+            #                                                           maxDistance, outputPath, chargeFlags))
+            #         self.threadpool.start(mgfGen)
+            #     else:
+            #         self.importedMGF(mined, maxed, overlapFlag,transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
+            #                          protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, True)
 
     def importedMGF(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
                     protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag=False):

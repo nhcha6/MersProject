@@ -257,7 +257,7 @@ def findOrigProt(combinedRef, protIndexList, protList):
             protRef1 += ('-' + str(max(ref) - protIndex1[0]) + ')')
             proteinTups.append([(prot1, protRef1),('Overlap',"")])
             continue
-            
+
         for j in range(1,len(ref)):
             #print(j)
             if ref[j] - 1 > protIndex1[1] or ref[j] - 1 < protIndex1[0]:

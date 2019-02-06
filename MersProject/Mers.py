@@ -207,8 +207,17 @@ def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag
             # peptide locations in the list of tuples, hence the for loop. Tuples are listed in order, with consecutive
             # tuples relating to a pair of splice locations.
             string = ""
+            # create seenOrigins list to store origins which have been added so that there is no double up of identical origins.
+            seenOrigins = []
+            # iterate through all the origins stored in the massDict for the given key
             for i in range(0, len(massDict[peptide][3]), 2):
+                # sort the origin so that it can be compared to others accurately
                 origProt = sorted(massDict[peptide][3][i:i+2])
+                # if origProt has already been seen (and in turn added to seenOrigins) continue iterating.
+                if origProt in seenOrigins:
+                    continue
+                # if origProt hasn't been seen, append it to seenOrigins and add it to the string which is to be added to allPeptidesDict.
+                seenOrigins.append(origProt)
                 string += origProt[0][0] + origProt[0][1] + '/' + origProt[1][0] + origProt[1][1] + ';'
             string = string[0:-1]
             allPeptidesDict[peptide] = string
@@ -1268,23 +1277,9 @@ def combMass(combine, combineRef, origProtTups = None):
         # information updated so it is not lost in the running process.
         else:
             if combine[i] in massDict.keys():
-                # an annoying check that the protein tups to be added are not already saved to massDict[combine[i]]
-                currentProtTups = massDict[combine[i]][2]
-                # flag is set to False if originProtTups[i] (the origin tup to be added) equals any of the origin tups already
-                # stored in the massDict for the given key. The origin tups from the massDict are stored locally under the
-                # variable currentProtTups).
-                addFlag = True
-                # iterate through each pair of origin tups (they are stored in a list where pairs of entries are next to each other).
-                # if any of the origin tups match the currentProtTup, change addFlag to False.
-                for j in range(0,len(currentProtTups), 2):
-                    if currentProtTups[j:j+2] == origProtTups[i]:
-                        addFlag = False
-                # if the addFlag is still True, origProtTups[i] did not match any of the tups in massDict[combine[i]] and thus
-                # we append the new origin information to the massDict. If it did match, we don't require the information
-                # and thus we do nothing.
-                if addFlag:
                     massDict[combine[i]][2].append(origProtTups[i][0])
                     massDict[combine[i]][2].append(origProtTups[i][1])
+
             else:
                 massRefPair = [totalMass, combineRef[i], origProtTups[i]]
                 massDict[combine[i]] = massRefPair

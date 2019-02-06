@@ -1268,13 +1268,20 @@ def combMass(combine, combineRef, origProtTups = None):
         # information updated so it is not lost in the running process.
         else:
             if combine[i] in massDict.keys():
+                # an annoying check that the protein tups to be added are not already saved to massDict[combine[i]]
                 currentProtTups = massDict[combine[i]][2]
+                # flag is set to False if originProtTups[i] (the origin tup to be added) equals any of the origin tups already
+                # stored in the massDict for the given key. The origin tups from the massDict are stored locally under the
+                # variable currentProtTups).
                 addFlag = True
+                # iterate through each pair of origin tups (they are stored in a list where pairs of entries are next to each other).
+                # if any of the origin tups match the currentProtTup, change addFlag to False.
                 for j in range(0,len(currentProtTups), 2):
-                    print(currentProtTups[j:j+2])
-                    print(origProtTups[i])
                     if currentProtTups[j:j+2] == origProtTups[i]:
                         addFlag = False
+                # if the addFlag is still True, origProtTups[i] did not match any of the tups in massDict[combine[i]] and thus
+                # we append the new origin information to the massDict. If it did match, we don't require the information
+                # and thus we do nothing.
                 if addFlag:
                     massDict[combine[i]][2].append(origProtTups[i][0])
                     massDict[combine[i]][2].append(origProtTups[i][1])

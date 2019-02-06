@@ -253,8 +253,11 @@ def findOrigProt(combinedRef, protIndexList, protList):
 
         # special check if peptide is ovelap spliced
         if len(set(ref)) != len(ref):
-            proteinTups.append([(prot1, ""),('Overlap',"")])
-
+            protRef1 += ('(' + str(min(ref) - protIndex1[0]))
+            protRef1 += ('-' + str(max(ref) - protIndex1[0]) + ')')
+            proteinTups.append([(prot1, protRef1),('Overlap',"")])
+            continue
+            
         for j in range(1,len(ref)):
             #print(j)
             if ref[j] - 1 > protIndex1[1] or ref[j] - 1 < protIndex1[0]:

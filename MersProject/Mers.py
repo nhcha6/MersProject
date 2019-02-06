@@ -414,11 +414,13 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
 
             # max, min and max distance checks combined into one function for clarity for clarity
             if combineCheck(toAddForward, mined, maxed, splitRef[i], splitRef[j], maxDistance):
-                # V. messy, need a way to get better visual
-                # check if linear and add to linearSet if so
-                if addLinPeptides(addForwardRef, protIndexList):
+                # overlap is forced in trans hence why the flag has not been included.
+                # linCisPepCheck assesses if the splits used to create the peptide were from the same protein.
+                # If so, its a cis or lin protein and not trans, and we add it to linCisSet not trans
+                if linCisPepCheck(addForwardRef, protIndexList):
                     linCisSet.add(toAddForward)
                     linCisSet.add(toAddReverse)
+                # if the splits are from different proteins, it is a trans peptide and can be added.
                 else:
                     combModless.append(toAddForward)
                     combModlessRef.append(addForwardRef)
@@ -1032,7 +1034,7 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
                     if overlapComp(splitRef[i], splitRef[j]):
                         massDict[toAddReverse] = addReverseRef
                         #check if toAdd forward is linear and add to linearSet if so
-                        if addLinPeptides(addForwardRef, False):
+                        if linCisPepCheck(addForwardRef, False):
                             linSet.add(toAddForward)
                         else:
                             massDict[toAddForward] = addForwardRef
@@ -1041,7 +1043,7 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
                 else:
                     massDict[toAddReverse] = addReverseRef
                     # check if toAddForward is linear and add to linearSet if so
-                    if addLinPeptides(addForwardRef, False):
+                    if linCisPepCheck(addForwardRef, False):
                         linSet.add(toAddForward)
                     else:
                         massDict[toAddForward] = addForwardRef
@@ -1061,21 +1063,30 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
 
     return combModless, combModlessRef, linSet
 
-def addLinPeptides(refs, transOrigins):
+
+def linCisPepCheck(refs, transOrigins):
+    # if transOrigins is not False, we know we are checking from a trans process and we need to check it the pep is Cis or Linear.
     if transOrigins != False:
+        # return the protein and index that the peptide is from.
         prot1, index1 = findInitProt(refs[0] - 1, transOrigins)
         prot2, index2 = findInitProt(refs[-1] - 1, transOrigins)
+        # if the two proteins are the same move to the next check
         if prot1 == prot2:
+            # if the set is the same length as the list there is no overlap, and thus it is eiter cis/lin splice.
             if len(set(refs)) == len(refs):
                 return True
         return False
+    # if transOrigins = False, we are checking from a cis process and need to check if the splice is linear.
     else:
         prevRef = refs[0]
+        # iterate through each ref starting from the second one.
         for i in range(1,len(refs)):
+            # if at any point a ref is not one more than the previous one, return False.
             if refs[i] == prevRef + 1:
                 prevRef = refs[i]
             else:
                 return False
+        # if we iterate all the way through without returning False, the peptide is Linear.
         return True
 
 def chargeIonMass(massDict, chargeFlags):

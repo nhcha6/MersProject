@@ -227,8 +227,6 @@ class MyTableWidget(QWidget):
         self.finishedPeptides = 0
         self.totalSize = 0
 
-        #self.getOutputPath()
-
     def uploadMgf(self, input_path, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag, chargeFlags):
         mgfDf, pepmassIonArray = readMGF(input_path, intensityThreshold)
 
@@ -250,8 +248,6 @@ class MyTableWidget(QWidget):
                     maxMass = maxMassTemp
 
         return maxMass, chargeMaxDict
-
-
 
     def onlyImportMGF(self, ms2Thresh, intensityPoints):
 
@@ -328,57 +324,69 @@ class MyTableWidget(QWidget):
     def getOutputPath(self):
 
         """
-        Called after generate output is clicked. Opens a window to select a file location to save the output to.
-        Returns False if no path is selected, otherwise returns the selected path.
+        Called after generate output is clicked and the user confirms their input. Opens a window to select a file location
+        to save the output to, and if valid opens a window to input the file name.
         """
-
+        # opens a window to select file location.
         self.outputPath = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
 
+        # if no outout path is returned, simply return to the main GUI and the user can choose to recommence the file location
+        # selection process if they desire.
         if self.outputPath == '':
-            #self.outputPath == False
             return
+        # else if a valid path is selected, bring up a dialog to input the file name
         else:
-            # text, ok = QInputDialog.getText(self, 'Input Dialog',
-            #                                 'Enter your file name:')
-            #
-            # if ok:
-            #     outputPath = outputFile + '/' + text
-            # else:
-            #     return False
             self.filePathDialog()
 
     def filePathDialog(self):
-        self.formGroupBox = QGroupBox('Output Name')
-        self.formLayout = QFormLayout()
-        self.formLayout.addRow(QLabel("Add a name for the output file."))
-        self.formLayout.addRow(QLabel('Banned characters: \ / : * " < > |'))
+        """
+        This function initialises and shows the filing naming popup.
+        """
+        self.outputNameBox = QGroupBox('Output Name')
+        self.outputNameLayout = QFormLayout()
+        self.outputNameLayout.addRow(QLabel("Add a name for the output file."))
+        self.outputNameLayout.addRow(QLabel('Banned characters: \ / : * " < > |'))
         self.fileName = QLineEdit()
         self.fileName.textChanged[str].connect(self.nameChecker)
         self.button = QPushButton("Create Output")
         self.valid = QLabel("Valid")
         self.button.clicked.connect(self.returnPath)
-        self.formLayout.addRow(self.fileName, self.valid)
-        self.formLayout.addRow(self.button)
-        self.formGroupBox.setLayout(self.formLayout)
-        self.formGroupBox.show()
+        self.outputNameLayout.addRow(self.fileName, self.valid)
+        self.outputNameLayout.addRow(self.button)
+        self.outputNameBox.setLayout(self.outputNameLayout)
+        self.outputNameBox.show()
 
     def nameChecker(self, input):
+        """
+        This function is called every time the file name lineEdit is updated. It takes the param input, which is the
+        text in the lineEdit, and checks if it is a valid file name.
+        :param input:
+        """
+        # assign bannedCharacters to variables.
         bannedCharacters = set('\/:*"<>|')
+        # if the input has no intersection with the banned characters it is valid. If so, update the label validity label
+        # and set ensure the generate output button is concurrently enabled/disabled.
         if len(set(input).intersection(bannedCharacters)) == 0:
             self.valid.setText("Valid")
+            self.button.setEnabled(True)
         else:
             self.valid.setText("Invalid")
-        if self.valid.text() == 'Invalid':
             self.button.setEnabled(False)
-        else:
-            self.button.setEnabled(True)
 
     def returnPath(self):
-        outputFile = self.outputPath
-        outputFile = outputFile + '/' + self.fileName.text()
+        """
+        Called when create output button in the file name dialog is clicked. It takes self.outputPath and adds the
+        name input by the user. It then creates the specific names for lin/cis/trans, adds the time and adds these
+        output paths to a dictionary. It lastly calls the code to create the output.
+        :return:
+        """
+        # create the base output file name which will be used to create the specific names for lin/cis/tras
+        outputFile = self.outputPath + '/' + self.fileName.text()
         print(outputFile)
+        # initialise the dictionary to store the splice type file names.
         outputFiles = {}
         now = datetime.now().strftime("%d%m%y_%H%M")
+        # create the file name for each splice type and add to dictionary.
         if self.linearFlag:
             linPath = outputFile + '-' + LINEAR + now + ".fasta"
             outputFiles[LINEAR] = Path(linPath)
@@ -390,6 +398,9 @@ class MyTableWidget(QWidget):
             outputFiles[TRANS] = Path(transPath)
             # print(outputPath[TRANS])
 
+        # if the mgfFlag is not checked, mgfGen imports the mgf then runs importedMGF() which generates the rest of the output.
+        # note that all the input variables have been declared under the myTableWidget class and are thus callable from
+        # this function.
         if self.mgfFlag.isChecked() == False:
             mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, self.ppmVal, self.intensityThreshold, self.minSimBy,
                                  self.byIonAccuracy, self.byIonFlag, self.chargeFlags)
@@ -398,9 +409,13 @@ class MyTableWidget(QWidget):
                                                               self.pepToProtFlag, self.protToPepFlag, self.modList, self.maxMod,
                                                               self.maxDistance, outputFiles, self.chargeFlags))
             self.threadpool.start(mgfGen)
+        # if mgfFlag is checked, no need to import the mgf, can skip straight to running importedMGF()
         else:
             self.importedMGF(self.mined, self.maxed, self.overlapFlag, self.transFlag, self.cisFlag, self.linearFlag, self.csvFlag, self.pepToProtFlag,
                              self.protToPepFlag, self.modList, self.maxMod, self.maxDistance, outputFiles, self.chargeFlags, True)
+
+        # close the output name box.
+        self.outputNameBox.close()
 
     def stopFunction(self):
         print('in stop function')
@@ -510,6 +525,7 @@ class MyTableWidget(QWidget):
         called which begins generating results
         """
 
+        # save the input variables as in the MyTableWidget class so that they can be accessed by all methods in the GUI.
         self.ppmVal, self.intensityThreshold, self.mined, self.maxed, self.maxDistance, self.overlapFlag, self.transFlag, self.cisFlag, self.linearFlag, self.csvFlag, \
         self.pepToProtFlag, self.protToPepFlag,  self.modList, self.maxMod, self.outputFlag, self.chargeFlags, self.minSimBy, self.byIonAccuracy, \
         self.byIonFlag, self.useMgf = self.getInputParams()
@@ -566,34 +582,9 @@ class MyTableWidget(QWidget):
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
-
-            # outputPath = {}
-            # now = datetime.now().strftime("%d%m%y_%H%M")
+            # if the user confirms the input, we ned to run the getOutputPath function. It requires the user input the desired save folder
+            # and name the output file. Once the user hits generate output on the file name dialog, the GUI initiates the splicing code.
             self.getOutputPath()
-            # outputFile = self.outputPath
-            # if outputFile is not False:
-            #     if linearFlag:
-            #         linPath = outputFile + '-' + LINEAR + now + ".fasta"
-            #         outputPath[LINEAR] = Path(linPath)
-            #     if cisFlag:
-            #         cisPath = outputFile + '-' + CIS + now + ".fasta"
-            #         outputPath[CIS] = Path(cisPath)
-            #     if transFlag:
-            #         transPath = outputFile + '-' + TRANS + now + ".fasta"
-            #         outputPath[TRANS] = Path(transPath)
-            #         # print(outputPath[TRANS])
-            #
-            #     if self.mgfFlag.isChecked() == False:
-            #         mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, ppmVal, intensityThreshold, minSimBy,
-            #                              byIonAccuracy, byIonFlag, chargeFlags)
-            #         mgfGen.signals.finished.connect(functools.partial(self.importedMGF, mined, maxed, overlapFlag,
-            #                                                           transFlag, cisFlag, linearFlag, csvFlag,
-            #                                                           pepToProtFlag, protToPepFlag, modList, maxMod,
-            #                                                           maxDistance, outputPath, chargeFlags))
-            #         self.threadpool.start(mgfGen)
-            #     else:
-            #         self.importedMGF(mined, maxed, overlapFlag,transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
-            #                          protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, True)
 
     def importedMGF(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
                     protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag=False):

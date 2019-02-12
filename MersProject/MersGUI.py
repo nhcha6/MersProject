@@ -178,6 +178,7 @@ class MyTableWidget(QWidget):
         self.fasta = None
         self.mgf = None
         self.mgfPath = None
+        self.outputPath = None
 
         # Init threading
         self.threadpool = QThreadPool()
@@ -248,8 +249,6 @@ class MyTableWidget(QWidget):
 
         return maxMass, chargeMaxDict
 
-
-
     def onlyImportMGF(self, ms2Thresh, intensityPoints):
 
         plot(ms2Thresh, intensityPoints)
@@ -296,6 +295,7 @@ class MyTableWidget(QWidget):
         """
         Called from the Upload Fasta File button. Opens a window to select a file, and check if the file ends in fasta
         """
+        sender = self.sender()
 
         fname = QFileDialog.getOpenFileName(self, 'Open File', '/home/')
 
@@ -303,14 +303,19 @@ class MyTableWidget(QWidget):
 
         # Ensure opening fasta extension file by checking last five chars
         if fastaTest == 'fasta':
-            self.fasta = Fasta(fname[0])
-            #self.enableControl()
-            self.controlMGFInput()
-            QMessageBox.about(self, "Message", 'Fasta file imported.')
+            if sender == self.pushButton1:
+                self.fasta = Fasta(fname[0])
+                #self.enableControl()
+                self.controlMGFInput()
+                QMessageBox.about(self, "Message", 'Fasta file imported.')
+            else:
+                self.fasta.inputFile.append(fname[0])
+                QMessageBox.about(self, "Message", 'Additional Fasta file imported.')
+            #print(self.fasta.inputFile)
 
         # Ensuring program does not crash if no file is selected
         elif fname[0] == '':
-            print('')
+            pass
 
         # Wrong extension selected! Try Again!
         else:
@@ -319,23 +324,98 @@ class MyTableWidget(QWidget):
     def getOutputPath(self):
 
         """
-        Called after generate output is clicked. Opens a window to select a file location to save the output to.
-        Returns False if no path is selected, otherwise returns the selected path.
+        Called after generate output is clicked and the user confirms their input. Opens a window to select a file location
+        to save the output to, and if valid opens a window to input the file name.
         """
+        # opens a window to select file location.
+        self.outputPath = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
 
-        outputFile = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
-
-        if outputFile == '':
-            return False
+        # if no outout path is returned, simply return to the main GUI and the user can choose to recommence the file location
+        # selection process if they desire.
+        if self.outputPath == '':
+            return
+        # else if a valid path is selected, bring up a dialog to input the file name
         else:
-            text, ok = QInputDialog.getText(self, 'Input Dialog',
-                                            'Enter your file name:')
+            self.filePathDialog()
 
-            if ok:
-                outputPath = outputFile + '/' + text
-            else:
-                return False
-        return outputPath
+    def filePathDialog(self):
+        """
+        This function initialises and shows the filing naming popup.
+        """
+        self.outputNameBox = QGroupBox('Output Name')
+        self.outputNameLayout = QFormLayout()
+        self.outputNameLayout.addRow(QLabel("Add a name for the output file."))
+        self.outputNameLayout.addRow(QLabel('Banned characters: \ / : * " < > |'))
+        self.fileName = QLineEdit()
+        self.fileName.textChanged[str].connect(self.nameChecker)
+        self.button = QPushButton("Create Output")
+        self.valid = QLabel("Valid")
+        self.button.clicked.connect(self.returnPath)
+        self.outputNameLayout.addRow(self.fileName, self.valid)
+        self.outputNameLayout.addRow(self.button)
+        self.outputNameBox.setLayout(self.outputNameLayout)
+        self.outputNameBox.show()
+
+    def nameChecker(self, input):
+        """
+        This function is called every time the file name lineEdit is updated. It takes the param input, which is the
+        text in the lineEdit, and checks if it is a valid file name.
+        :param input:
+        """
+        # assign bannedCharacters to variables.
+        bannedCharacters = set('\/:*"<>|')
+        # if the input has no intersection with the banned characters it is valid. If so, update the label validity label
+        # and set ensure the generate output button is concurrently enabled/disabled.
+        if len(set(input).intersection(bannedCharacters)) == 0:
+            self.valid.setText("Valid")
+            self.button.setEnabled(True)
+        else:
+            self.valid.setText("Invalid")
+            self.button.setEnabled(False)
+
+    def returnPath(self):
+        """
+        Called when create output button in the file name dialog is clicked. It takes self.outputPath and adds the
+        name input by the user. It then creates the specific names for lin/cis/trans, adds the time and adds these
+        output paths to a dictionary. It lastly calls the code to create the output.
+        :return:
+        """
+        # create the base output file name which will be used to create the specific names for lin/cis/tras
+        outputFile = self.outputPath + '/' + self.fileName.text()
+        print(outputFile)
+        # initialise the dictionary to store the splice type file names.
+        outputFiles = {}
+        now = datetime.now().strftime("%d%m%y_%H%M")
+        # create the file name for each splice type and add to dictionary.
+        if self.linearFlag:
+            linPath = outputFile + '-' + LINEAR + now + ".fasta"
+            outputFiles[LINEAR] = Path(linPath)
+        if self.cisFlag:
+            cisPath = outputFile + '-' + CIS + now + ".fasta"
+            outputFiles[CIS] = Path(cisPath)
+        if self.transFlag:
+            transPath = outputFile + '-' + TRANS + now + ".fasta"
+            outputFiles[TRANS] = Path(transPath)
+            # print(outputPath[TRANS])
+
+        # if the mgfFlag is not checked, mgfGen imports the mgf then runs importedMGF() which generates the rest of the output.
+        # note that all the input variables have been declared under the myTableWidget class and are thus callable from
+        # this function.
+        if self.mgfFlag.isChecked() == False:
+            mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, self.ppmVal, self.intensityThreshold, self.minSimBy,
+                                 self.byIonAccuracy, self.byIonFlag, self.chargeFlags)
+            mgfGen.signals.finished.connect(functools.partial(self.importedMGF, self.mined, self.maxed, self.overlapFlag,
+                                                              self.transFlag, self.cisFlag, self.linearFlag, self.csvFlag,
+                                                              self.pepToProtFlag, self.protToPepFlag, self.modList, self.maxMod,
+                                                              self.maxDistance, outputFiles, self.chargeFlags))
+            self.threadpool.start(mgfGen)
+        # if mgfFlag is checked, no need to import the mgf, can skip straight to running importedMGF()
+        else:
+            self.importedMGF(self.mined, self.maxed, self.overlapFlag, self.transFlag, self.cisFlag, self.linearFlag, self.csvFlag, self.pepToProtFlag,
+                             self.protToPepFlag, self.modList, self.maxMod, self.maxDistance, outputFiles, self.chargeFlags, True)
+
+        # close the output name box.
+        self.outputNameBox.close()
 
     def stopFunction(self):
         print('in stop function')
@@ -377,6 +457,7 @@ class MyTableWidget(QWidget):
 
     def enableControl(self):
         if self.fasta is not None:
+            self.addMultipleFasta.setEnabled(True)
             if self.mgfPath is not None or self.mgfFlag.isChecked() == True:
                 self.tab1.toleranceText.setEnabled(True)
                 self.tab1.toleranceLabel.setEnabled(True)
@@ -406,6 +487,8 @@ class MyTableWidget(QWidget):
             else:
                 self.tabs.setTabEnabled(1, False)
                 self.nextTab.setEnabled(False)
+        else:
+            self.addMultipleFasta.setEnabled(False)
 
     def controlMGFInput(self):
         if self.mgfFlag.isChecked():
@@ -442,60 +525,66 @@ class MyTableWidget(QWidget):
         called which begins generating results
         """
 
-        ppmVal, intensityThreshold, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, \
-        pepToProtFlag, protToPepFlag,  modList, maxMod, outputFlag, chargeFlags, minSimBy, byIonAccuracy, \
-        byIonFlag, mgfFlag = self.getInputParams()
+        # save the input variables as in the MyTableWidget class so that they can be accessed by all methods in the GUI.
+        self.ppmVal, self.intensityThreshold, self.mined, self.maxed, self.maxDistance, self.overlapFlag, self.transFlag, self.cisFlag, self.linearFlag, self.csvFlag, \
+        self.pepToProtFlag, self.protToPepFlag,  self.modList, self.maxMod, self.outputFlag, self.chargeFlags, self.minSimBy, self.byIonAccuracy, \
+        self.byIonFlag, self.useMgf = self.getInputParams()
+
+        # if transFlag is selected, we check the size of the input to avoid the user unknowingly starting a huge computation.
+        if self.transFlag:
+            strng = ""
+            maxAminos = 2000
+            counter = 0
+            for inputFile in self.fasta.inputFile:
+                with open(inputFile, "rU") as handle:
+                    for record in SeqIO.parse(handle, 'fasta'):
+                        # add to strng and counter
+                        counter += 1
+                        strng += str(record.seq)
+                        # we do not want to measure the length of strng until we are sure that more than one protein has been uploaded.
+                        # thus, we continue if counter == 1.
+                        if counter == 1:
+                            continue
+                        # if running trans and the number of aminos in the fasta exceeds 2000, block input.
+                        if len(strng) > maxAminos:
+                            response = QMessageBox.question(self, 'Message', 'You have selected to compute trans splicing on a file containing over ' +
+                            str(maxAminos) + ' amino acids. We do not recommend you persist with this input as it is likely to take a very long time to compute.' +
+                            ' Do you still wish to continue with the input?')
+                            if response == QMessageBox.Yes:
+                                break
+                            else:
+                                return
+            # block output if counter is less than two
+            if counter < 2:
+                QMessageBox.about(self, "Message", 'Trans output requires at least two proteins to have been uploaded! Please review the input accordingly.')
+                return
 
         reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' +
-                                     'Minimum Peptide Length: ' + str(mined) + '\n' +
-                                     'Maximum Peptide Length: ' + str(maxed) + '\n' +
-                                     'Maximum Distance: ' + str(maxDistance) + '\n' +
-                                     'Modifications: ' + str(modList) + '\n' +
-                                     'Max Mods Per Pep: ' + str(maxMod) + '\n' +
-                                     'No Overlap: ' + str(overlapFlag) + '\n' +
-                                     'Linear Splicing: ' + str(linearFlag) + '\n' +
-                                     'Cis Splicing: ' + str(cisFlag) + '\n' +
-                                     'Trans Splicing: ' + str(transFlag) + '\n' +
-                                     'Print Intial Combinations: ' + str(csvFlag) + '\n' +
-                                     'Write Peptide to Protein Fasta: ' + str(pepToProtFlag) + '\n' +
-                                     'Write Protein to Peptide Fasta: ' + str(pepToProtFlag) + '\n' +
-                                     'Charge States: ' + str(chargeFlags) + '\n' +
-                                     'No MGF Comparison: ' + str(mgfFlag) + '\n' +
-                                     'PPM Value: ' + str(ppmVal) + '\n' +
-                                     'Intensity Threshold: ' + str(intensityThreshold) + '\n' +
-                                     'Apply b/y Ion Comparison: ' + str(byIonFlag) + '\n' +
-                                     'Min b/y Ion %: ' + str(minSimBy) + '\n' +
-                                     'b/y Ion Accuracy: ' + str(byIonAccuracy) + '\n',
+                                     'Minimum Peptide Length: ' + str(self.mined) + '\n' +
+                                     'Maximum Peptide Length: ' + str(self.maxed) + '\n' +
+                                     'Maximum Distance: ' + str(self.maxDistance) + '\n' +
+                                     'Modifications: ' + str(self.modList) + '\n' +
+                                     'Max Mods Per Pep: ' + str(self.maxMod) + '\n' +
+                                     'No Overlap: ' + str(self.overlapFlag) + '\n' +
+                                     'Linear Splicing: ' + str(self.linearFlag) + '\n' +
+                                     'Cis Splicing: ' + str(self.cisFlag) + '\n' +
+                                     'Trans Splicing: ' + str(self.transFlag) + '\n' +
+                                     'Print Intial Combinations: ' + str(self.csvFlag) + '\n' +
+                                     'Write Peptide to Protein Fasta: ' + str(self.pepToProtFlag) + '\n' +
+                                     'Write Protein to Peptide Fasta: ' + str(self.pepToProtFlag) + '\n' +
+                                     'Charge States: ' + str(self.chargeFlags) + '\n' +
+                                     'No MGF Comparison: ' + str(self.useMgf) + '\n' +
+                                     'PPM Value: ' + str(self.ppmVal) + '\n' +
+                                     'Intensity Threshold: ' + str(self.intensityThreshold) + '\n' +
+                                     'Apply b/y Ion Comparison: ' + str(self.byIonFlag) + '\n' +
+                                     'Min b/y Ion %: ' + str(self.minSimBy) + '\n' +
+                                     'b/y Ion Accuracy: ' + str(self.byIonAccuracy) + '\n',
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
-
-            outputPath = {}
-            now = datetime.now().strftime("%d%m%y_%H%M")
-            outputFile = self.getOutputPath()
-            if outputFile is not False:
-                if linearFlag:
-                    linPath = outputFile + '-' + LINEAR + now + ".fasta"
-                    outputPath[LINEAR] = Path(linPath)
-                if cisFlag:
-                    cisPath = outputFile + '-' + CIS + now + ".fasta"
-                    outputPath[CIS] = Path(cisPath)
-                if transFlag:
-                    transPath = outputFile + '-' + TRANS + now + ".fasta"
-                    outputPath[TRANS] = Path(transPath)
-                    # print(outputPath[TRANS])
-
-                if self.mgfFlag.isChecked() == False:
-                    mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, ppmVal, intensityThreshold, minSimBy,
-                                         byIonAccuracy, byIonFlag, chargeFlags)
-                    mgfGen.signals.finished.connect(functools.partial(self.importedMGF, mined, maxed, overlapFlag,
-                                                                      transFlag, cisFlag, linearFlag, csvFlag,
-                                                                      pepToProtFlag, protToPepFlag, modList, maxMod,
-                                                                      maxDistance, outputPath, chargeFlags))
-                    self.threadpool.start(mgfGen)
-                else:
-                    self.importedMGF(mined, maxed, overlapFlag,transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
-                                     protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, True)
+            # if the user confirms the input, we ned to run the getOutputPath function. It requires the user input the desired save folder
+            # and name the output file. Once the user hits generate output on the file name dialog, the GUI initiates the splicing code.
+            self.getOutputPath()
 
     def importedMGF(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
                     protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag=False):
@@ -807,23 +896,28 @@ class MyTableWidget(QWidget):
         self.formGroupBox = QGroupBox('Custom Modification')
         self.formLayout = QFormLayout()
         self.formLayout.addRow(QLabel("Input modified amino acids without spaces: TGN \n" +
-                                      "Input mass change as a decimal number"))
+                                      "Input mass change as a decimal number. Place a minus (-) \n" +
+                                        "directly before to signify mass loss."))
         self.custAminoInput = QLineEdit()
         self.custMassInput = QLineEdit()
+        self.modName = QLineEdit()
         self.addModButton = QPushButton("Create Modification")
         # partial method allows variable to be passed to connected function on click
         self.addCustToModListSender = partial(self.addCustToModlist, sender)
         self.addModButton.clicked.connect(self.addCustToModListSender)
         self.formLayout.addRow(QLabel("Modified Amino Acids: "), self.custAminoInput)
         self.formLayout.addRow(QLabel("Mass Change: "), self.custMassInput)
+        self.formLayout.addRow(QLabel("Modification Name: "), self.modName)
         self.formLayout.addRow(self.addModButton)
         self.formGroupBox.setLayout(self.formLayout)
         self.formGroupBox.show()
 
     def addCustToModlist(self, sender):
-        aminoAcids = self.custAminoInput.text()
-        massChange = self.custMassInput.text()
-        modKey = "Custom " + aminoAcids
+        # strip inputs so that leading or lagging whitespace does not void the tests.
+        aminoAcids = self.custAminoInput.text().strip()
+        massChange = self.custMassInput.text().strip()
+        modName = self.modName.text().strip()
+        modKey = "Custom " + modName + " (" + aminoAcids + ")"
         modValue = []
 
         # validity checks
@@ -834,11 +928,14 @@ class MyTableWidget(QWidget):
                 return
             else:
                 modValue.append(char)
+
+        # if not float (accounts for +/- at start) return error message.
         try:
-            float(massChange)
+            float(massChange[1:])
         except ValueError:
             QMessageBox.about(self, "Message", 'Mass Change is not a valid decimal number!')
             return
+
 
         # update modTable and GUI
         modValue.append(float(massChange))
@@ -1033,6 +1130,9 @@ class MyTableWidget(QWidget):
     def createTab1ParameterWidgets(self):
         self.pushButton1 = QPushButton("Select Fasta File")
         self.pushButton1.clicked.connect(self.uploadFasta)
+        self.addMultipleFasta = QPushButton("Add Another Fasta")
+        self.addMultipleFasta.clicked.connect(self.uploadFasta)
+        self.addMultipleFasta.setEnabled(False)
         self.mgfButton = QPushButton("Select MGF File")
         self.mgfButton.clicked.connect(self.uploadMgfPreStep)
         self.mgfPlotFlag = QCheckBox('Produce Intensity Plot')
@@ -1100,24 +1200,25 @@ class MyTableWidget(QWidget):
         self.tab1.layout.setRowStretch(0, 1)
         self.tab1.layout.setRowStretch(5, 1)
         self.tab1.layout.addWidget(self.pushButton1, 1, 2)
+        self.tab1.layout.addWidget(self.addMultipleFasta, 3, 2)
         self.tab1.layout.addWidget(self.mgfButton, 2, 2)
         self.tab1.layout.addWidget(self.mgfFlag, 1, 3)
         self.tab1.layout.addWidget(self.mgfPlotFlag, 2, 3)
-        self.tab1.layout.addWidget(self.tab1.ppmLabel, 3, 2)
-        self.tab1.layout.addWidget(self.tab1.ppmText, 3, 3)
-        self.tab1.layout.addWidget(self.tab1.ppmStatus, 3, 4)
-        self.tab1.layout.addWidget(self.tab1.toleranceLabel, 4, 2)
-        self.tab1.layout.addWidget(self.tab1.toleranceText, 4, 3)
-        self.tab1.layout.addWidget(self.tab1.toleranceStatus, 4, 4)
+        self.tab1.layout.addWidget(self.tab1.ppmLabel, 4, 2)
+        self.tab1.layout.addWidget(self.tab1.ppmText, 4, 3)
+        self.tab1.layout.addWidget(self.tab1.ppmStatus, 4, 4)
+        self.tab1.layout.addWidget(self.tab1.toleranceLabel, 5, 2)
+        self.tab1.layout.addWidget(self.tab1.toleranceText, 5, 3)
+        self.tab1.layout.addWidget(self.tab1.toleranceStatus, 5, 4)
 
-        self.tab1.layout.addWidget(self.tab1.minByIonLabel, 5, 2)
-        self.tab1.layout.addWidget(self.tab1.minByIonText, 5, 3)
-        self.tab1.layout.addWidget(self.tab1.minByIonStatus, 5, 4)
-        self.tab1.layout.addWidget(self.tab1.byIonAccLabel, 6, 2)
-        self.tab1.layout.addWidget(self.tab1.byIonAccText, 6, 3)
-        self.tab1.layout.addWidget(self.tab1.byIonAccStatus, 6, 4)
-        self.tab1.layout.addWidget(self.tab1.byIonFlag, 7, 2)
-        self.tab1.layout.addWidget(self.nextTab, 7, 3)
+        self.tab1.layout.addWidget(self.tab1.minByIonLabel, 6, 2)
+        self.tab1.layout.addWidget(self.tab1.minByIonText, 6, 3)
+        self.tab1.layout.addWidget(self.tab1.minByIonStatus, 6, 4)
+        self.tab1.layout.addWidget(self.tab1.byIonAccLabel, 7, 2)
+        self.tab1.layout.addWidget(self.tab1.byIonAccText, 7, 3)
+        self.tab1.layout.addWidget(self.tab1.byIonAccStatus, 7, 4)
+        self.tab1.layout.addWidget(self.tab1.byIonFlag, 8, 2)
+        self.tab1.layout.addWidget(self.nextTab, 8, 3)
 
     def createTab2ParameterWidgets(self):
 

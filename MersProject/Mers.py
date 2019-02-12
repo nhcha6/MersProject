@@ -19,6 +19,8 @@ import tempfile
 from queue import Queue
 import io
 import traceback
+from pathlib import Path
+
 
 TRANS = "Trans"
 LINEAR = "Linear"
@@ -45,7 +47,7 @@ class Fasta:
 
     def __init__(self, inputFile):
 
-        self.inputFile = inputFile
+        self.inputFile = [inputFile]
         self.allProcessList = []
         self.pepTotal = multiprocessing.Queue()
         self.pepCompleted = multiprocessing.Queue()
@@ -107,11 +109,14 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
         finalPath = getFinalPath(outputPath, spliceType)
         open(finalPath, 'w')
 
-    seqDict = addSequenceList(inputFile)
+    seqDict = {}
+    for file in inputFile:
+        seqDict.update(addSequenceList(file))
 
-    if len(seqDict) <= 1:
-        logging.info('Only 1 protein, therefore trans not relevant')
-        return
+
+    # if len(seqDict) <= 1:
+    #     logging.info('Only 1 protein, therefore trans not relevant')
+    #     return
 
     finalPeptide, protIndexList, protList = combinePeptides(seqDict)
 
@@ -260,7 +265,10 @@ def findOrigProt(combinedRef, protIndexList, protList):
 
         # special check if peptide is ovelap spliced
         if len(set(ref)) != len(ref):
-            proteinTups.append([(prot1, ""),('Overlap',"")])
+            protRef1 += ('(' + str(min(ref) - protIndex1[0]))
+            protRef1 += ('-' + str(max(ref) - protIndex1[0]) + ')')
+            proteinTups.append([(prot1, protRef1),('Overlap',"")])
+            continue
 
         for j in range(1,len(ref)):
             #print(j)
@@ -421,21 +429,14 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
 
             # max, min and max distance checks combined into one function for clarity for clarity
             if combineCheck(toAddForward, mined, maxed, splitRef[i], splitRef[j], maxDistance):
-                # V. messy, need a way to get better visual
-                if overlapFlag:
-                    if overlapComp(splitRef[i], splitRef[j]):
-                        # check if linear and add to linearSet if so
-                        linCisSet = addLinPeptides(toAddForward, addForwardRef, linCisSet, protIndexList)
-                        linCisSet = addLinPeptides(toAddReverse, addReverseRef, linCisSet, protIndexList)
-                        combModless.append(toAddForward)
-                        combModlessRef.append(addForwardRef)
-                        combModless.append(toAddReverse)
-                        combModlessRef.append(addReverseRef)
-
+                # overlap is forced in trans hence why the flag has not been included.
+                # linCisPepCheck assesses if the splits used to create the peptide were from the same protein.
+                # If so, its a cis or lin protein and not trans, and we add it to linCisSet not trans
+                if linCisPepCheck(addForwardRef, protIndexList):
+                    linCisSet.add(toAddForward)
+                    linCisSet.add(toAddReverse)
+                # if the splits are from different proteins, it is a trans peptide and can be added.
                 else:
-                    # check if linear and add to linearSet if so
-                    linCisSet = addLinPeptides(toAddForward, addForwardRef, linCisSet, protIndexList)
-                    linCisSet = addLinPeptides(toAddReverse, addReverseRef, linCisSet, protIndexList)
                     combModless.append(toAddForward)
                     combModlessRef.append(addForwardRef)
                     combModless.append(toAddReverse)
@@ -483,28 +484,28 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
     maxMem = psutil.virtual_memory()[1] / 2
 
 
+    for file in inputFile:
+        with open(file, "rU") as handle:
+            for record in SeqIO.parse(handle, 'fasta'):
 
-    with open(inputFile, "rU") as handle:
-        for record in SeqIO.parse(handle, 'fasta'):
+                pepTotal.put(1)
+                seq = str(record.seq)
+                seqId = record.name
 
-            pepTotal.put(1)
-            seq = str(record.seq)
-            seqId = record.name
+                # while memoryCheck(maxMem):
+                #     time.sleep(1)
+                #     logging.info('Memory Limit Reached')
 
-            # while memoryCheck(maxMem):
-            #     time.sleep(1)
-            #     logging.info('Memory Limit Reached')
-
-            seqId = seqId.split('|')[1]
-            logging.info(spliceType + " process started for: " + seq[0:5])
-            # Start the processes for each protein with the targe function being genMassDict
-            pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
-                                                    csvFlag, modList, maxMod, maxDistance, finalPath, chargeFlags, mgfFlag))
+                seqId = seqId.split('|')[1]
+                logging.info(spliceType + " process started for: " + seq[0:5])
+                # Start the processes for each protein with the targe function being genMassDict
+                pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
+                                                        csvFlag, modList, maxMod, maxDistance, finalPath, chargeFlags, mgfFlag))
 
 
-        #pepTotal.put(counter)
-        pool.close()
-        pool.join()
+    #pepTotal.put(counter)
+    pool.close()
+    pool.join()
 
     toWriteQueue.put('stop')
     writerProcess.join()
@@ -559,12 +560,12 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
             for peptide in allPeptides:
                 allPeptidesDict[peptide] = protId
             genMassDict.toWriteQueue.put(allPeptidesDict)
+
         # If there is an mgf file AND there is a charge selected
         elif mgfData is not None and True in chargeFlags:
             #fulfillPpmReq(mgfObj, massDict)
             matchedPeptides = generateMGFList(protId, mgfData, massDict, modList)
             genMassDict.toWriteQueue.put(matchedPeptides)
-
 
         # If csv is selected, write to csv file
         if csvFlag:
@@ -1063,15 +1064,22 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
                 # V. messy, need a way to get better visual
                 if overlapFlag:
                     if overlapComp(splitRef[i], splitRef[j]):
-                        #check if linear and add to linearSet if so
-                        linSet = addLinPeptides(toAddForward, addForwardRef, linSet, False)
-                        massDict[toAddForward] = addForwardRef
                         massDict[toAddReverse] = addReverseRef
+                        #check if toAdd forward is linear and add to linearSet if so
+                        if linCisPepCheck(addForwardRef, False):
+                            linSet.add(toAddForward)
+                        else:
+                            massDict[toAddForward] = addForwardRef
+
 
                 else:
-                    linSet = addLinPeptides(toAddForward, addForwardRef, linSet, False)
-                    massDict[toAddForward] = addForwardRef
                     massDict[toAddReverse] = addReverseRef
+                    # check if toAddForward is linear and add to linearSet if so
+                    if linCisPepCheck(addForwardRef, False):
+                        linSet.add(toAddForward)
+                    else:
+                        massDict[toAddForward] = addForwardRef
+
             elif not maxDistCheck(splitRef[i], splitRef[j], maxDistance):
                 break
 
@@ -1087,24 +1095,31 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
 
     return combModless, combModlessRef, linSet
 
-def addLinPeptides(peptide, refs, linCisSet, transOrigins):
-    prevRef = refs[0]
-    for i in range(1,len(refs)):
-        if transOrigins != False:
-            prot1, index1 = findInitProt(refs[0]-1, transOrigins)
-            prot2, index2 = findInitProt(refs[-1]-1, transOrigins)
-            if prot1 == prot2:
-                if len(set(refs)) == len(refs):
-                    linCisSet.add(peptide)
-                return linCisSet
+
+def linCisPepCheck(refs, transOrigins):
+    # if transOrigins is not False, we know we are checking from a trans process and we need to check it the pep is Cis or Linear.
+    if transOrigins != False:
+        # return the protein and index that the peptide is from.
+        prot1, index1 = findInitProt(refs[0] - 1, transOrigins)
+        prot2, index2 = findInitProt(refs[-1] - 1, transOrigins)
+        # if the two proteins are the same move to the next check
+        if prot1 == prot2:
+            # if the set is the same length as the list there is no overlap, and thus it is eiter cis/lin splice.
+            if len(set(refs)) == len(refs):
+                return True
+        return False
+    # if transOrigins = False, we are checking from a cis process and need to check if the splice is linear.
+    else:
+        prevRef = refs[0]
+        # iterate through each ref starting from the second one.
+        for i in range(1,len(refs)):
+            # if at any point a ref is not one more than the previous one, return False.
+            if refs[i] == prevRef + 1:
+                prevRef = refs[i]
             else:
-                return linCisSet
-        elif refs[i] == prevRef + 1:
-            prevRef = refs[i]
-        else:
-            return linCisSet
-    linCisSet.add(peptide)
-    return linCisSet
+                return False
+        # if we iterate all the way through without returning False, the peptide is Linear.
+        return True
 
 def chargeIonMass(massDict, chargeFlags):
 
@@ -1305,8 +1320,9 @@ def combMass(combine, combineRef, origProtTups = None):
         # information updated so it is not lost in the running process.
         else:
             if combine[i] in massDict.keys():
-                massDict[combine[i]][2].append(origProtTups[i][0])
-                massDict[combine[i]][2].append(origProtTups[i][1])
+                    massDict[combine[i]][2].append(origProtTups[i][0])
+                    massDict[combine[i]][2].append(origProtTups[i][1])
+
             else:
                 massRefPair = [totalMass, combineRef[i], origProtTups[i]]
                 massDict[combine[i]] = massRefPair
@@ -1347,9 +1363,9 @@ def editRefMassDict(massDict):
 
 
 def getFinalPath(outputPath, spliceType):
-    outputPathSmall = outputPath[0:-6]
+    outputPathSmall = str(outputPath)[0:-6]
     newPath = str(outputPathSmall) + '-' + spliceType + '.csv'
-    return newPath
+    return Path(newPath)
 
 def nth_replace(string, old, new, n=1, option='only nth'):
 

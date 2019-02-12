@@ -515,52 +515,69 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     """
     Compute the peptides for the given protein
     """
-    start = time.time()
+    try:
+        start = time.time()
 
-    # Get the initial peptides and their positions, and the set of linear peptides produced for this protein
-    combined, combinedRef, linSet = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
+        # Get the initial peptides and their positions, and the set of linear peptides produced for this protein
+        combined, combinedRef, linSet = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
 
-    # add this set of linear proteins to the linProt queue
-    genMassDict.linSetQueue.put(linSet)
+        # add this set of linear proteins to the linProt queue
+        genMassDict.linSetQueue.put(linSet)
 
-    # Convert it into a dictionary that has a mass
-    massDict = combMass(combined, combinedRef)
+        # Convert it into a dictionary that has a mass
+        massDict = combMass(combined, combinedRef)
 
-    # Apply mods to the dictionary values and update the dictionary
-    massDict = applyMods(massDict, modList, maxMod)
+        # Apply mods to the dictionary values and update the dictionary
+        massDict = applyMods(massDict, modList, maxMod)
 
-    # Add the charge information along with their masses
-    massDict = chargeIonMass(massDict, chargeFlags)
+        # Add the charge information along with their masses
+        massDict = chargeIonMass(massDict, chargeFlags)
 
-    # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
-    massDict = editRefMassDict(massDict)
+        # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
+        massDict = editRefMassDict(massDict)
 
-    if mgfFlag:
-        allPeptides = getAllPep(massDict)
-        allPeptidesDict = {}
-        for peptide in allPeptides:
-            allPeptidesDict[peptide] = protId
-        genMassDict.toWriteQueue.put(allPeptidesDict)
-    # If there is an mgf file AND there is a charge selected
-    elif mgfData is not None and True in chargeFlags:
-        #fulfillPpmReq(mgfObj, massDict)
-        matchedPeptides = generateMGFList(protId, mgfData, massDict, modList)
-        genMassDict.toWriteQueue.put(matchedPeptides)
+        if mgfFlag:
+            allPeptides = getAllPep(massDict)
+            allPeptidesDict = {}
+            for peptide in allPeptides:
+                allPeptidesDict[peptide] = protId
+            genMassDict.toWriteQueue.put(allPeptidesDict)
+        # If there is an mgf file AND there is a charge selected
+        elif mgfData is not None and True in chargeFlags:
+            #fulfillPpmReq(mgfObj, massDict)
+            matchedPeptides = generateMGFList(protId, mgfData, massDict, modList)
+            genMassDict.toWriteQueue.put(matchedPeptides)
 
 
-    # If csv is selected, write to csv file
-    if csvFlag:
-        logging.info("Writing locked :(")
-        lock.acquire()
+        # If csv is selected, write to csv file
+        if csvFlag:
+            logging.info("Writing locked :(")
+            lock.acquire()
 
-        writeToCsv(massDict, protId, finalPath, chargeFlags)
-        lock.release()
-        logging.info("Writing released!")
+            writeToCsv(massDict, protId, finalPath, chargeFlags)
+            lock.release()
+            logging.info("Writing released!")
 
-    end = time.time()
+        end = time.time()
 
-    logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
-    genMassDict.pepCompleted.put(1)
+        logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
+        genMassDict.pepCompleted.put(1)
+
+    except Exception as e:
+
+        exc_buffer = io.StringIO()
+
+        traceback.print_exc(file=exc_buffer)
+
+        errorString = 'Uncaught exception in worker process: ' + protId + '\n%s'
+
+        logging.error(
+
+            errorString,
+
+            exc_buffer.getvalue())
+
+        raise e
 
 def getAllPep(massDict):
 

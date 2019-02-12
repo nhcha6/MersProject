@@ -136,8 +136,12 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                 # If they didn't match try the next one. Step will be 1 when traversing forward, -1
                                 # when traversing backward thus will be able to go up and down.
                                 else:
-                                    index += step
+                                index += step
+                                try:
                                     pepMass = pepMasses[index]
+                                except IndexError:
+                                    print('index is outide range of pepMasses')
+                                    break
                 else:
                     break
         return matchedPeptides

@@ -533,6 +533,8 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
     # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
     massDict = editRefMassDict(massDict)
 
+    print(massDict['IIQKy2WRMy2VVRRRy2K'])
+
     if mgfFlag:
         allPeptides = getAllPep(massDict)
         allPeptidesDict = {}

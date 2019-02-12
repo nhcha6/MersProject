@@ -139,7 +139,7 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
 
     # Create a process for pairs of splits, pairing element 0 with -1, 1 with -2 and so on.
     splitsIndex = []
-    procSize = 5
+    procSize = 1
 
     maxMem = psutil.virtual_memory()[1] / 2
 
@@ -173,62 +173,79 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
 def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, maxMod, finalPath,
                  chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList, protList):
 
-    # Look to produce only trans spliced peptides - not linear or cis. Do so by not allowing combination of peptides
-    # which originate from the same protein as opposed to solving for Cis and Linear and not including that
-    # in the output
-    combined, combinedRef, linCisSet = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance,
-                                                           overlapFlag, splitsIndex, protIndexList)
+    try:
+        # Look to produce only trans spliced peptides - not linear or cis. Do so by not allowing combination of peptides
+        # which originate from the same protein as opposed to solving for Cis and Linear and not including that
+        # in the output
+        combined, combinedRef, linCisSet = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance,
+                                                               overlapFlag, splitsIndex, protIndexList)
 
-    # Put linCisSet to linCisQueue:
-    transProcess.linCisQueue.put(linCisSet)
+        # Put linCisSet to linCisQueue:
+        transProcess.linCisQueue.put(linCisSet)
 
-    # update combineRef to include information on where the peptide originated from
-    origProtTups = findOrigProt(combinedRef, protIndexList, protList)
+        # update combineRef to include information on where the peptide originated from
+        origProtTups = findOrigProt(combinedRef, protIndexList, protList)
 
-    # Convert it into a dictionary that has a mass
-    massDict = combMass(combined, combinedRef, origProtTups)
+        # Convert it into a dictionary that has a mass
+        massDict = combMass(combined, combinedRef, origProtTups)
 
-    # Apply mods to the dictionary values and update the dictionary
-    massDict = applyMods(massDict, modList, maxMod)
+        # Apply mods to the dictionary values and update the dictionary
+        massDict = applyMods(massDict, modList, maxMod)
 
-    # Add the charge information along with their masses
-    massDict = chargeIonMass(massDict, chargeFlags)
+        # Add the charge information along with their masses
+        massDict = chargeIonMass(massDict, chargeFlags)
 
-    # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
-    massDict = editRefMassDict(massDict)
+        # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
+        massDict = editRefMassDict(massDict)
 
-    if mgfFlag:
-        allPeptides = getAllPep(massDict)
-        allPeptidesDict = {}
-        for peptide in allPeptides:
-            # create the string, with peptides sorted so all permutations are matched as similar. There may be multiple
-            # peptide locations in the list of tuples, hence the for loop. Tuples are listed in order, with consecutive
-            # tuples relating to a pair of splice locations.
-            string = ""
-            for i in range(0, len(massDict[peptide][3]), 2):
-                origProt = sorted(massDict[peptide][3][i:i+2])
-                string += origProt[0][0] + origProt[0][1] + '/' + origProt[1][0] + origProt[1][1] + ';'
-            string = string[0:-1]
-            allPeptidesDict[peptide] = string
-        transProcess.toWriteQueue.put(allPeptidesDict)
+        if mgfFlag:
+            allPeptides = getAllPep(massDict)
+            allPeptidesDict = {}
+            for peptide in allPeptides:
+                # create the string, with peptides sorted so all permutations are matched as similar. There may be multiple
+                # peptide locations in the list of tuples, hence the for loop. Tuples are listed in order, with consecutive
+                # tuples relating to a pair of splice locations.
+                string = ""
+                for i in range(0, len(massDict[peptide][3]), 2):
+                    origProt = sorted(massDict[peptide][3][i:i+2])
+                    string += origProt[0][0] + origProt[0][1] + '/' + origProt[1][0] + origProt[1][1] + ';'
+                string = string[0:-1]
+                allPeptidesDict[peptide] = string
+            transProcess.toWriteQueue.put(allPeptidesDict)
 
-    # If there is an mgf file AND there is a charge selected
-    elif mgfData is not None and True in chargeFlags:
-        #fulfillPpmReq(mgfObj, massDict)
-        matchedPeptides = generateMGFList(TRANS, mgfData, massDict, modList)
-        transProcess.toWriteQueue.put(matchedPeptides)
+        # If there is an mgf file AND there is a charge selected
+        elif mgfData is not None and True in chargeFlags:
+            #fulfillPpmReq(mgfObj, massDict)
+            matchedPeptides = generateMGFList(TRANS, mgfData, massDict, modList)
+            transProcess.toWriteQueue.put(matchedPeptides)
 
-    # If csv is selected, write to csv file
-    if csvFlag:
-        logging.info("Writing locked :(")
-        lock.acquire()
+        # If csv is selected, write to csv file
+        if csvFlag:
+            logging.info("Writing locked :(")
+            lock.acquire()
 
-        writeToCsv(massDict, TRANS, finalPath, chargeFlags)
-        lock.release()
-        logging.info("Writing released!")
+            writeToCsv(massDict, TRANS, finalPath, chargeFlags)
+            lock.release()
+            logging.info("Writing released!")
 
-    transProcess.pepCompleted.put(1)
+        transProcess.pepCompleted.put(1)
 
+
+    except Exception as e:
+
+        exc_buffer = io.StringIO()
+
+        traceback.print_exc(file=exc_buffer)
+
+        errorString = 'Uncaught exception in worker process: ' + str(splitsIndex) + '\n%s'
+
+        logging.error(
+
+            errorString,
+
+            exc_buffer.getvalue())
+
+        raise e
 
 # Only works if we presume Cis proteins aren't being created in the trans process.
 def findOrigProt(combinedRef, protIndexList, protList):

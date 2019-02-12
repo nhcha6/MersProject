@@ -726,7 +726,7 @@ def combineAllTempFasta(linCisSet, outputTempFiles, outputPath):
         outputTempFiles.put(tempName)
 
     # once the while loop breaks, return the finalSeenPetides from the remaining two tempFiles.
-    finalSeenPeptides = combineTempFile(fileOne, fileTwo, linCisSet, counter, outputPath)
+    finalSeenPeptides, counter = combineTempFile(fileOne, fileTwo, linCisSet, counter, outputPath)
 
     # Return the last combination of two files remaining
     return finalSeenPeptides

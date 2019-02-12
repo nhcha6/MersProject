@@ -139,7 +139,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                     index += step
                                     try:
                                         pepMass = pepMasses[index]
-                                    except:
+                                    except IndexError:
                                         print('index is outide range of pepMasses')
                                         break
                 else:

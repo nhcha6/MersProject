@@ -497,7 +497,7 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
                 #     logging.info('Memory Limit Reached')
 
                 seqId = seqId.split('|')[1]
-                logging.info(spliceType + " process started for: " + seq[0:5])
+                #logging.info(spliceType + " process started for: " + seq[0:5])
                 # Start the processes for each protein with the targe function being genMassDict
                 pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
                                                         csvFlag, modList, maxMod, maxDistance, finalPath, chargeFlags, mgfFlag))
@@ -578,7 +578,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
 
         end = time.time()
 
-        logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
+        #logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
         genMassDict.pepCompleted.put(1)
 
     except Exception as e:

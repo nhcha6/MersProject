@@ -158,6 +158,7 @@ class App(QMainWindow):
 
     def closeEvent(self, event):
         print('closed')
+        self.table_widget.stopFunction()
         sys.exit()
 
 

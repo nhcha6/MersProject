@@ -63,8 +63,7 @@ class Fasta:
 
         if transFlag:
 
-            transProc = multiprocessing.Process(target=transOutput, args=(self.inputFile, TRANS, mined, maxed,
-                                                                          maxDistance, overlapFlag, modList, maxMod,
+            transProc = multiprocessing.Process(target=transOutput, args=(self.inputFile, TRANS, mined, maxed, modList, maxMod,
                                                                           outputPath[TRANS], chargeFlags, mgfObj,
                                                                           modTable, mgfFlag, self.pepCompleted,
                                                                           self.pepTotal, csvFlag, pepToProtFlag,
@@ -98,8 +97,7 @@ class Fasta:
             process.join()
 
 
-def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
-                modList, maxMod, outputPath, chargeFlags, mgfObj, modTable, mgfFlag, pepCompleted, pepTotal, csvFlag,
+def transOutput(inputFile, spliceType, mined, maxed, modList, maxMod, outputPath, chargeFlags, mgfObj, modTable, mgfFlag, pepCompleted, pepTotal, csvFlag,
                 pepToProtFlag, protToPepFlag):
 
     finalPath = None
@@ -161,8 +159,8 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
             time.sleep(1)
             print('stuck in memory check')
 
-        pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, False, modList, maxMod,
-                                             finalPath, chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList, protList))
+        pool.apply_async(transProcess, args=(splitsIndex, mined, maxed, modList, maxMod,
+                                             finalPath, chargeFlags, mgfFlag, csvFlag, protIndexList, protList))
         pepTotal.put(1)
         splitsIndex = []
 
@@ -175,15 +173,14 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
 
 # takes splits index from the multiprocessing pool and adds to writer the output. Splits and SplitRef are global
 # variables within the pool.
-def transProcess(spliceType, splitsIndex, mined, maxed, overlapFlag, modList, maxMod, finalPath,
-                 chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList, protList):
+def transProcess(splitsIndex, mined, maxed, modList, maxMod, finalPath,
+                 chargeFlags, mgfFlag, csvFlag, protIndexList, protList):
 
     try:
         # Look to produce only trans spliced peptides - not linear or cis. Do so by not allowing combination of peptides
         # which originate from the same protein as opposed to solving for Cis and Linear and not including that
         # in the output
-        combined, combinedRef, linCisSet = combineTransPeptide(splits, splitRef, mined, maxed, 'None',
-                                                               overlapFlag, splitsIndex, protIndexList)
+        combined, combinedRef, linCisSet = combineTransPeptide(splits, splitRef, mined, maxed, splitsIndex, protIndexList)
 
         # Put linCisSet to linCisQueue:
         transProcess.linCisQueue.put(linCisSet)
@@ -398,7 +395,7 @@ def splitTransPeptide(spliceType, peptide, mined, maxed, protIndexList):
     return splits, splitRef
 
 
-def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag, splitsIndex, protIndexList):
+def combineTransPeptide(splits, splitRef, mined, maxed, splitsIndex, protIndexList):
 
     """
     Input: splits: list of splits, splitRef: list of the character indexes for splits, mined/maxed: min and max
@@ -428,7 +425,7 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
             addReverseRef = splitRef[j] + splitRef[i]
 
             # max, min and max distance checks combined into one function for clarity for clarity
-            if combineCheck(toAddForward, mined, maxed, splitRef[i], splitRef[j], maxDistance):
+            if combineCheck(toAddForward, mined, maxed, splitRef[i], splitRef[j], 'None'):
                 # overlap is forced in trans hence why the flag has not been included.
                 # linCisPepCheck assesses if the splits used to create the peptide were from the same protein.
                 # If so, its a cis or lin protein and not trans, and we add it to linCisSet not trans
@@ -441,9 +438,6 @@ def combineTransPeptide(splits, splitRef, mined, maxed, maxDistance, overlapFlag
                     combModlessRef.append(addForwardRef)
                     combModless.append(toAddReverse)
                     combModlessRef.append(addReverseRef)
-
-            elif not maxDistCheck(splitRef[i], splitRef[j], maxDistance):
-                break
 
             toAddForward = ""
             toAddReverse = ""

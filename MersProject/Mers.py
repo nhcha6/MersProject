@@ -161,7 +161,7 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
             time.sleep(1)
             print('stuck in memory check')
 
-        pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, maxDistance, False, modList, maxMod,
+        pool.apply_async(transProcess, args=(spliceType, splitsIndex, mined, maxed, False, modList, maxMod,
                                              finalPath, chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList, protList))
         pepTotal.put(1)
         splitsIndex = []
@@ -175,14 +175,14 @@ def transOutput(inputFile, spliceType, mined, maxed, maxDistance, overlapFlag,
 
 # takes splits index from the multiprocessing pool and adds to writer the output. Splits and SplitRef are global
 # variables within the pool.
-def transProcess(spliceType, splitsIndex, mined, maxed, maxDistance, overlapFlag, modList, maxMod, finalPath,
+def transProcess(spliceType, splitsIndex, mined, maxed, overlapFlag, modList, maxMod, finalPath,
                  chargeFlags, mgfObj, mgfFlag, csvFlag, protIndexList, protList):
 
     try:
         # Look to produce only trans spliced peptides - not linear or cis. Do so by not allowing combination of peptides
         # which originate from the same protein as opposed to solving for Cis and Linear and not including that
         # in the output
-        combined, combinedRef, linCisSet = combineTransPeptide(splits, splitRef, mined, maxed, maxDistance,
+        combined, combinedRef, linCisSet = combineTransPeptide(splits, splitRef, mined, maxed, 'None',
                                                                overlapFlag, splitsIndex, protIndexList)
 
         # Put linCisSet to linCisQueue:

@@ -765,15 +765,16 @@ class MyTableWidget(QWidget):
         :param state: Whether trans flag is True or False
         :return:
         """
-        if self.tab2.trans.isChecked():
+        if self.tab2.cis.isChecked():
+            self.tab2.maxDistCombo.setEnabled(True)
+            self.tab2.overlap.setEnabled(True)
+            self.tab2.overlap.setEnabled(True)
+        else:
             index = self.tab2.maxDistCombo.findText('None')
             self.tab2.maxDistCombo.setCurrentIndex(index)
             self.tab2.maxDistCombo.setEnabled(False)
             self.tab2.overlap.setChecked(True)
             self.tab2.overlap.setEnabled(False)
-        else:
-            self.tab2.maxDistCombo.setEnabled(True)
-            self.tab2.overlap.setEnabled(True)
 
     def output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag, protToPepFlag,
                modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag):
@@ -1054,12 +1055,13 @@ class MyTableWidget(QWidget):
         # initialise overlap, trans, cis and linear check boxes
         self.tab2.overlap = QCheckBox('Cis Overlap Off', self)
         self.tab2.trans = QCheckBox('Trans', self)
-        self.tab2.trans.stateChanged.connect(self.disableMaxDist)  # connect trans check box to relevant function
         self.tab2.trans.stateChanged.connect(self.enableControl)
         self.tab2.cis = QCheckBox('Cis', self)
         self.tab2.cis.stateChanged.connect(self.enableControl)
+        self.tab2.cis.stateChanged.connect(self.disableMaxDist)
         self.tab2.linear = QCheckBox('Linear', self)
         self.tab2.linear.stateChanged.connect(self.enableControl)
+        self.tab2.linear.stateChanged.connect(self.disableMaxDist)
 
     def addChargeStates(self):
 

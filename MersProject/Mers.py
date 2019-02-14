@@ -555,7 +555,8 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
         massDict = editRefMassDict(massDict)
 
         if mgfFlag:
-            allPeptides = getAllPep(massDict)
+            #allPeptides = getAllPep(massDict)
+            allPeptides = massDict.keys()
             allPeptidesDict = {}
             for peptide in allPeptides:
                 allPeptidesDict[peptide] = protId

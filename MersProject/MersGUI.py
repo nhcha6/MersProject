@@ -506,6 +506,12 @@ class MyTableWidget(QWidget):
             self.tab1.byIonAccText.setEnabled(False)
             self.tab1.byIonAccLabel.setEnabled(False)
             self.tab1.byIonFlag.setEnabled(False)
+            self.tab2.plusOne.setEnabled(False)
+            self.tab2.plusTwo.setEnabled(False)
+            self.tab2.plusThree.setEnabled(False)
+            self.tab2.plusFour.setEnabled(False)
+            self.tab2.plusFive.setEnabled(False)
+            self.tab2.chargeLabel.setEnabled(False)
             #self.tab2.trans.setEnabled(True)
             # self.tab1.ppmLabel.setEnabled(False)
         if not self.mgfFlag.isChecked():
@@ -515,6 +521,12 @@ class MyTableWidget(QWidget):
             self.mgfButton.setEnabled(True)
             self.mgfPlotFlag.setEnabled(True)
             #self.tab2.trans.setEnabled(False)
+            self.tab2.plusOne.setEnabled(True)
+            self.tab2.plusTwo.setEnabled(True)
+            self.tab2.plusThree.setEnabled(True)
+            self.tab2.plusFour.setEnabled(True)
+            self.tab2.plusFive.setEnabled(True)
+            self.tab2.chargeLabel.setEnabled(True)
 
 
     def confirmationFunction(self):
@@ -703,11 +715,6 @@ class MyTableWidget(QWidget):
         self.tab2.trans.setEnabled(True)
         self.tab2.cis.setEnabled(True)
         self.tab2.linear.setEnabled(True)
-        self.tab2.plusOne.setEnabled(True)
-        self.tab2.plusTwo.setEnabled(True)
-        self.tab2.plusThree.setEnabled(True)
-        self.tab2.plusFour.setEnabled(True)
-        self.tab2.plusFive.setEnabled(True)
         self.tab2.mod1Combo.setEnabled(True)
         self.tab2.mod2Combo.setEnabled(True)
         self.tab2.mod3Combo.setEnabled(True)
@@ -716,6 +723,15 @@ class MyTableWidget(QWidget):
         self.tab2.pepToProt.setEnabled(True)
         self.tab2.protToPep.setEnabled(False)
         self.tab2.output.setEnabled(True)
+        # only enable the charge checkboxes if mgfFlag is False
+        if not self.mgfFlag.isChecked():
+            self.tab2.plusOne.setEnabled(True)
+            self.tab2.plusTwo.setEnabled(True)
+            self.tab2.plusThree.setEnabled(True)
+            self.tab2.plusFour.setEnabled(True)
+            self.tab2.plusFive.setEnabled(True)
+            self.tab2.chargeLabel.setEnabled(True)
+
 
     def outputPreStep(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
                       protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag):

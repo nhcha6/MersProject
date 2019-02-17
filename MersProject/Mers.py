@@ -208,8 +208,17 @@ def transProcess(splitsIndex, mined, maxed, modList, maxMod, finalPath,
                 # peptide locations in the list of tuples, hence the for loop. Tuples are listed in order, with consecutive
                 # tuples relating to a pair of splice locations.
                 string = ""
+                # create seenOrigins list to store origins which have been added so that there is no double up of identical origins.
+                seenOrigins = []
+                # iterate through all the origins stored in the massDict for the given key
                 for i in range(0, len(massDict[peptide][3]), 2):
-                    origProt = sorted(massDict[peptide][3][i:i+2])
+                    # sort the origin so that it can be compared to others accurately
+                    origProt = sorted(massDict[peptide][3][i:i + 2])
+                    # if origProt has already been seen (and in turn added to seenOrigins) continue iterating.
+                    if origProt in seenOrigins:
+                        continue
+                    # if origProt hasn't been seen, append it to seenOrigins and add it to the string which is to be added to allPeptidesDict.
+                    seenOrigins.append(origProt)
                     string += origProt[0][0] + origProt[0][1] + '/' + origProt[1][0] + origProt[1][1] + ';'
                 string = string[0:-1]
                 allPeptidesDict[peptide] = string

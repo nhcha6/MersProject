@@ -111,16 +111,16 @@ class Fasta:
                         outputPath[TRANS], chargeFlags, mgfObj, modTable, mgfFlag, self.pepCompleted,
                         self.pepTotal, csvFlag, pepToProtFlag, protToPepFlag)
 
-        if cisFlag:
-            self.cisAndLinearOutput(self.inputFile, CIS, mined, maxed, overlapFlag, csvFlag,
-                                    pepToProtFlag, protToPepFlag, modList, maxMod, maxDistance,
-                                    outputPath[CIS], chargeFlags, mgfObj, modTable, mgfFlag,
-                                    self.pepCompleted, self.pepTotal)
-
         if linearFlag:
             self.cisAndLinearOutput(self.inputFile, LINEAR, mined, maxed, overlapFlag, csvFlag,
                                     pepToProtFlag, protToPepFlag, modList, maxMod, maxDistance,
                                     outputPath[LINEAR], chargeFlags, mgfObj, modTable, mgfFlag,
+                                    self.pepCompleted, self.pepTotal)
+
+        if cisFlag:
+            self.cisAndLinearOutput(self.inputFile, CIS, mined, maxed, overlapFlag, csvFlag,
+                                    pepToProtFlag, protToPepFlag, modList, maxMod, maxDistance,
+                                    outputPath[CIS], chargeFlags, mgfObj, modTable, mgfFlag,
                                     self.pepCompleted, self.pepTotal)
 
     def cisAndLinearOutput(self, inputFile, spliceType, mined, maxed, overlapFlag, csvFlag, pepToProtFlag, protToPepFlag,
@@ -198,6 +198,7 @@ class Fasta:
         toWriteQueue.put(stopToken)
         writerProcess.join()
         logging.info("All " + spliceType + " !joined")
+        self.finishedPeptides = 0
 
 
 def transOutput(inputFile, spliceType, mined, maxed, modList, maxMod, outputPath, chargeFlags, mgfObj, modTable, mgfFlag, pepCompleted, pepTotal, csvFlag,

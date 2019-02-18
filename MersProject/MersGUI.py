@@ -224,9 +224,6 @@ class MyTableWidget(QWidget):
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
 
-        # variables to count the total number of processes and those which have finished
-        self.finishedPeptides = 0
-        self.totalSize = 0
 
     def uploadMgf(self, input_path, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag, chargeFlags):
         mgfDf, pepmassIonArray = readMGF(input_path, intensityThreshold)
@@ -419,9 +416,10 @@ class MyTableWidget(QWidget):
         self.outputNameBox.close()
 
     def stopFunction(self):
-        print('in stop function')
-        for process in self.fasta.allProcessList:
-            process.terminate()
+        # print('in stop function')
+        self.fasta.closePool = True
+        # print('closePool set to True')
+
 
     def nextTabFunc(self):
         self.tabs.setCurrentIndex(1)
@@ -626,15 +624,16 @@ class MyTableWidget(QWidget):
         self.enableControl()
 
     def updateProgressBar(self):
-        if not self.fasta.pepTotal.empty():
-            self.totalSize += self.fasta.pepTotal.get()
+        # if not self.fasta.pepTotal.empty():
+        #     self.fasta.totalSize += self.fasta.pepTotal.get()
         if not self.fasta.pepCompleted.empty():
-            self.finishedPeptides += self.fasta.pepCompleted.get()
-        if self.totalSize is not 0 and self.finishedPeptides is not 0:
-            value = self.finishedPeptides/self.totalSize*100
+            self.fasta.finishedPeptides += self.fasta.pepCompleted.get()
+        if self.fasta.totalSize is not 0 and self.fasta.finishedPeptides is not 0:
+            value = self.fasta.finishedPeptides/self.fasta.totalSize*100
         else:
             value = 2
         self.progressBar.setValue(value)
+        pass
 
     def deleteTab2ProgressBar(self):
         # Delete progress label and progress bar

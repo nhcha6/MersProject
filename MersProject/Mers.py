@@ -51,6 +51,54 @@ class Fasta:
         self.allProcessList = []
         self.pepTotal = multiprocessing.Queue()
         self.pepCompleted = multiprocessing.Queue()
+        self.closePool = False
+        # variables to count the total number of processes and those which have finished
+        self.finishedPeptides = 0
+        self.totalSize = 0
+
+    # def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
+    #                    protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfObj, mgfFlag):
+    #
+    #     """
+    #     Function that literally combines everything to generate output
+    #     """
+    #
+    #     self.allProcessList = []
+    #
+    #     if transFlag:
+    #
+    #         transProc = multiprocessing.Process(target=transOutput, args=(self.inputFile, TRANS, mined, maxed, modList, maxMod,
+    #                                                                       outputPath[TRANS], chargeFlags, mgfObj,
+    #                                                                       modTable, mgfFlag, self.pepCompleted,
+    #                                                                       self.pepTotal, csvFlag, pepToProtFlag,
+    #                                                                       protToPepFlag))
+    #         self.allProcessList.append(transProc)
+    #         transProc.start()
+    #
+    #     if cisFlag:
+    #         cisProcess = multiprocessing.Process(target=self.cisAndLinearOutput, args=(self.inputFile, CIS, mined, maxed,
+    #                                                                               overlapFlag, csvFlag, pepToProtFlag,
+    #                                                                               protToPepFlag, modList, maxMod,
+    #                                                                               maxDistance, outputPath[CIS],
+    #                                                                               chargeFlags, mgfObj, modTable,
+    #                                                                               mgfFlag, self.pepCompleted,
+    #                                                                               self.pepTotal))
+    #         self.allProcessList.append(cisProcess)
+    #         cisProcess.start()
+    #
+    #     if linearFlag:
+    #         linearProcess = multiprocessing.Process(target=self.cisAndLinearOutput, args=(self.inputFile, LINEAR, mined,
+    #                                                                                  maxed, overlapFlag, csvFlag,
+    #                                                                                  pepToProtFlag, protToPepFlag,
+    #                                                                                  modList, maxMod, maxDistance,
+    #                                                                                  outputPath[LINEAR], chargeFlags,
+    #                                                                                  mgfObj, modTable, mgfFlag,
+    #                                                                                  self.pepCompleted, self.pepTotal))
+    #         self.allProcessList.append(linearProcess)
+    #         linearProcess.start()
+    #
+    #     for process in self.allProcessList:
+    #         process.join()
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
                        protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfObj, mgfFlag):
@@ -58,43 +106,98 @@ class Fasta:
         """
         Function that literally combines everything to generate output
         """
-
-        self.allProcessList = []
-
         if transFlag:
-
-            transProc = multiprocessing.Process(target=transOutput, args=(self.inputFile, TRANS, mined, maxed, modList, maxMod,
-                                                                          outputPath[TRANS], chargeFlags, mgfObj,
-                                                                          modTable, mgfFlag, self.pepCompleted,
-                                                                          self.pepTotal, csvFlag, pepToProtFlag,
-                                                                          protToPepFlag))
-            self.allProcessList.append(transProc)
-            transProc.start()
+            transOutput(self.inputFile, TRANS, mined, maxed, modList, maxMod,
+                        outputPath[TRANS], chargeFlags, mgfObj, modTable, mgfFlag, self.pepCompleted,
+                        self.pepTotal, csvFlag, pepToProtFlag, protToPepFlag)
 
         if cisFlag:
-            cisProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, CIS, mined, maxed,
-                                                                                  overlapFlag, csvFlag, pepToProtFlag,
-                                                                                  protToPepFlag, modList, maxMod,
-                                                                                  maxDistance, outputPath[CIS],
-                                                                                  chargeFlags, mgfObj, modTable,
-                                                                                  mgfFlag, self.pepCompleted,
-                                                                                  self.pepTotal))
-            self.allProcessList.append(cisProcess)
-            cisProcess.start()
+            self.cisAndLinearOutput(self.inputFile, CIS, mined, maxed, overlapFlag, csvFlag,
+                                    pepToProtFlag, protToPepFlag, modList, maxMod, maxDistance,
+                                    outputPath[CIS], chargeFlags, mgfObj, modTable, mgfFlag,
+                                    self.pepCompleted, self.pepTotal)
 
         if linearFlag:
-            linearProcess = multiprocessing.Process(target=cisAndLinearOutput, args=(self.inputFile, LINEAR, mined,
-                                                                                     maxed, overlapFlag, csvFlag,
-                                                                                     pepToProtFlag, protToPepFlag,
-                                                                                     modList, maxMod, maxDistance,
-                                                                                     outputPath[LINEAR], chargeFlags,
-                                                                                     mgfObj, modTable, mgfFlag,
-                                                                                     self.pepCompleted, self.pepTotal))
-            self.allProcessList.append(linearProcess)
-            linearProcess.start()
+            self.cisAndLinearOutput(self.inputFile, LINEAR, mined, maxed, overlapFlag, csvFlag,
+                                    pepToProtFlag, protToPepFlag, modList, maxMod, maxDistance,
+                                    outputPath[LINEAR], chargeFlags, mgfObj, modTable, mgfFlag,
+                                    self.pepCompleted, self.pepTotal)
 
-        for process in self.allProcessList:
-            process.join()
+    def cisAndLinearOutput(self, inputFile, spliceType, mined, maxed, overlapFlag, csvFlag, pepToProtFlag, protToPepFlag,
+                           modList, maxMod, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag,
+                           pepCompleted, pepTotal):
+
+        """
+        Process that is in charge for dealing with cis and linear. Creates sub processes for every protein to compute
+        their respective output
+        """
+
+        finalPath = None
+
+        # set to be finished, but changes to cancelled if stop button is hit.
+        stopToken = "finished"
+
+        # Open the csv file if the csv file is selected
+        if csvFlag:
+            finalPath = getFinalPath(outputPath, spliceType)
+            open(finalPath, 'w')
+
+        num_workers = multiprocessing.cpu_count()
+
+        # Used to lock write access to file
+        lockVar = multiprocessing.Lock()
+
+        toWriteQueue = multiprocessing.Queue()
+        linSetQueue = multiprocessing.Queue()
+
+        pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit,
+                                    initargs=(lockVar, toWriteQueue, pepCompleted,
+                                              mgfObj, childTable, linSetQueue))
+
+        writerProcess = multiprocessing.Process(target=writer,
+                                                args=(toWriteQueue, outputPath, linSetQueue, pepToProtFlag,
+                                                      protToPepFlag))
+        writerProcess.start()
+
+        maxMem = psutil.virtual_memory()[1] / 2
+
+        for file in inputFile:
+            with open(file, "rU") as handle:
+
+                processesGenerated = 0
+                for record in SeqIO.parse(handle, 'fasta'):
+
+                    seq = str(record.seq)
+                    seqId = record.name
+
+                    # code to ensure no more than 20 processes are generated at once!
+                    print(processesGenerated)
+                    if processesGenerated > 20:
+                        finishedPrev = self.finishedPeptides
+                        while self.finishedPeptides == finishedPrev:
+                            pass
+                    print(self.finishedPeptides)
+
+                    if self.closePool:
+                        print('stop button hit!!')
+                        stopToken = 'cancelled'
+                        break
+
+                    seqId = seqId.split('|')[1]
+                    logging.info(spliceType + " process started for: " + seq[0:5])
+                    # Start the processes for each protein with the targe function being genMassDict
+                    pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
+                                                        csvFlag, modList, maxMod, maxDistance, finalPath, chargeFlags,
+                                                        mgfFlag))
+                    processesGenerated += 1
+
+        # pepTotal.put(counter)
+        pool.close()
+        pool.join()
+
+        toWriteQueue.put(stopToken)
+        writerProcess.join()
+        logging.info("All " + spliceType + " !joined")
 
 
 def transOutput(inputFile, spliceType, mined, maxed, modList, maxMod, outputPath, chargeFlags, mgfObj, modTable, mgfFlag, pepCompleted, pepTotal, csvFlag,
@@ -453,67 +556,6 @@ def combineTransPeptide(splits, splitRef, mined, maxed, splitsIndex, protIndexLi
 
     return combModless, combModlessRef, linCisSet
 
-
-def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag, pepToProtFlag, protToPepFlag,
-                       modList, maxMod, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag, pepCompleted,
-                       pepTotal):
-
-    """
-    Process that is in charge for dealing with cis and linear. Creates sub processes for every protein to compute
-    their respective output
-    """
-
-    finalPath = None
-
-    # Open the csv file if the csv file is selected
-    if csvFlag:
-        finalPath = getFinalPath(outputPath, spliceType)
-        open(finalPath, 'w')
-
-    num_workers = multiprocessing.cpu_count()
-
-    # Used to lock write access to file
-    lockVar = multiprocessing.Lock()
-
-    toWriteQueue = multiprocessing.Queue()
-    linSetQueue = multiprocessing.Queue()
-    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit,
-                                initargs=(lockVar, toWriteQueue, pepCompleted,
-                                          mgfObj, childTable, linSetQueue))
-    writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath, linSetQueue, pepToProtFlag,
-                                                                 protToPepFlag))
-    writerProcess.start()
-
-    maxMem = psutil.virtual_memory()[1] / 2
-
-
-    for file in inputFile:
-        with open(file, "rU") as handle:
-            for record in SeqIO.parse(handle, 'fasta'):
-
-                pepTotal.put(1)
-                seq = str(record.seq)
-                seqId = record.name
-
-                # while memoryCheck(maxMem):
-                #     time.sleep(1)
-                #     logging.info('Memory Limit Reached')
-
-                seqId = seqId.split('|')[1]
-                #logging.info(spliceType + " process started for: " + seq[0:5])
-                # Start the processes for each protein with the targe function being genMassDict
-                pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
-                                                        csvFlag, modList, maxMod, maxDistance, finalPath, chargeFlags, mgfFlag))
-
-
-    #pepTotal.put(counter)
-    pool.close()
-    pool.join()
-
-    toWriteQueue.put('stop')
-    writerProcess.join()
-    logging.info("All " + spliceType + " !joined")
-
 def memoryCheck(maxMem):
     process = psutil.Process(os.getpid())
     #print(process.memory_info().rss)
@@ -582,7 +624,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
 
         end = time.time()
 
-        #logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
+        logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
         genMassDict.pepCompleted.put(1)
 
     except Exception as e:
@@ -634,11 +676,16 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
             matchedPeptides = queue.get()
             if not linCisQueue.empty():
                 linCisSet = linCisSet | linCisQueue.get()
-            # if stop is sent to the matchedPeptide Queue, everything has been output,
+            # if finished is sent to the matchedPeptide Queue, everything has been output,
             # so we exit the while loop.
-            if matchedPeptides == 'stop':
+            if matchedPeptides == 'finished':
                 logging.info("Everything computed, stop message has been sent")
                 break
+
+            # if cancelled is sent, we do not wish to write anything to fasta so we simply return
+            if matchedPeptides == 'cancelled':
+                print('ouptut cancelled')
+                return
 
             # each queue.get() returns the matchedPeptides from an individual process.
             # Add  the matchedPeptides from the given process to seenPeptides.

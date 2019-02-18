@@ -474,9 +474,8 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
 
     toWriteQueue = multiprocessing.Queue()
     linSetQueue = multiprocessing.Queue()
-    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit,
-                                initargs=(lockVar, toWriteQueue, pepCompleted,
-                                          mgfObj, childTable, linSetQueue))
+    # pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit,
+    #                             initargs=(lockVar, toWriteQueue, pepCompleted, childTable, linSetQueue))
     writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath, linSetQueue, pepToProtFlag,
                                                                  protToPepFlag))
     writerProcess.start()
@@ -499,13 +498,15 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
                 seqId = seqId.split('|')[1]
                 #logging.info(spliceType + " process started for: " + seq[0:5])
                 # Start the processes for each protein with the targe function being genMassDict
-                pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
-                                                        csvFlag, modList, maxMod, maxDistance, finalPath, chargeFlags, mgfFlag))
-
+                # pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
+                #                                         csvFlag, modList, maxMod, maxDistance, finalPath, chargeFlags, mgfFlag, mgfObj))
+                genMassDict(spliceType, seqId, seq, mined, maxed, overlapFlag,
+                            csvFlag, modList, maxMod, maxDistance, finalPath, chargeFlags, mgfFlag, mgfObj,
+                            toWriteQueue, pepCompleted, childTable, linSetQueue)
 
     #pepTotal.put(counter)
-    pool.close()
-    pool.join()
+    # pool.close()
+    # pool.join()
 
     toWriteQueue.put('stop')
     writerProcess.join()
@@ -528,7 +529,7 @@ def memoryCheck2():
         return False
 
 def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList, maxMod,
-                maxDistance, finalPath, chargeFlags, mgfFlag):
+                maxDistance, finalPath, chargeFlags, mgfFlag, mgfData, toWriteQueue, pepCompleted, finalModTable, linSetQueue):
 
     """
     Compute the peptides for the given protein
@@ -540,13 +541,13 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
         combined, combinedRef, linSet = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
 
         # add this set of linear proteins to the linProt queue
-        genMassDict.linSetQueue.put(linSet)
+        linSetQueue.put(linSet)
 
         # Convert it into a dictionary that has a mass
         massDict = combMass(combined, combinedRef)
 
         # Apply mods to the dictionary values and update the dictionary
-        massDict = applyMods(massDict, modList, maxMod)
+        massDict = applyMods(massDict, modList, maxMod, finalModTable)
 
         # Add the charge information along with their masses
         massDict = chargeIonMass(massDict, chargeFlags)
@@ -559,13 +560,13 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
             allPeptidesDict = {}
             for peptide in allPeptides:
                 allPeptidesDict[peptide] = protId
-            genMassDict.toWriteQueue.put(allPeptidesDict)
+            toWriteQueue.put(allPeptidesDict)
 
         # If there is an mgf file AND there is a charge selected
         elif mgfData is not None and True in chargeFlags:
             #fulfillPpmReq(mgfObj, massDict)
             matchedPeptides = generateMGFList(protId, mgfData, massDict, modList)
-            genMassDict.toWriteQueue.put(matchedPeptides)
+            toWriteQueue.put(matchedPeptides)
 
         # If csv is selected, write to csv file
         if csvFlag:
@@ -579,7 +580,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
         end = time.time()
 
         #logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
-        genMassDict.pepCompleted.put(1)
+        pepCompleted.put(1)
 
     except Exception as e:
 
@@ -877,7 +878,7 @@ def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance=100
 
     return combined, combinedRef, linSet
 
-def applyMods(combineModlessDict, modList, maxMod):
+def applyMods(combineModlessDict, modList, maxMod, finalModTable):
 
     """
     Calls the genericMod function and accesses the modification table to
@@ -1395,7 +1396,7 @@ def nth_replace(string, old, new, n=1, option='only nth'):
     return new.join(nth_split)
 
 
-def processLockInit(lockVar, toWriteQueue, pepCompleted, mgfObj, childTable, linSetQueue):
+def processLockInit(lockVar, toWriteQueue, pepCompleted, childTable, linSetQueue):
 
     """
     Designed to set up a global lock for a child processes (child per protein)
@@ -1403,8 +1404,6 @@ def processLockInit(lockVar, toWriteQueue, pepCompleted, mgfObj, childTable, lin
 
     global lock
     lock = lockVar
-    global mgfData
-    mgfData = mgfObj
     global finalModTable
     finalModTable = childTable
     genMassDict.toWriteQueue = toWriteQueue

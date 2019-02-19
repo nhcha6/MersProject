@@ -161,21 +161,37 @@ class Fasta:
 
         maxMem = psutil.virtual_memory()[1] / 2
 
+        #iterate through file and get its size
         for file in inputFile:
             with open(file, "rU") as handle:
+                for entry in SeqIO.parse(handle, 'fasta'):
+                    self.totalSize += 1
 
+        for file in inputFile:
+            with open(file, "rU") as handle:
+                numProcesses = 20
                 processesGenerated = 0
                 for record in SeqIO.parse(handle, 'fasta'):
 
                     seq = str(record.seq)
                     seqId = record.name
 
+                    if processesGenerated == 100:
+                        print('restarting pool')
+                        pool.close()
+                        pool.join()
+                        pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit,
+                                                    initargs=(lockVar, toWriteQueue, pepCompleted,
+                                                              mgfObj, childTable, linSetQueue))
+                        numProcesses = processesGenerated
+
                     # code to ensure no more than 20 processes are generated at once!
                     print(processesGenerated)
-                    if processesGenerated > 20:
-                        finishedPrev = self.finishedPeptides
-                        while self.finishedPeptides == finishedPrev:
-                            pass
+                    if processesGenerated > numProcesses:
+                        while True:
+                            if not self.pepCompleted.empty():
+                                self.finishedPeptides += self.pepCompleted.get()
+                                break
                     print(self.finishedPeptides)
 
                     if self.closePool:

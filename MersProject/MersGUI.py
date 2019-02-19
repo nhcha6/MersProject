@@ -626,8 +626,8 @@ class MyTableWidget(QWidget):
     def updateProgressBar(self):
         # if not self.fasta.pepTotal.empty():
         #     self.fasta.totalSize += self.fasta.pepTotal.get()
-        if not self.fasta.pepCompleted.empty():
-            self.fasta.finishedPeptides += self.fasta.pepCompleted.get()
+        # if not self.fasta.pepCompleted.empty():
+        #     self.fasta.finishedPeptides += self.fasta.pepCompleted.get()
         if self.fasta.totalSize is not 0 and self.fasta.finishedPeptides is not 0:
             value = self.fasta.finishedPeptides/self.fasta.totalSize*100
         else:

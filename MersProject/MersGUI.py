@@ -399,6 +399,9 @@ class MyTableWidget(QWidget):
             outputFiles[TRANS] = Path(transPath)
             # print(outputPath[TRANS])
 
+        # disable widgets here before the mgf upload commences
+        self.disableWidgets()
+
         # if the mgfFlag is not checked, mgfGen imports the mgf then runs importedMGF() which generates the rest of the output.
         # note that all the input variables have been declared under the myTableWidget class and are thus callable from
         # this function.
@@ -409,6 +412,10 @@ class MyTableWidget(QWidget):
                                                               self.transFlag, self.cisFlag, self.linearFlag, self.csvFlag,
                                                               self.pepToProtFlag, self.protToPepFlag, self.modList, self.maxMod,
                                                               self.maxDistance, outputFiles, self.chargeFlags))
+            # add label informing the user that the mgf is uploading
+            self.mgfLabel = QLabel("Uploading MGF. Please Wait!")
+            self.tab2.layout.addWidget(self.mgfLabel, 16, 3, 1, 2)
+
             self.threadpool.start(mgfGen)
         # if mgfFlag is checked, no need to import the mgf, can skip straight to running importedMGF()
         else:
@@ -604,6 +611,12 @@ class MyTableWidget(QWidget):
 
         print("MGF FILE UPLOADED")
 
+        if self.mgfLabel:
+            self.tab2.layout.removeWidget(self.mgfLabel)
+            self.mgfLabel.deleteLater()
+            self.mgfLabel = None
+
+
         self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
                            protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag)
     def outputFinished(self):
@@ -686,6 +699,7 @@ class MyTableWidget(QWidget):
         self.tab2.csv.setEnabled(False)
         self.tab2.pepToProt.setEnabled(False)
         self.tab2.protToPep.setEnabled(False)
+        self.tab2.output.setEnabled(False)
 
     def enableAllWidgets(self):
 
@@ -757,7 +771,7 @@ class MyTableWidget(QWidget):
         self.progressBarUpdate = ProgressGenerator()
         self.progressBarUpdate.signals.updateProgBar.connect(self.updateProgressBar)
         self.progressBarUpdate.signals.finished.connect(self.deleteTab2ProgressBar)
-        self.progressBarUpdate.signals.disableButtons.connect(self.disableWidgets)
+        #self.progressBarUpdate.signals.disableButtons.connect(self.disableWidgets)
         self.threadpool.start(self.progressBarUpdate)
 
     def disableMaxDist(self):

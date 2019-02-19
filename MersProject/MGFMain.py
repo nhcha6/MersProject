@@ -61,7 +61,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                 if key in pepmassIonArray.keys():
                     pepmassIonArray[key] = pepmassIonArray[key] + value
                 else:
-                    pepmassIonArray[key] = [value]
+                    pepmassIonArray[key] = value
 
         # sort the final mgfDf
         sortMgfDFValues(mgfDf)
@@ -499,7 +499,6 @@ def findSimIons(mzArray, byIons, accuracy):
 def simIons(mzArray, byIons, accuracy, minSim):
     noSimReq = math.ceil(len(byIons)*minSim/100)
     for array in mzArray:
-        print(array)
         simTemp = 0
         byIonsTested = 0
         for mass in byIons:

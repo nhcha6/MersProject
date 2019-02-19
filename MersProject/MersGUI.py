@@ -229,24 +229,25 @@ class MyTableWidget(QWidget):
         self.totalSize = 0
 
     def uploadMgf(self, input_path, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag, chargeFlags):
-        mgfDf, pepmassIonArray = readMGF(input_path, intensityThreshold)
+        mgfDfList, pepmassIonArrayList, mgfLen = readMGF(input_path, intensityThreshold)
 
-        maxMass, chargeMaxDict = self.maxMgfMass(mgfDf, chargeFlags)
+        maxMass, chargeMaxDict = self.maxMgfMass(mgfDfList, chargeFlags)
 
-        self.mgf = MGF(mgfDf, pepmassIonArray, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag,
-                       maxMass, chargeMaxDict)
+        self.mgf = MGF(mgfDfList, pepmassIonArrayList, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag,
+                       maxMass, chargeMaxDict, mgfLen)
 
-    def maxMgfMass(self, mgfDf, chargeFlags):
+    def maxMgfMass(self, mgfDfList, chargeFlags):
         maxMass = 0
         chargeMaxDict = {}
-        for z, masses in mgfDf.items():
-            if chargeFlags[int(z)-1]:
-                maxChargeMass = max(masses)
+        for mgfDf in mgfDfList:
+            for z, masses in mgfDf.items():
+                if chargeFlags[int(z)-1]:
+                    maxChargeMass = max(masses)
 
-                chargeMaxDict[z] = maxChargeMass
-                maxMassTemp = maxChargeMass*int(z) - int(z)*1.00794
-                if maxMassTemp > maxMass:
-                    maxMass = maxMassTemp
+                    chargeMaxDict[z] = maxChargeMass
+                    maxMassTemp = maxChargeMass*int(z) - int(z)*1.00794
+                    if maxMassTemp > maxMass:
+                        maxMass = maxMassTemp
 
         return maxMass, chargeMaxDict
 

@@ -17,13 +17,13 @@ class MGF:
     """
 
 
-    def __init__(self, mgfDf, pepmassIonArray, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag, maxMass,
-                 chargeMaxDict):
+    def __init__(self, mgfDfList, pepmassIonArrayList, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag, maxMass,
+                 chargeMaxDict, mgfLen):
 
         # mgfDf looks like: {'charge': [list of masses]}
-        self.mgfDf = mgfDf
-        self.pepmassIonArray = pepmassIonArray
-        self.mgfEntries = len(mgfDf)
+        self.mgfDfList = mgfDfList
+        self.pepmassIonArrayList = pepmassIonArrayList
+        self.mgfEntries = mgfLen
         self.maxMass = maxMass
         self.chargeMaxDict = chargeMaxDict
 
@@ -41,7 +41,30 @@ def generateMGFList(protId, mgfObj, massDict, modList):
     Generates the list of unique peptides that have masses that match within the specified.
 
     """
-    if mgfObj.mgfDf:
+    if mgfObj.mgfDfList:
+
+        # convert the list of dictionaries into dictionaries.
+        mgfDf = mgfObj.mgfDfList[0]
+        pepmassIonArray = mgfObj.pepmassIonArrayList[0]
+        for i in range(1, len(mgfObj.mgfDfList)):
+            # declare the portions you are about to combine
+            mgfDfIter = mgfObj.mgfDfList[i]
+            pepmassIonIter = mgfObj.pepmassIonArrayList[i]
+            # update mgfDf
+            for key, value in mgfDfIter.items():
+                if key in mgfDf.keys():
+                    mgfDf[key] = mgfDf[key] + value
+                else:
+                    mgfDf[key] = value
+            # update pepmassIonArray
+            for key, value in pepmassIonIter.items():
+                if key in pepmassIonArray.keys():
+                    pepmassIonArray[key] = pepmassIonArray[key] + value
+                else:
+                    pepmassIonArray[key] = [value]
+
+        # sort the final mgfDf
+        sortMgfDFValues(mgfDf)
 
         matchedPeptides = {}
         for key, value in massDict.items():
@@ -56,7 +79,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                 if alphaKey not in matchedPeptides.keys():
 
                     # define required data in a temporary form
-                    pepMasses = mgfObj.mgfDf[charge]
+                    pepMasses = mgfDf[charge]
                     #closestIndex = takeClosest(pepMasses, chargeMass, True)
                     #pepMass = pepMasses[closestIndex]
 
@@ -115,7 +138,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                 # Check the similarity of the byIons as was being done previously
                                 # if closestMatched == False: create byIonArray, ptherwise it has already been created
                                 byIonArray = initIonMass(key, modList)
-                                mzArray = mgfObj.pepmassIonArray[(charge, pepMass)]
+                                mzArray = pepmassIonArray[(charge, pepMass)]
                                 # If they match in accordance with the input minimum requirement, add them to the list
                                 if simIons(mzArray, byIonArray, mgfObj.byIonAccuracy, mgfObj.minSimBy):
                                     # if it is trans, massDict[3] will exist and will hold the desired protId
@@ -174,11 +197,22 @@ def readMGF(input_path, intensityThreshold):
     uniqueSpec = set()
 
     mgfDf = {}
+    mgfDfList = []
 
     pepmassIonArray = {}
+    pepmassIonArrayList = []
 
     with mgf.read(input_path) as mgfReader:
+        counter = 0
         for spectrum in mgfReader:
+            counter += 1
+
+            if counter == 1000:
+                pepmassIonArrayList.append(pepmassIonArray)
+                pepmassIonArray = {}
+                sortMgfDFValues(mgfDf)
+                mgfDfList.append(mgfDf)
+                mgfDf = {}
 
             if 'charge' in spectrum['params'].keys():
                 charge = spectrum['params']['charge'][0]
@@ -219,9 +253,12 @@ def readMGF(input_path, intensityThreshold):
 
                 uniqueSpec.add(chargePepmassTup)
 
+    pepmassIonArrayList.append(pepmassIonArray)
     sortMgfDFValues(mgfDf)
+    mgfDfList.append(mgfDf)
 
-    return mgfDf, pepmassIonArray
+
+    return mgfDfList, pepmassIonArrayList, counter
 
 def readMgfInit(input_path):
 
@@ -460,9 +497,9 @@ def findSimIons(mzArray, byIons, accuracy):
     return simIons
 
 def simIons(mzArray, byIons, accuracy, minSim):
-
     noSimReq = math.ceil(len(byIons)*minSim/100)
     for array in mzArray:
+        print(array)
         simTemp = 0
         byIonsTested = 0
         for mass in byIons:

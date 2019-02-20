@@ -158,8 +158,11 @@ class App(QMainWindow):
         self.move(qr.topLeft())
 
     def closeEvent(self, event):
-        self.table_widget.stopFunction()
-        sys.exit()
+        #self.table_widget.stopFunction()
+        if self.table_widget.outputRunning == True:
+            os.kill(os.getpid(), signal.SIGABRT)
+        else:
+            sys.exit()
 
 
 class MyTableWidget(QWidget):
@@ -417,29 +420,11 @@ class MyTableWidget(QWidget):
         self.outputNameBox.close()
 
     def stopFunction(self):
-        # if the output is not running, return.
-        if not self.outputRunning:
-            return
-
         # update flag to close the pool.
         self.fasta.closePool = True
 
         # give the processes 10 seconds to terminate. If they do so in time, return the function
-        #QMessageBox.about(self, 'Message', 'Waiting for processes to finish running!')
-        time.sleep(10)
-        if not self.outputRunning:
-            self.fasta.closePool = False
-            return
-
-        # if it has been ten seconds and the processes haven't closed, give the option to force the exit
-        response = QMessageBox.question(self, 'Message', 'The test being run may take some time to close. Do you wish to forcably quit the program?')
-
-        # if response is yes kill the processes
-        if response == QMessageBox.Yes:
-            os.kill(os.getpid(), signal.SIGABRT)
-        else:
-            self.fasta.closePool = False
-            pass
+        QMessageBox.about(self, 'Message', "Waiting for processes to finish running! This may take a while, press the exit button if you wish not to wait")
 
 
     def nextTabFunc(self):
@@ -808,16 +793,18 @@ class MyTableWidget(QWidget):
 
         start = time.time()
 
+        self.outputRunning = True
+
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
-
-        self.outputRunning = True
 
         self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
                                   protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, self.mgf, mgfFlag)
         end = time.time()
 
         self.outputRunning = False
+        self.fasta.closePool = False
+
         print(end - start)
 
         # The following statements are used to open the output directory after output is created into file format

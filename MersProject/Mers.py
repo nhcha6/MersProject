@@ -132,6 +132,8 @@ class Fasta:
         Process that is in charge for dealing with cis and linear. Creates sub processes for every protein to compute
         their respective output
         """
+        # reset finished peptides incase this is the second (or more) time something has been run
+        self.finishedPeptides = 0
 
         finalPath = None
 
@@ -162,11 +164,12 @@ class Fasta:
 
         maxMem = psutil.virtual_memory()[1] / 2
 
-        #iterate through file and get its size
-        for file in inputFile:
-            with open(file, "rU") as handle:
-                for entry in SeqIO.parse(handle, 'fasta'):
-                    self.totalSize += 1
+        #iterate through file and get its size (no need to do it if you have in a previous iteration
+        if self.totalSize == 0:
+            for file in inputFile:
+                with open(file, "rU") as handle:
+                    for entry in SeqIO.parse(handle, 'fasta'):
+                        self.totalSize += 1
 
         for file in inputFile:
             with open(file, "rU") as handle:

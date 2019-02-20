@@ -28,6 +28,7 @@ CIS = "Cis"
 
 MEMORY_THRESHOLD = 80
 MEMORY_THRESHOLD_COMBINE = 90
+numProcesses = 20
 
 logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 # logging.disable(logging.INFO)
@@ -169,21 +170,11 @@ class Fasta:
 
         for file in inputFile:
             with open(file, "rU") as handle:
-                numProcesses = 20
                 processesGenerated = 0
                 for record in SeqIO.parse(handle, 'fasta'):
 
                     seq = str(record.seq)
                     seqId = record.name
-
-                    if processesGenerated == 100:
-                        print('restarting pool')
-                        pool.close()
-                        pool.join()
-                        pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit,
-                                                    initargs=(lockVar, toWriteQueue, pepCompleted,
-                                                              mgfObj, childTable, linSetQueue))
-                        numProcesses = processesGenerated
 
                     # code to ensure no more than 20 processes are generated at once!
                     print(processesGenerated)

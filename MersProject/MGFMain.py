@@ -189,7 +189,7 @@ def calcPpm(predictedMass, pepmass):
 
 
 
-def readMGF(input_path, intensityThreshold):
+def readMGF(input_path, intensityThreshold, byIonFlag):
 
     """
     Creates a pandas dataframe based on mgf data
@@ -239,15 +239,16 @@ def readMGF(input_path, intensityThreshold):
                         mgfDf[charge] = [pepmass]
                         #pepmassIonArray[(charge,pepmass)] = mzArray
 
-                if chargePepmassTup in pepmassIonArray:
-                    pepmassIonArray[chargePepmassTup].append(mzArray)
-                    #print(pepmassIonArray[chargePepmassTup])
-                else:
-                    pepmassIonArray[chargePepmassTup] = [mzArray]
+                if byIonFlag:
+                    if chargePepmassTup in pepmassIonArray:
+                        pepmassIonArray[chargePepmassTup].append(mzArray)
+                        #print(pepmassIonArray[chargePepmassTup])
+                    else:
+                        pepmassIonArray[chargePepmassTup] = [mzArray]
 
 
-                    # mgfDf.loc[len(mgfDf)] = [spectrum['params']['charge'][0],
-                    #                          spectrum['params']['pepmass'][0]]
+                        # mgfDf.loc[len(mgfDf)] = [spectrum['params']['charge'][0],
+                        #                          spectrum['params']['pepmass'][0]]
 
 
 
@@ -256,7 +257,6 @@ def readMGF(input_path, intensityThreshold):
     pepmassIonArrayList.append(pepmassIonArray)
     sortMgfDFValues(mgfDf)
     mgfDfList.append(mgfDf)
-
 
     return mgfDfList, pepmassIonArrayList, counter
 

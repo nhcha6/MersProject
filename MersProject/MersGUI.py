@@ -229,7 +229,7 @@ class MyTableWidget(QWidget):
         self.totalSize = 0
 
     def uploadMgf(self, input_path, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag, chargeFlags):
-        mgfDfList, pepmassIonArrayList, mgfLen = readMGF(input_path, intensityThreshold)
+        mgfDfList, pepmassIonArrayList, mgfLen = readMGF(input_path, intensityThreshold, byIonFlag)
 
         maxMass, chargeMaxDict = self.maxMgfMass(mgfDfList, chargeFlags)
 
@@ -612,11 +612,12 @@ class MyTableWidget(QWidget):
 
         print("MGF FILE UPLOADED")
 
-        if self.mgfLabel:
+        try:
             self.tab2.layout.removeWidget(self.mgfLabel)
             self.mgfLabel.deleteLater()
             self.mgfLabel = None
-
+        except AttributeError:
+            pass
 
         self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
                            protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag)

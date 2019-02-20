@@ -207,7 +207,7 @@ def readMGF(input_path, intensityThreshold):
         for spectrum in mgfReader:
             counter += 1
 
-            if counter == 1000:
+            if counter == 200000:
                 pepmassIonArrayList.append(pepmassIonArray)
                 pepmassIonArray = {}
                 sortMgfDFValues(mgfDf)

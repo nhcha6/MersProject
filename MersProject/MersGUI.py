@@ -19,6 +19,7 @@ import functools
 from functools import partial
 from datetime import datetime
 from pathlib import Path
+import signal
 
 
 class WorkerSignals(QObject):
@@ -158,9 +159,10 @@ class App(QMainWindow):
 
     def closeEvent(self, event):
         print('closed')
-        self.table_widget.stopFunction()
-        sys.exit()
-
+        if self.table_widget.outputRunning == True:
+            os.kill(os.getpid(), signal.SIGABRT)
+        else:
+            sys.exit()
 
 class MyTableWidget(QWidget):
     """
@@ -183,6 +185,7 @@ class MyTableWidget(QWidget):
 
         # Init threading
         self.threadpool = QThreadPool()
+        self.outputRunning = False
 
         # Default values for the input parameters
         self.minDefault = '8'
@@ -428,8 +431,19 @@ class MyTableWidget(QWidget):
 
     def stopFunction(self):
         print('in stop function')
+        # close processes
         for process in self.fasta.allProcessList:
             process.terminate()
+
+        # empty queues
+        while not self.fasta.pepCompleted.empty():
+            clearQ = self.fasta.pepCompleted.get()
+        while not self.fasta.pepTotal.empty():
+            clearQ = self.fasta.pepTotal.get()
+
+        # reset progress bar counters
+        self.totalSize = 0
+        self.finishedPeptides = 0
 
     def nextTabFunc(self):
         self.tabs.setCurrentIndex(1)
@@ -627,8 +641,11 @@ class MyTableWidget(QWidget):
         Alerts when done!
         """
         print("IT'S DONE")
-
+        # clear prog bar variables and send flag to close prog bar
+        self.totalSize = 0
+        self.finishedPeptides = 0
         self.progressBarUpdate.changeFlag()
+        # enable all widgets and produce popup 
         self.enableAllWidgets()
         QMessageBox.about(self, "Message", 'Output Complete')
 
@@ -803,12 +820,18 @@ class MyTableWidget(QWidget):
 
         start = time.time()
 
+        self.outputRunning = True
+        self.tab2.stop.setEnabled(True)
+
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
 
         self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
                                   protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, self.mgf, mgfFlag)
         end = time.time()
+
+        self.outputRunning = False
+        self.tab2.stop.setEnabled(False)
 
         print(end - start)
 
@@ -1272,6 +1295,7 @@ class MyTableWidget(QWidget):
         self.tab2.stop = QPushButton('Stop Process', self)
         self.tab2.output.clicked.connect(self.confirmationFunction)
         self.tab2.stop.clicked.connect(self.stopFunction)
+        self.tab2.stop.setEnabled(False)
 
         self.setDefaultParameters()
 

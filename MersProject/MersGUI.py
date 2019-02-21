@@ -159,10 +159,9 @@ class App(QMainWindow):
 
     def closeEvent(self, event):
         print('closed')
-        if self.table_widget.outputRunning == True:
-            os.kill(os.getpid(), signal.SIGABRT)
-        else:
-            sys.exit()
+        response = QMessageBox.question(self, 'Message', 'Do you want to close all python processes. We strongly recommend doing so, unless you have another python script currently running!')
+        if response == QMessageBox.Yes:
+            os.system("pkill -f python")
 
 class MyTableWidget(QWidget):
     """
@@ -185,7 +184,6 @@ class MyTableWidget(QWidget):
 
         # Init threading
         self.threadpool = QThreadPool()
-        self.outputRunning = False
 
         # Default values for the input parameters
         self.minDefault = '8'
@@ -429,21 +427,24 @@ class MyTableWidget(QWidget):
         # close the output name box.
         self.outputNameBox.close()
 
-    def stopFunction(self):
-        print('in stop function')
-        # close processes
-        for process in self.fasta.allProcessList:
-            process.terminate()
+    # def stopFunction(self):
+    #     print('in stop function')
+    #     # close processes
+    #     for process in self.fasta.allProcessList:
+    #         process.terminate()
+    #
+    #     # empty queues
+    #     self.emptyProgQueues()
+    #
+    #     # reset progress bar counters
+    #     self.totalSize = 0
+    #     self.finishedPeptides = 0
 
-        # empty queues
+    def emptyProgQueues(self):
         while not self.fasta.pepCompleted.empty():
             clearQ = self.fasta.pepCompleted.get()
         while not self.fasta.pepTotal.empty():
             clearQ = self.fasta.pepTotal.get()
-
-        # reset progress bar counters
-        self.totalSize = 0
-        self.finishedPeptides = 0
 
     def nextTabFunc(self):
         self.tabs.setCurrentIndex(1)
@@ -645,7 +646,7 @@ class MyTableWidget(QWidget):
         self.totalSize = 0
         self.finishedPeptides = 0
         self.progressBarUpdate.changeFlag()
-        # enable all widgets and produce popup 
+        # enable all widgets and produce popup
         self.enableAllWidgets()
         QMessageBox.about(self, "Message", 'Output Complete')
 
@@ -658,6 +659,8 @@ class MyTableWidget(QWidget):
         self.enableControl()
 
     def updateProgressBar(self):
+        print(self.totalSize)
+        print(self.finishedPeptides)
         if not self.fasta.pepTotal.empty():
             self.totalSize += self.fasta.pepTotal.get()
         if not self.fasta.pepCompleted.empty():
@@ -820,9 +823,6 @@ class MyTableWidget(QWidget):
 
         start = time.time()
 
-        self.outputRunning = True
-        self.tab2.stop.setEnabled(True)
-
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
 
@@ -830,8 +830,7 @@ class MyTableWidget(QWidget):
                                   protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, self.mgf, mgfFlag)
         end = time.time()
 
-        self.outputRunning = False
-        self.tab2.stop.setEnabled(False)
+        self.emptyProgQueues()
 
         print(end - start)
 
@@ -1292,10 +1291,10 @@ class MyTableWidget(QWidget):
 
         # create generate output push button
         self.tab2.output = QPushButton('Generate Output!', self)
-        self.tab2.stop = QPushButton('Stop Process', self)
+        #self.tab2.stop = QPushButton('Stop Process', self)
         self.tab2.output.clicked.connect(self.confirmationFunction)
-        self.tab2.stop.clicked.connect(self.stopFunction)
-        self.tab2.stop.setEnabled(False)
+        #self.tab2.stop.clicked.connect(self.stopFunction)
+        #self.tab2.stop.setEnabled(False)
 
         self.setDefaultParameters()
 
@@ -1338,7 +1337,7 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.plusFour, 14, 4)
         self.tab2.layout.addWidget(self.tab2.plusFive, 14, 5)
         self.tab2.layout.addWidget(self.tab2.output, 15, 5, 1, 2)
-        self.tab2.layout.addWidget(self.tab2.stop, 15, 3)
+        #self.tab2.layout.addWidget(self.tab2.stop, 15, 3)
 
     def setDefaultParameters(self):
 

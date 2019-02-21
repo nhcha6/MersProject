@@ -159,9 +159,10 @@ class App(QMainWindow):
 
     def closeEvent(self, event):
         print('closed')
-        response = QMessageBox.question(self, 'Message', 'Do you want to close all python processes. We strongly recommend doing so, unless you have another python script currently running!')
-        if response == QMessageBox.Yes:
-            os.system("pkill -f python")
+        # response = QMessageBox.question(self, 'Message', 'Do you want to close all python processes. We strongly recommend doing so, unless you have another python script currently running!')
+        # if response == QMessageBox.Yes:
+        #     os.system("pkill -f python")
+        os.system("ps aux |grep MersGUI |awk '{print $2}' |xargs kill")
 
 class MyTableWidget(QWidget):
     """
@@ -659,8 +660,6 @@ class MyTableWidget(QWidget):
         self.enableControl()
 
     def updateProgressBar(self):
-        print(self.totalSize)
-        print(self.finishedPeptides)
         if not self.fasta.pepTotal.empty():
             self.totalSize += self.fasta.pepTotal.get()
         if not self.fasta.pepCompleted.empty():
@@ -823,12 +822,16 @@ class MyTableWidget(QWidget):
 
         start = time.time()
 
+        #self.tab2.stop.setEnabled(True)
+
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
 
         self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
                                   protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, self.mgf, mgfFlag)
         end = time.time()
+
+        #self.tab2.stop.setEnabled(False)
 
         self.emptyProgQueues()
 

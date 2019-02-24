@@ -8,6 +8,7 @@ from MonoAminoAndMods import *
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+from collections import Counter
 import math
 
 class MGF:
@@ -66,6 +67,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
         # sort the final mgfDf
         sortMgfDFValues(mgfDf)
 
+        modCountDict = Counter()
         matchedPeptides = {}
         for key, value in massDict.items():
             # convert modified peptides to original form
@@ -149,9 +151,14 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                             string += origProt[0][0] + origProt[0][1] + '/' + origProt[1][0] + \
                                                       origProt[1][1] + ';'
                                         string = string[0:-1]
+
+                                        if not key.isalpha():
+                                            modCountDict += getModNumbers(key, modList)
                                         matchedPeptides[alphaKey] = string
                                         matchAdded = True
                                     except IndexError:
+                                        if not key.isalpha():
+                                            modCountDict += getModNumbers(key, modList)
                                         matchedPeptides[alphaKey] = protId
                                         matchAdded = True
                                     break
@@ -167,8 +174,41 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                         break
                 else:
                     break
-        return matchedPeptides
+        print(modCountDict)
+        return matchedPeptides, modCountDict
 
+def getModNumbers(peptide, modList):
+    modNumberDict = {}
+    for character in peptide:
+        if character.islower():
+            for mod in modList:
+                if character.upper in modTable[mod]:
+                    modType = mod + character.upper()
+                    try:
+                        modNumberDict[modType] += 1
+                    except KeyError:
+                        modNumberDict[modType] = 1
+    return modNumberDict
+
+
+def getModNumbers(peptide, modList):
+    modCountDict = Counter()
+    for i in range(0, len(peptide)):
+        if peptide[i].isdigit():
+            continue
+        if peptide[i].islower():
+            modNumber = int(peptide[i+1]) - 1
+            mod = modList[modNumber]
+            moddedAmino = peptide[i].upper()
+
+            if moddedAmino in modTable[mod]:
+
+                modType = mod.split(' ')[0] + ' '+ moddedAmino + ' modified'
+                try:
+                    modCountDict[modType] += 1
+                except KeyError:
+                    modCountDict[modType] = 1
+    return modCountDict
 
 def modToPeptide(moddedPeptide):
     peptide = ''.join(filter(lambda x: x.isalpha(), moddedPeptide))

@@ -6,6 +6,7 @@ import csv
 from MonoAminoAndMods import *
 import multiprocessing
 from multiprocessing import Queue
+from collections import Counter
 import time
 import sys
 # import h5py
@@ -176,6 +177,7 @@ def transOutput(inputFile, spliceType, mined, maxed, modList, maxMod, outputPath
 def transProcess(splitsIndex, mined, maxed, modList, maxMod, finalPath,
                  chargeFlags, mgfFlag, csvFlag, protIndexList, protList):
 
+
     try:
         # Look to produce only trans spliced peptides - not linear or cis. Do so by not allowing combination of peptides
         # which originate from the same protein as opposed to solving for Cis and Linear and not including that
@@ -227,8 +229,8 @@ def transProcess(splitsIndex, mined, maxed, modList, maxMod, finalPath,
         # If there is an mgf file AND there is a charge selected
         elif mgfData is not None and True in chargeFlags:
             #fulfillPpmReq(mgfObj, massDict)
-            matchedPeptides = generateMGFList(TRANS, mgfData, massDict, modList)
-            transProcess.toWriteQueue.put(matchedPeptides)
+            matchedPeptides, modCountDict = generateMGFList(TRANS, mgfData, massDict, modList)
+            transProcess.toWriteQueue.put((matchedPeptides, modCountDict))
 
         # If csv is selected, write to csv file
         if csvFlag:
@@ -568,8 +570,8 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
         # If there is an mgf file AND there is a charge selected
         elif mgfData is not None and True in chargeFlags:
             #fulfillPpmReq(mgfObj, massDict)
-            matchedPeptides = generateMGFList(protId, mgfData, massDict, modList)
-            genMassDict.toWriteQueue.put(matchedPeptides)
+            matchedPeptides, modCountDict = generateMGFList(protId, mgfData, massDict, modList)
+            genMassDict.toWriteQueue.put((matchedPeptides, modCountDict))
 
         # If csv is selected, write to csv file
         if csvFlag:
@@ -623,6 +625,7 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
     seenPeptides = {}
     backwardsSeenPeptides = {}
     linCisSet = set()
+    modCountDict = Counter()
     saveHandle = str(outputPath)
 
     outputTempFiles = Queue()
@@ -631,14 +634,18 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
         while True:
 
             # get from cisLinQueue and from matchedPeptide Queue
-            matchedPeptides = queue.get()
+            matchedTuple = queue.get()
             if not linCisQueue.empty():
                 linCisSet = linCisSet | linCisQueue.get()
             # if stop is sent to the matchedPeptide Queue, everything has been output,
             # so we exit the while loop.
-            if matchedPeptides == 'stop':
+            if matchedTuple == 'stop':
                 logging.info("Everything computed, stop message has been sent")
                 break
+
+            matchedPeptides = matchedTuple[0]
+
+            modCountDict += matchedTuple[1]
 
             # each queue.get() returns the matchedPeptides from an individual process.
             # Add  the matchedPeptides from the given process to seenPeptides.
@@ -704,7 +711,7 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
         if finalSeenPeptides:
             SeqIO.write(createSeqObj(finalSeenPeptides), output_handle, "fasta")
 
-
+        print(modCountDict)
 
 def combineAllTempFasta(linCisSet, outputTempFiles, outputPath):
     counter = 0

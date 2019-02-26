@@ -109,9 +109,17 @@ def transOutput(inputFile, spliceType, mined, maxed, modList, maxMod, outputPath
         open(finalPath, 'w')
 
     seqDict = {}
-    for file in inputFile:
-        seqDict.update(addSequenceList(file))
 
+    # check number of input files and pass flag into addSequenceList so that the seqId can updated to include file
+    # name if there are more than 1 files imported.
+    if len(inputFile) > 1:
+        multiFileFlag = True
+    else:
+        multiFileFlag = False
+
+    # loop through files and add to seqDict
+    for file in inputFile:
+        seqDict.update(addSequenceList(file, multiFileFlag))
 
     # if len(seqDict) <= 1:
     #     logging.info('Only 1 protein, therefore trans not relevant')
@@ -1259,7 +1267,7 @@ def overlapComp(ref1, ref2):
     return False
 
 
-def addSequenceList(input_file):
+def addSequenceList(input_file, multiFileFlag):
 
     """
     input_file is the file path to the fasta file.
@@ -1271,8 +1279,11 @@ def addSequenceList(input_file):
     for fasta in fasta_sequences:
         name, sequence = fasta.id, str(fasta.seq)
 
-
         name = name.split('|')[1]
+        if multiFileFlag:
+            fileName = input_file.split('/')[-1]
+            name = fileName.split('.')[0] + '_' + name
+            print(name)
 
         sequenceDictionary[name] = sequence
     return sequenceDictionary

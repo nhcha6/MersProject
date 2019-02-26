@@ -501,7 +501,13 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
                 #     time.sleep(1)
                 #     logging.info('Memory Limit Reached')
 
+                # add the filename to the seqId if more than one file has been included
                 seqId = seqId.split('|')[1]
+                if len(inputFile) > 1:
+                    fileName = file.split('/')[-1]
+                    seqId  = fileName.split('.')[0] + '_' + seqId
+                    print(seqId)
+
                 #logging.info(spliceType + " process started for: " + seq[0:5])
                 # Start the processes for each protein with the targe function being genMassDict
                 pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,

@@ -668,8 +668,9 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
                 if key not in seenPeptides.keys():
                     seenPeptides[key] = origins
                 else:
-                    if value not in seenPeptides[key]:
-                        seenPeptides[key] += origins
+                    for origin in origins:
+                        if origin not in seenPeptides[key]:
+                            seenPeptides[key].append(origin)
 
             # If current memory is above threshold write to a tempfile and add that to the outputTempFiles queue
             if memory_usage_psutil() > MEMORY_THRESHOLD:

@@ -124,11 +124,22 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                             if mgfObj.byIonFlag == False:
                                 # if it is trans, massDict[3] will exist and will hold the desired protId
                                 try:
+                                    # create the string, with peptides sorted so all permutations are matched as similar. There may be multiple
+                                    # peptide locations in the list of tuples, hence the for loop. Tuples are listed in order, with consecutive
+                                    # tuples relating to a pair of splice locations.
                                     string = ""
-                                    for i in range(0, len(value[3]), 2):
-                                        origProt = sorted(value[3][i:i + 2])
-                                        string += origProt[0][0] + origProt[0][1] + '/' + origProt[1][0] + \
-                                                  origProt[1][1] + ';'
+                                    # create seenOrigins list to store origins which have been added so that there is no double up of identical origins.
+                                    seenOrigins = []
+                                    # iterate through all the origins stored in the massDict for the given key
+                                    for i in range(0, len(massDict[alphaKey][3]), 2):
+                                        # sort the origin so that it can be compared to others accurately
+                                        origProt = sorted(massDict[alphaKey][3][i:i + 2])
+                                        # if origProt has already been seen (and in turn added to seenOrigins) continue iterating.
+                                        if origProt in seenOrigins:
+                                            continue
+                                        # if origProt hasn't been seen, append it to seenOrigins and add it to the string which is to be added to allPeptidesDict.
+                                        seenOrigins.append(origProt)
+                                        string += origProt[0][0] + origProt[0][1] + '/' + origProt[1][0] + origProt[1][1] + ';'
                                     string = string[0:-1]
                                     matchedPeptides[alphaKey] = string
                                     matchAdded = True
@@ -145,17 +156,30 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                 if simIons(mzArray, byIonArray, mgfObj.byIonAccuracy, mgfObj.minSimBy):
                                     # if it is trans, massDict[3] will exist and will hold the desired protId
                                     try:
+                                        # add to modCountDict
+                                        if not key.isalpha():
+                                            modCountDict += getModNumbers(key, modList)
+                                        # create the string, with peptides sorted so all permutations are matched as similar. There may be multiple
+                                        # peptide locations in the list of tuples, hence the for loop. Tuples are listed in order, with consecutive
+                                        # tuples relating to a pair of splice locations.
                                         string = ""
-                                        for i in range(0, len(value[3]), 2):
-                                            origProt = sorted(value[3][i:i + 2])
+                                        # create seenOrigins list to store origins which have been added so that there is no double up of identical origins.
+                                        seenOrigins = []
+                                        # iterate through all the origins stored in the massDict for the given key
+                                        for i in range(0, len(massDict[key][3]), 2):
+                                            # sort the origin so that it can be compared to others accurately
+                                            origProt = sorted(massDict[key][3][i:i + 2])
+                                            # if origProt has already been seen (and in turn added to seenOrigins) continue iterating.
+                                            if origProt in seenOrigins:
+                                                continue
+                                            # if origProt hasn't been seen, append it to seenOrigins and add it to the string which is to be added to allPeptidesDict.
+                                            seenOrigins.append(origProt)
                                             string += origProt[0][0] + origProt[0][1] + '/' + origProt[1][0] + \
                                                       origProt[1][1] + ';'
                                         string = string[0:-1]
-
-                                        if not key.isalpha():
-                                            modCountDict += getModNumbers(key, modList)
                                         matchedPeptides[alphaKey] = string
                                         matchAdded = True
+
                                     except IndexError:
                                         if not key.isalpha():
                                             modCountDict += getModNumbers(key, modList)

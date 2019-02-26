@@ -122,6 +122,9 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                             # Not super important but this should likely be at the very start and outside the step
                             # loop.
                             if mgfObj.byIonFlag == False:
+                                # count modifications
+                                if not key.isalpha():
+                                    modCountDict += getModNumbers(key, modList)
                                 # if it is trans, massDict[3] will exist and will hold the desired protId
                                 try:
                                     # create the string, with peptides sorted so all permutations are matched as similar. There may be multiple
@@ -154,11 +157,11 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                 mzArray = pepmassIonArray[(charge, pepMass)]
                                 # If they match in accordance with the input minimum requirement, add them to the list
                                 if simIons(mzArray, byIonArray, mgfObj.byIonAccuracy, mgfObj.minSimBy):
+                                    # count the modifications
+                                    if not key.isalpha():
+                                        modCountDict += getModNumbers(key, modList)
                                     # if it is trans, massDict[3] will exist and will hold the desired protId
                                     try:
-                                        # add to modCountDict
-                                        if not key.isalpha():
-                                            modCountDict += getModNumbers(key, modList)
                                         # create the string, with peptides sorted so all permutations are matched as similar. There may be multiple
                                         # peptide locations in the list of tuples, hence the for loop. Tuples are listed in order, with consecutive
                                         # tuples relating to a pair of splice locations.
@@ -181,8 +184,6 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                         matchAdded = True
 
                                     except IndexError:
-                                        if not key.isalpha():
-                                            modCountDict += getModNumbers(key, modList)
                                         matchedPeptides[alphaKey] = protId
                                         matchAdded = True
                                     break

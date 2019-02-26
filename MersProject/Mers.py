@@ -232,7 +232,7 @@ def transProcess(splitsIndex, mined, maxed, modList, maxMod, finalPath,
                     string += origProt[0][0] + origProt[0][1] + '/' + origProt[1][0] + origProt[1][1] + ';'
                 string = string[0:-1]
                 allPeptidesDict[peptide] = string
-            transProcess.toWriteQueue.put(allPeptidesDict)
+            transProcess.toWriteQueue.put((allPeptidesDict,False))
 
         # If there is an mgf file AND there is a charge selected
         elif mgfData is not None and True in chargeFlags:
@@ -579,7 +579,7 @@ def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag,
             allPeptidesDict = {}
             for peptide in allPeptides:
                 allPeptidesDict[peptide] = protId
-            genMassDict.toWriteQueue.put(allPeptidesDict)
+            genMassDict.toWriteQueue.put((allPeptidesDict,False))
 
         # If there is an mgf file AND there is a charge selected
         elif mgfData is not None and True in chargeFlags:
@@ -659,7 +659,8 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
 
             matchedPeptides = matchedTuple[0]
 
-            modCountDict += matchedTuple[1]
+            if matchedTuple[1]:
+                modCountDict += matchedTuple[1]
 
             # each queue.get() returns the matchedPeptides from an individual process.
             # Add  the matchedPeptides from the given process to seenPeptides.
@@ -726,7 +727,8 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
         if finalSeenPeptides:
             SeqIO.write(createSeqObj(finalSeenPeptides), output_handle, "fasta")
 
-        print(modCountDict)
+        if modCountDict:
+            print(modCountDict)
 
 def combineAllTempFasta(linCisSet, outputTempFiles, outputPath):
     counter = 0

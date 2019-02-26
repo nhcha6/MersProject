@@ -818,8 +818,8 @@ def writeTempFasta(seenPeptides):
     return temp.name
 
 def writeProtToPep(seenPeptides, groupedBy, outputPath):
-    with open(outputPath+ groupedBy + '.csv', 'a', newline='') as csv_file:
-
+    newPath = outputPath.parent / (outputPath.name + groupedBy + '.csv')
+    with open(newPath, 'a', newline='') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
         if groupedBy is 'ProtToPep':
             header = 'Protein'

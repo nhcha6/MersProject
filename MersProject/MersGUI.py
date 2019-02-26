@@ -182,6 +182,7 @@ class MyTableWidget(QWidget):
         self.mgf = None
         self.mgfPath = None
         self.outputPath = None
+        self.settingString = None
 
         # Init threading
         self.threadpool = QThreadPool()
@@ -390,6 +391,12 @@ class MyTableWidget(QWidget):
         # initialise the dictionary to store the splice type file names.
         outputFiles = {}
         now = datetime.now().strftime("%d%m%y_%H%M")
+
+        # write settings to file
+        settingPath = outputFile + '-' + 'Settings' + now + '.txt'
+        file = open(settingPath, 'w')
+        file.write(self.settingString)
+
         # create the file name for each splice type and add to dictionary.
         if self.linearFlag:
             linPath = outputFile + '-' + LINEAR + now + ".fasta"
@@ -596,26 +603,27 @@ class MyTableWidget(QWidget):
                 QMessageBox.about(self, "Message", 'Trans output requires at least two proteins to have been uploaded! Please review the input accordingly.')
                 return
 
-        reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' +
-                                     'Minimum Peptide Length: ' + str(self.mined) + '\n' +
-                                     'Maximum Peptide Length: ' + str(self.maxed) + '\n' +
-                                     'Maximum Distance: ' + str(self.maxDistance) + '\n' +
-                                     'Modifications: ' + str(self.modList) + '\n' +
-                                     'Max Mods Per Pep: ' + str(self.maxMod) + '\n' +
-                                     'No Overlap: ' + str(self.overlapFlag) + '\n' +
-                                     'Linear Splicing: ' + str(self.linearFlag) + '\n' +
-                                     'Cis Splicing: ' + str(self.cisFlag) + '\n' +
-                                     'Trans Splicing: ' + str(self.transFlag) + '\n' +
-                                     'Print Intial Combinations: ' + str(self.csvFlag) + '\n' +
-                                     'Write Peptide to Protein Fasta: ' + str(self.pepToProtFlag) + '\n' +
-                                     'Write Protein to Peptide Fasta: ' + str(self.pepToProtFlag) + '\n' +
-                                     'Charge States: ' + str(self.chargeFlags) + '\n' +
-                                     'No MGF Comparison: ' + str(self.useMgf) + '\n' +
-                                     'PPM Value: ' + str(self.ppmVal) + '\n' +
-                                     'Intensity Threshold: ' + str(self.intensityThreshold) + '\n' +
-                                     'Apply b/y Ion Comparison: ' + str(self.byIonFlag) + '\n' +
-                                     'Min b/y Ion %: ' + str(self.minSimBy) + '\n' +
-                                     'b/y Ion Accuracy: ' + str(self.byIonAccuracy) + '\n',
+        self.settingString = 'Minimum Peptide Length: ' + str(self.mined) + '\n' + \
+                                     'Maximum Peptide Length: ' + str(self.maxed) + '\n' + \
+                                     'Maximum Distance: ' + str(self.maxDistance) + '\n' + \
+                                     'Modifications: ' + str(self.modList) + '\n' + \
+                                     'Max Mods Per Pep: ' + str(self.maxMod) + '\n' + \
+                                     'No Overlap: ' + str(self.overlapFlag) + '\n' + \
+                                     'Linear Splicing: ' + str(self.linearFlag) + '\n' + \
+                                     'Cis Splicing: ' + str(self.cisFlag) + '\n' + \
+                                     'Trans Splicing: ' + str(self.transFlag) + '\n' + \
+                                     'Print Intial Combinations: ' + str(self.csvFlag) + '\n' + \
+                                     'Write Peptide to Protein Fasta: ' + str(self.pepToProtFlag) + '\n' + \
+                                     'Write Protein to Peptide Fasta: ' + str(self.pepToProtFlag) + '\n' + \
+                                     'Charge States: ' + str(self.chargeFlags) + '\n' + \
+                                     'No MGF Comparison: ' + str(self.useMgf) + '\n' + \
+                                     'PPM Value: ' + str(self.ppmVal) + '\n' + \
+                                     'Intensity Threshold: ' + str(self.intensityThreshold) + '\n' + \
+                                     'Apply b/y Ion Comparison: ' + str(self.byIonFlag) + '\n' + \
+                                     'Min b/y Ion %: ' + str(self.minSimBy) + '\n' + \
+                                     'b/y Ion Accuracy: ' + str(self.byIonAccuracy) + '\n'
+
+        reply = QMessageBox.question(self, 'Message', 'Do you wish to confirm the following input?\n' + self.settingString,
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
         if reply == QMessageBox.Yes:

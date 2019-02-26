@@ -728,6 +728,14 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
             SeqIO.write(createSeqObj(finalSeenPeptides), output_handle, "fasta")
 
         if modCountDict:
+            # need to know if related to cis/lin/trans. currently just written for lin
+            infoPath = saveHandle.replace("-Linear", "-Info")
+            infoPath = infoPath[0:-6] + '.txt'
+            print(infoPath)
+            file = open(infoPath, 'a')
+            file.write('\n' + 'Linear Modification Count')
+            for key, value in modCountDict.items():
+                file.write(key + ': ' + str(value) + '\n')
             print(modCountDict)
 
 def combineAllTempFasta(linCisSet, outputTempFiles, outputPath):

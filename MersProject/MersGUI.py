@@ -393,7 +393,7 @@ class MyTableWidget(QWidget):
         now = datetime.now().strftime("%d%m%y_%H%M")
 
         # write settings to file
-        settingPath = outputFile + '-' + 'Settings' + now + '.txt'
+        settingPath = outputFile + '-' + 'Info' + now + '.txt'
         file = open(settingPath, 'w')
         file.write(self.settingString)
 

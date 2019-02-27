@@ -399,6 +399,7 @@ class MyTableWidget(QWidget):
         # write settings to file
         settingPath = outputFile + '-' + 'Info' + now + '.txt'
         file = open(settingPath, 'w')
+        file.write('SETTINGS' + '\n')
         file.write(self.settingString)
 
         # create the file name for each splice type and add to dictionary.

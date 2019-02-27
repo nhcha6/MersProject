@@ -20,6 +20,7 @@ from functools import partial
 from datetime import datetime
 from pathlib import Path
 import signal
+import platform
 
 
 class WorkerSignals(QObject):
@@ -159,13 +160,13 @@ class App(QMainWindow):
 
     def closeEvent(self, event):
         print('closed')
-        # response = QMessageBox.question(self, 'Message', 'Do you want to close all python processes. We strongly recommend doing so, unless you have another python script currently running!')
-        # if response == QMessageBox.Yes:
-        #     os.system("pkill -f python")
-        # mac close command
-        # os.system("ps aux |grep MersGUI | grep -v 'pattern_of_process_you_dont_want_to_kill' | awk '{print $2}' |xargs kill")
         # windows close command
-        os.system('taskkill /f /fi "WINDOWTITLE eq Peptide Splicer" /t')
+        if platform.system() == 'Windows':
+            os.system('taskkill /f /fi "WINDOWTITLE eq Peptide Splicer" /t')
+        # mac close command
+        else:
+            os.system("ps aux |grep MersGUI | grep -v 'pattern_of_process_you_dont_want_to_kill' | awk '{print $2}' |xargs kill")
+
 
 class MyTableWidget(QWidget):
     """

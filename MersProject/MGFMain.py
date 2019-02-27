@@ -316,7 +316,6 @@ def readMGF(input_path, intensityThreshold, byIonFlag):
                         #                          spectrum['params']['pepmass'][0]]
 
 
-
                 uniqueSpec.add(chargePepmassTup)
 
     pepmassIonArrayList.append(pepmassIonArray)

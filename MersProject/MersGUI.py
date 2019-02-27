@@ -162,7 +162,10 @@ class App(QMainWindow):
         # response = QMessageBox.question(self, 'Message', 'Do you want to close all python processes. We strongly recommend doing so, unless you have another python script currently running!')
         # if response == QMessageBox.Yes:
         #     os.system("pkill -f python")
-        os.system("ps aux |grep MersGUI | grep -v 'pattern_of_process_you_dont_want_to_kill' | awk '{print $2}' |xargs kill")
+        # mac close command
+        # os.system("ps aux |grep MersGUI | grep -v 'pattern_of_process_you_dont_want_to_kill' | awk '{print $2}' |xargs kill")
+        # windows close command
+        os.system('taskkill /f /fi "WINDOWTITLE eq Peptide Splicer" /t')
 
 class MyTableWidget(QWidget):
     """

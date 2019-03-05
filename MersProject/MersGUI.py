@@ -264,7 +264,7 @@ class MyTableWidget(QWidget):
 
     def uploadMgfPreStep(self):
         """
-        Called from the select Fasta file button. Opens a window to select a file, and check if the file ends in MGF
+        Called from the select MGF file button. Opens a window to select a file, and check if the file ends in MGF
         """
 
         fname = QFileDialog.getOpenFileName(self, 'Open File', '/home')
@@ -400,6 +400,11 @@ class MyTableWidget(QWidget):
         settingPath = outputFile + '-' + 'Info' + now + '.txt'
         file = open(settingPath, 'w')
         file.write('SETTINGS' + '\n')
+        file.write('FASTA Files: ' + str(self.fasta.inputFile) + '\n')
+        # write to mgfPath to info file if one has been uploaded
+        if self.mgfPath is not None:
+            file.write('MGF File: ' + str(self.mgfPath) + '\n')
+        # write all the settings to file
         file.write(self.settingString)
 
         # create the file name for each splice type and add to dictionary.

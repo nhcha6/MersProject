@@ -770,7 +770,7 @@ class MyTableWidget(QWidget):
         self.tab2.maxModCombo.setEnabled(True)
         self.tab2.csv.setEnabled(True)
         self.tab2.pepToProt.setEnabled(True)
-        self.tab2.protToPep.setEnabled(False)
+        self.tab2.protToPep.setEnabled(True)
         self.tab2.output.setEnabled(True)
         # only enable the charge checkboxes if mgfFlag is False
         if not self.mgfFlag.isChecked():

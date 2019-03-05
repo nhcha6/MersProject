@@ -21,6 +21,7 @@ from queue import Queue
 import io
 import traceback
 from pathlib import Path
+import math
 
 
 TRANS = "Trans"
@@ -29,6 +30,7 @@ CIS = "Cis"
 
 MEMORY_THRESHOLD = 80
 MEMORY_THRESHOLD_COMBINE = 90
+NUM_PROC_TOTAL = 10
 
 logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 # logging.disable(logging.INFO)
@@ -151,7 +153,7 @@ def transOutput(inputFile, spliceType, mined, maxed, modList, maxMod, outputPath
 
     # Create a process for pairs of splits, pairing element 0 with -1, 1 with -2 and so on.
     splitsIndex = []
-    procSize = 1
+    procSize = math.ceil(splitLen / (NUM_PROC_TOTAL*2))
 
     maxMem = psutil.virtual_memory()[1] / 2
 
@@ -466,7 +468,7 @@ def combineTransPeptide(splits, splitRef, mined, maxed, splitsIndex, protIndexLi
 
 def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag, pepToProtFlag, protToPepFlag,
                        modList, maxMod, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag, pepCompleted,
-                       pepTotal):
+                       procTotal):
 
     """
     Process that is in charge for dealing with cis and linear. Creates sub processes for every protein to compute
@@ -494,32 +496,45 @@ def cisAndLinearOutput(inputFile, spliceType, mined, maxed, overlapFlag, csvFlag
                                                                  protToPepFlag))
     writerProcess.start()
 
-    maxMem = psutil.virtual_memory()[1] / 2
+    #maxMem = psutil.virtual_memory()[1] / 2
 
+    # calculate total size of input fasta
+    totalProt = 0
+    for file in inputFile:
+        with open(file, "rU") as handle:
+            for entry in SeqIO.parse(handle, 'fasta'):
+                totalProt += 1
 
+    pepPerProc = math.ceil(totalProt / NUM_PROC_TOTAL)
+    print("Process Size: " + str(pepPerProc))
+
+    # initialise counter variables
+    counter = 0
+    protDict = {}
+    procNum = 0
     for file in inputFile:
         with open(file, "rU") as handle:
             for record in SeqIO.parse(handle, 'fasta'):
-
-                pepTotal.put(1)
+                counter += 1
                 seq = str(record.seq)
                 seqId = record.name
-
-                # while memoryCheck(maxMem):
-                #     time.sleep(1)
-                #     logging.info('Memory Limit Reached')
 
                 # add the filename to the seqId if more than one file has been included
                 seqId = seqId.split('|')[1]
                 if len(inputFile) > 1:
                     fileName = file.split('/')[-1]
                     seqId  = fileName.split('.')[0] + '_' + seqId
-                    print(seqId)
 
-                #logging.info(spliceType + " process started for: " + seq[0:5])
-                # Start the processes for each protein with the targe function being genMassDict
-                pool.apply_async(genMassDict, args=(spliceType, seqId, seq, mined, maxed, overlapFlag,
-                                                        csvFlag, modList, maxMod, maxDistance, finalPath, chargeFlags, mgfFlag))
+                # add seqId and seq to protDict
+                protDict[seqId] = seq
+
+                if counter % pepPerProc == 0:
+                    procTotal.put(1)
+                    #logging.info(spliceType + " process started for: " + seq[0:5])
+                    # Start the processes for each protein with the targe function being genMassDict
+                    pool.apply_async(genMassDict, args=(spliceType, protDict, mined, maxed, overlapFlag,
+                                                            csvFlag, modList, maxMod, maxDistance, finalPath, chargeFlags, mgfFlag))
+                    protDict = {}
 
 
     #pepTotal.put(counter)
@@ -546,59 +561,60 @@ def memoryCheck2():
     else:
         return False
 
-def genMassDict(spliceType, protId, peptide, mined, maxed, overlapFlag, csvFlag, modList, maxMod,
+def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modList, maxMod,
                 maxDistance, finalPath, chargeFlags, mgfFlag):
 
     """
     Compute the peptides for the given protein
     """
     try:
-        start = time.time()
+        for protId, protSeq in protDict.items():
+            start = time.time()
 
-        # Get the initial peptides and their positions, and the set of linear peptides produced for this protein
-        combined, combinedRef, linSet = outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance)
+            # Get the initial peptides and their positions, and the set of linear peptides produced for this protein
+            combined, combinedRef, linSet = outputCreate(spliceType, protSeq, mined, maxed, overlapFlag, maxDistance)
 
-        # add this set of linear proteins to the linProt queue
-        genMassDict.linSetQueue.put(linSet)
+            # add this set of linear proteins to the linProt queue
+            genMassDict.linSetQueue.put(linSet)
 
-        # Convert it into a dictionary that has a mass
-        massDict = combMass(combined, combinedRef)
+            # Convert it into a dictionary that has a mass
+            massDict = combMass(combined, combinedRef)
 
-        # Apply mods to the dictionary values and update the dictionary
-        massDict = applyMods(massDict, modList, maxMod)
+            # Apply mods to the dictionary values and update the dictionary
+            massDict = applyMods(massDict, modList, maxMod)
 
-        # Add the charge information along with their masses
-        massDict = chargeIonMass(massDict, chargeFlags)
+            # Add the charge information along with their masses
+            massDict = chargeIonMass(massDict, chargeFlags)
 
-        # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
-        massDict = editRefMassDict(massDict)
+            # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
+            massDict = editRefMassDict(massDict)
 
-        if mgfFlag:
-            #allPeptides = getAllPep(massDict)
-            allPeptides = massDict.keys()
-            allPeptidesDict = {}
-            for peptide in allPeptides:
-                allPeptidesDict[peptide] = protId
-            genMassDict.toWriteQueue.put((allPeptidesDict,False))
+            if mgfFlag:
+                #allPeptides = getAllPep(massDict)
+                allPeptides = massDict.keys()
+                allPeptidesDict = {}
+                for peptide in allPeptides:
+                    allPeptidesDict[peptide] = protId
+                genMassDict.toWriteQueue.put((allPeptidesDict,False))
 
-        # If there is an mgf file AND there is a charge selected
-        elif mgfData is not None and True in chargeFlags:
-            #fulfillPpmReq(mgfObj, massDict)
-            matchedPeptides, modCountDict = generateMGFList(protId, mgfData, massDict, modList)
-            genMassDict.toWriteQueue.put((matchedPeptides, modCountDict))
+            # If there is an mgf file AND there is a charge selected
+            elif mgfData is not None and True in chargeFlags:
+                #fulfillPpmReq(mgfObj, massDict)
+                matchedPeptides, modCountDict = generateMGFList(protId, mgfData, massDict, modList)
+                genMassDict.toWriteQueue.put((matchedPeptides, modCountDict))
 
-        # If csv is selected, write to csv file
-        if csvFlag:
-            logging.info("Writing locked :(")
-            lock.acquire()
+            # If csv is selected, write to csv file
+            if csvFlag:
+                logging.info("Writing locked :(")
+                lock.acquire()
 
-            writeToCsv(massDict, protId, finalPath, chargeFlags)
-            lock.release()
-            logging.info("Writing released!")
+                writeToCsv(massDict, protId, finalPath, chargeFlags)
+                lock.release()
+                logging.info("Writing released!")
 
-        end = time.time()
+            end = time.time()
 
-        #logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
+            #logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
         genMassDict.pepCompleted.put(1)
 
     except Exception as e:

@@ -741,12 +741,12 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
                 title = 'TRANS MODIFICATION COUNT' + '\n'
                 infoPath = saveHandle.replace("-Trans", "-Info")
                 infoPath = infoPath[0:-6] + '.txt'
-            print(infoPath)
+            #print(infoPath)
             file = open(infoPath, 'a')
             file.write('\n' + title)
             for key, value in modCountDict.items():
                 file.write(key + ': ' + str(value) + '\n')
-            print(modCountDict)
+            #print(modCountDict)
 
 
 def combineAllTempFasta(linCisSet, outputTempFiles, outputPath):

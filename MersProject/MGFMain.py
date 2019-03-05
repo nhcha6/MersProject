@@ -199,7 +199,6 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                                         break
                 else:
                     break
-        print(modCountDict)
         return matchedPeptides, modCountDict
 
 def getModNumbers(peptide, modList):

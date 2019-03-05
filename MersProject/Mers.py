@@ -30,8 +30,8 @@ CIS = "Cis"
 
 MEMORY_THRESHOLD = 80
 MEMORY_THRESHOLD_COMBINE = 90
-NUM_PROC_TOTAL = 20
-MAX_PROC_ALIVE = 10
+NUM_PROC_TOTAL = 10
+MAX_PROC_ALIVE = 5
 
 logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 # logging.disable(logging.INFO)
@@ -145,13 +145,13 @@ class Fasta:
                     splitsIndex.append(j)
                     splitsIndex.append(splitLen - 1 - j)
 
-            while memoryCheck(maxMem):
-                time.sleep(1)
-                print('stuck in memory check')
-
+            # wait until the number processes started but not completed is less than 40 to begin a new process.
+            self.procGenCounter += 1
+            while True:
+                if self.procGenCounter - self.completedProcs < MAX_PROC_ALIVE:
+                    break
             pool.apply_async(transProcess, args=(splitsIndex, mined, maxed, modList, maxMod,
                                                  finalPath, chargeFlags, mgfFlag, csvFlag, protIndexList, protList))
-            self.procGenCounter += 1
             splitsIndex = []
 
         pool.close()

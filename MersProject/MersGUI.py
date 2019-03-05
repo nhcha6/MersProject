@@ -680,10 +680,8 @@ class MyTableWidget(QWidget):
         #     value = self.finishedPeptides/self.totalSize*100
         # else:
         #     value = 2
-        if self.fasta.procGenCounter == 0:
-            value = 0
-        else:
-            value = self.fasta.completedProcs/self.fasta.procGenCounter*100
+
+        value = self.fasta.completedProcs/self.fasta.totalProcs*100
         self.progressBar.setValue(value)
         print(self.fasta.procGenCounter)
         print(self.fasta.completedProcs)

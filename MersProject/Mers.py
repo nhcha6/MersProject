@@ -56,6 +56,7 @@ class Fasta:
         self.procGenCounter = 0
         self.pepCompleted = multiprocessing.Queue()
         self.completedProcs = 0
+        self.totalProcs = 0
 
     def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
                        protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfObj, mgfFlag):
@@ -63,6 +64,13 @@ class Fasta:
         """
         Function that literally combines everything to generate output
         """
+        # calculate the total number of processes that will be generated (NUM_PROC_TOTAL for every splice type running)
+        if transFlag:
+            self.totalProcs += NUM_PROC_TOTAL
+        if cisFlag:
+            self.totalProcs += NUM_PROC_TOTAL
+        if linearFlag:
+            self.totalProcs += NUM_PROC_TOTAL
 
         if transFlag:
             self.transOutput(self.inputFile, TRANS, mined, maxed, modList, maxMod,outputPath[TRANS], chargeFlags, mgfObj,

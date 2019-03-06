@@ -28,10 +28,12 @@ TRANS = "Trans"
 LINEAR = "Linear"
 CIS = "Cis"
 
-MEMORY_THRESHOLD = 80
+MEMORY_THRESHOLD = 20
 MEMORY_THRESHOLD_COMBINE = 90
 NUM_PROC_TOTAL = 10
 MAX_PROC_ALIVE = 5
+MEMFLAG = 'mem'
+STOPFLAG = 'stop'
 
 logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 # logging.disable(logging.INFO)
@@ -165,7 +167,7 @@ class Fasta:
         pool.close()
         pool.join()
 
-        toWriteQueue.put('stop')
+        toWriteQueue.put(STOPFLAG)
         writerProcess.join()
         logging.info("All " + spliceType + " !joined")
 
@@ -243,6 +245,15 @@ class Fasta:
                                                             chargeFlags, mgfFlag))
                         protDict = {}
 
+                        if memory_usage_psutil() > MEMORY_THRESHOLD:
+                            print('Memory usage exceded. Waiting for processes to finish.')
+                            toWriteQueue.put(MEMFLAG)
+                            pool.close()
+                            pool.join()
+                            pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit,
+                                                        initargs=(lockVar, toWriteQueue, mgfObj, childTable,
+                                                                  linSetQueue, self.pepCompleted))
+
         # add left over to pool if there is any
         if protDict:
             self.procGenCounter += 1
@@ -253,7 +264,7 @@ class Fasta:
         pool.close()
         pool.join()
 
-        toWriteQueue.put('stop')
+        toWriteQueue.put(STOPFLAG)
         writerProcess.join()
         logging.info("All " + spliceType + " !joined")
 
@@ -662,17 +673,31 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
 
     with open(saveHandle, "w") as output_handle:
         while True:
-
             # get from cisLinQueue and from matchedPeptide Queue
             matchedTuple = queue.get()
             if not linCisQueue.empty():
                 linCisSet = linCisSet | linCisQueue.get()
+
             # if stop is sent to the matchedPeptide Queue, everything has been output,
             # so we exit the while loop.
-            if matchedTuple == 'stop':
+            if matchedTuple == STOPFLAG:
                 logging.info("Everything computed, stop message has been sent")
                 break
 
+            # If mem is sent, we know the max memory has been hit during process generation.
+            if matchedTuple == MEMFLAG:
+                # remove linear/cis peptides from seenPeptides:
+                commonPeptides = linCisSet.intersection(seenPeptides.keys())
+                for peptide in commonPeptides:
+                    del seenPeptides[peptide]
+                # write current seenPeptides to tempFile
+                tempName = writeTempFasta(seenPeptides)
+                outputTempFiles.put(tempName)
+                seenPeptides = {}
+                continue
+
+            # if metchedTuple is not MEMFLAG or STOPFLAG, it is a genuine output and we continue as
+            # normal to add it to seenPeptides.
             matchedPeptides = matchedTuple[0]
 
             if matchedTuple[1]:
@@ -689,19 +714,7 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
                         if origin not in seenPeptides[key]:
                             seenPeptides[key].append(origin)
 
-            # If current memory is above threshold write to a tempfile and add that to the outputTempFiles queue
-            if memory_usage_psutil() > MEMORY_THRESHOLD:
-                # remove linear/cis peptides from seenPeptides:
-                commonPeptides = linCisSet.intersection(seenPeptides.keys())
-                for peptide in commonPeptides:
-                    del seenPeptides[peptide]
-                tempName = writeTempFasta(seenPeptides)
-
-                outputTempFiles.put(tempName)
-                seenPeptides = {}
-                backwardsSeenPeptides = {}
-
-        # Was not over memory threshold but last few items left are also written to tempFile
+        # Was not over memory threshold but last few items left need to be dealt with.
         commonPeptides = linCisSet.intersection(seenPeptides.keys())
         for peptide in commonPeptides:
             del seenPeptides[peptide]
@@ -716,6 +729,7 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
             tempName = writeTempFasta(seenPeptides)
             outputTempFiles.put(tempName)
             finalSeenPeptides = combineAllTempFasta(linCisSet, outputTempFiles, saveHandle)
+            print(finalSeenPeptides)
 
         # generate backwardSeenPeptides if protToPep is selected
         if protToPepFlag:
@@ -816,6 +830,7 @@ def combineTempFile(fileOne, fileTwo, linCisSet, counter, outputPath):
                 seenPeptides[peptide] = [protein]
             else:
                 seenPeptides[peptide].append(protein)
+
             if memory_usage_psutil() > MEMORY_THRESHOLD_COMBINE:
                 if seenPeptides:
                     commonPeptides = linCisSet.intersection(seenPeptides.keys())

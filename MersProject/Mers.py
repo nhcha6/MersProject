@@ -160,9 +160,19 @@ class Fasta:
             while True:
                 if self.procGenCounter - self.completedProcs < MAX_PROC_ALIVE:
                     break
+
             pool.apply_async(transProcess, args=(splitsIndex, mined, maxed, modList, maxMod,
                                                  finalPath, chargeFlags, mgfFlag, csvFlag, protIndexList, protList))
             splitsIndex = []
+
+            if memory_usage_psutil() > MEMORY_THRESHOLD:
+                print('Memory usage exceded. Waiting for processes to finish.')
+                toWriteQueue.put(MEMFLAG)
+                pool.close()
+                pool.join()
+                pool = multiprocessing.Pool(processes=num_workers, initializer=processLockTrans,
+                                            initargs=(lockVar, toWriteQueue, splits, splitRef, mgfObj, modTable,
+                                                      linCisQueue, self.pepCompleted))
 
         pool.close()
         pool.join()

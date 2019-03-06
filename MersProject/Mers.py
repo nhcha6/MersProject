@@ -719,6 +719,23 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
         for peptide in commonPeptides:
             del seenPeptides[peptide]
 
+        # tempName = writeTempFasta(seenPeptides)
+        # outputTempFiles.put(tempName)
+        #
+        # with open(tempName, 'rU') as handle:
+        #     for record in SeqIO.parse(handle, 'fasta'):
+        #
+        #         peptide = str(record.seq)
+        #         protein = str(record.name)
+        #         print(peptide)
+        #         print(protein)
+        #
+        #         if peptide not in seenPeptides.keys():
+        #             seenPeptides[peptide] = [protein]
+        #         else:
+        #             seenPeptides[peptide].append(protein)
+
+
         # if no tempFiles have been generated so far, meaning the memory limit was never exceded,
         # seenPeptides already contains all the peptides generated.
         if outputTempFiles.empty():
@@ -729,7 +746,6 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
             tempName = writeTempFasta(seenPeptides)
             outputTempFiles.put(tempName)
             finalSeenPeptides = combineAllTempFasta(linCisSet, outputTempFiles, saveHandle)
-            print(finalSeenPeptides)
 
         # generate backwardSeenPeptides if protToPep is selected
         if protToPepFlag:
@@ -816,20 +832,28 @@ def combineTempFile(fileOne, fileTwo, linCisSet, counter, outputPath):
 
             peptide = str(record.seq)
             protein = str(record.name)
+
+            origins = protein.split(';')
             if peptide not in seenPeptides.keys():
-                seenPeptides[peptide] = [protein]
+                seenPeptides[peptide] = origins
             else:
-                seenPeptides[peptide].append(protein)
+                for origin in origins:
+                    if origin not in seenPeptides[peptide]:
+                        seenPeptides[peptide].append(origin)
 
     with open(fileTwo, 'rU') as handle:
         for record in SeqIO.parse(handle, 'fasta'):
 
             peptide = str(record.seq)
             protein = str(record.name)
+
+            origins = protein.split(';')
             if peptide not in seenPeptides.keys():
-                seenPeptides[peptide] = [protein]
+                seenPeptides[peptide] = origins
             else:
-                seenPeptides[peptide].append(protein)
+                for origin in origins:
+                    if origin not in seenPeptides[peptide]:
+                        seenPeptides[peptide].append(origin)
 
             if memory_usage_psutil() > MEMORY_THRESHOLD_COMBINE:
                 if seenPeptides:
@@ -860,8 +884,12 @@ def writeTempFasta(seenPeptides):
     temp = tempfile.NamedTemporaryFile(mode='w+t', suffix=".fasta", delete=False)
     for key, value in seenPeptides.items():
         temp.writelines(">")
+        counter = 0
         for protein in value:
+            if counter != 0:
+                temp.writelines(';')
             temp.writelines(str(protein))
+            counter += 1
         temp.writelines("\n")
         temp.writelines(str(key))
         temp.writelines("\n")

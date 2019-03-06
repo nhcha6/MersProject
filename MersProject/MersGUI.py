@@ -683,8 +683,6 @@ class MyTableWidget(QWidget):
 
         value = self.fasta.completedProcs/self.fasta.totalProcs*100
         self.progressBar.setValue(value)
-        print(self.fasta.procGenCounter)
-        print(self.fasta.completedProcs)
 
     def deleteTab2ProgressBar(self):
         # Delete progress label and progress bar

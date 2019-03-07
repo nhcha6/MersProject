@@ -28,12 +28,14 @@ TRANS = "Trans"
 LINEAR = "Linear"
 CIS = "Cis"
 
-MEMORY_THRESHOLD = 40
+MEMORY_THRESHOLD = 10
 MEMORY_THRESHOLD_COMBINE = 90
-NUM_PROC_TOTAL = 1000
-MAX_PROC_ALIVE = 40
+NUM_PROC_TOTAL = 10
+MAX_PROC_ALIVE = 5
 MEMFLAG = 'mem'
 STOPFLAG = 'stop'
+PROC_FINISHED = 'Process Finished'
+TEMP_WRITTEN = "temp written"
 
 logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 # logging.disable(logging.INFO)
@@ -204,10 +206,10 @@ class Fasta:
         toWriteQueue = multiprocessing.Queue()
         linSetQueue = multiprocessing.Queue()
         pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit,
-                                    initargs=(lockVar, toWriteQueue, mgfObj, childTable, linSetQueue, self.pepCompleted))
+                                    initargs=(lockVar, toWriteQueue, mgfObj, childTable, linSetQueue))
         writerProcess = multiprocessing.Process(target=writer,
                                                 args=(toWriteQueue, outputPath, linSetQueue, pepToProtFlag,
-                                                      protToPepFlag))
+                                                      protToPepFlag, self.pepCompleted))
         writerProcess.start()
 
         # maxMem = psutil.virtual_memory()[1] / 2
@@ -257,13 +259,16 @@ class Fasta:
 
                         if memory_usage_psutil() > MEMORY_THRESHOLD:
                             print('Memory usage exceded. Waiting for processes to finish.')
-                            toWriteQueue.put(MEMFLAG)
                             pool.close()
                             pool.join()
+                            toWriteQueue.put(MEMFLAG)
+                            # wait for writer to communicate back that it is done
+                            while toWriteQueue.empty():
+                                continue
                             print('Restarting Pool')
                             pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit,
                                                         initargs=(lockVar, toWriteQueue, mgfObj, childTable,
-                                                                  linSetQueue, self.pepCompleted))
+                                                                  linSetQueue))
 
         # add left over to pool if there is any
         if protDict:
@@ -629,10 +634,8 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
                 lock.release()
                 logging.info("Writing released!")
 
-            end = time.time()
-
-            #logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
-        genMassDict.pepCompleted.put(1)
+        # put PROC_FINISHED flag to toWriteQueue
+        genMassDict.toWriteQueue.put(PROC_FINISHED)
 
     except Exception as e:
 
@@ -667,7 +670,7 @@ def memory_usage_psutil():
 
     return mem.percent
 
-def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFlag = False):
+def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, procCompleted, transFlag = False):
 
     seenPeptides = {}
     backwardsSeenPeptides = {}
@@ -678,12 +681,10 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
     outputTempFiles = Queue()
 
     with open(saveHandle, "w") as output_handle:
-        counter = 0
         while True:
             # get from cisLinQueue and from matchedPeptide Queue
             matchedTuple = queue.get()
-            counter += 1
-            print(counter)
+
             if not linCisQueue.empty():
                 linCisSet = linCisSet | linCisQueue.get()
 
@@ -706,6 +707,18 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
                 print('written to temp fasta')
                 outputTempFiles.put(tempName)
                 seenPeptides = {}
+                # put back to queue to tell process generating function that it can restart the queue.
+                queue.put(TEMP_WRITTEN)
+                continue
+
+            # when TEMP_WRITTEN is put to queue, the pool will restart because queue is no longer empty. However
+            # the write queue must get it.
+            if matchedTuple == TEMP_WRITTEN:
+                continue
+
+            # flag gets put via writer queue everytime a process is finished
+            if matchedTuple == PROC_FINISHED:
+                procCompleted.put(1)
                 continue
 
             # if metchedTuple is not MEMFLAG or STOPFLAG, it is a genuine output and we continue as
@@ -730,23 +743,6 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
         commonPeptides = linCisSet.intersection(seenPeptides.keys())
         for peptide in commonPeptides:
             del seenPeptides[peptide]
-
-        # tempName = writeTempFasta(seenPeptides)
-        # outputTempFiles.put(tempName)
-        #
-        # with open(tempName, 'rU') as handle:
-        #     for record in SeqIO.parse(handle, 'fasta'):
-        #
-        #         peptide = str(record.seq)
-        #         protein = str(record.name)
-        #         print(peptide)
-        #         print(protein)
-        #
-        #         if peptide not in seenPeptides.keys():
-        #             seenPeptides[peptide] = [protein]
-        #         else:
-        #             seenPeptides[peptide].append(protein)
-
 
         # if no tempFiles have been generated so far, meaning the memory limit was never exceded,
         # seenPeptides already contains all the peptides generated.
@@ -1516,7 +1512,7 @@ def nth_replace(string, old, new, n=1, option='only nth'):
     return new.join(nth_split)
 
 
-def processLockInit(lockVar, toWriteQueue, mgfObj, childTable, linSetQueue, pepCompleted):
+def processLockInit(lockVar, toWriteQueue, mgfObj, childTable, linSetQueue):
 
     """
     Designed to set up a global lock for a child processes (child per protein)
@@ -1530,7 +1526,6 @@ def processLockInit(lockVar, toWriteQueue, mgfObj, childTable, linSetQueue, pepC
     finalModTable = childTable
     genMassDict.toWriteQueue = toWriteQueue
     genMassDict.linSetQueue = linSetQueue
-    genMassDict.pepCompleted = pepCompleted
 
 def processLockTrans(lockVar, toWriteQueue, allSplits, allSplitRef, mgfObj, childTable,linCisQueue, pepCompleted):
 

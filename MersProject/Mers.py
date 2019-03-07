@@ -262,9 +262,11 @@ class Fasta:
                             pool.close()
                             pool.join()
                             toWriteQueue.put(MEMFLAG)
-                            # wait for writer to communicate back that it is done
-                            while toWriteQueue.empty():
+                            comp = self.completedProcs
+                            # wait for writer to communicate back that it is done by adding one to self.completedProcs
+                            while self.completedProcs == comp:
                                 continue
+                            self.completedProcs += -1
                             print('Restarting Pool')
                             pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit,
                                                         initargs=(lockVar, toWriteQueue, mgfObj, childTable,
@@ -707,13 +709,8 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, procCom
                 print('written to temp fasta')
                 outputTempFiles.put(tempName)
                 seenPeptides = {}
-                # put back to queue to tell process generating function that it can restart the queue.
-                queue.put(TEMP_WRITTEN)
-                continue
-
-            # when TEMP_WRITTEN is put to queue, the pool will restart because queue is no longer empty. However
-            # the write queue must get it.
-            if matchedTuple == TEMP_WRITTEN:
+                # put back to procCompleted queue to tell process generating function that it can restart the queue.
+                procCompleted.put(1)
                 continue
 
             # flag gets put via writer queue everytime a process is finished

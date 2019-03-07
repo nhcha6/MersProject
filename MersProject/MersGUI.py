@@ -393,7 +393,7 @@ class MyTableWidget(QWidget):
         now = datetime.now().strftime("%d%m%y_%H%M")
 
         # write settings to file
-        settingPath = outputFile + '-' + 'Info' + now + '.txt'
+        settingPath = outputFile + '_' + 'Info' + now + '.txt'
         file = open(settingPath, 'w')
         file.write('SETTINGS' + '\n')
         file.write('FASTA Files: ' + str(self.fasta.inputFile) + '\n')
@@ -405,13 +405,13 @@ class MyTableWidget(QWidget):
 
         # create the file name for each splice type and add to dictionary.
         if self.linearFlag:
-            linPath = outputFile + '-' + LINEAR + now + ".fasta"
+            linPath = outputFile + '_' + LINEAR + now + ".fasta"
             outputFiles[LINEAR] = Path(linPath)
         if self.cisFlag:
-            cisPath = outputFile + '-' + CIS + now + ".fasta"
+            cisPath = outputFile + '_' + CIS + now + ".fasta"
             outputFiles[CIS] = Path(cisPath)
         if self.transFlag:
-            transPath = outputFile + '-' + TRANS + now + ".fasta"
+            transPath = outputFile + '_' + TRANS + now + ".fasta"
             outputFiles[TRANS] = Path(transPath)
             # print(outputPath[TRANS])
 

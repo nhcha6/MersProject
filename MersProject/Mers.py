@@ -678,88 +678,103 @@ def memory_usage_psutil():
 def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, procCompleted, transFlag = False):
 
     seenPeptides = {}
-    backwardsSeenPeptides = {}
     linCisSet = set()
     modCountDict = Counter()
-    saveHandle = str(outputPath)
+    fileCount = 0
 
-    outputTempFiles = Queue()
+    while True:
+        # get from cisLinQueue and from matchedPeptide Queue
+        matchedTuple = queue.get()
 
-    with open(saveHandle, "w") as output_handle:
-        while True:
-            # get from cisLinQueue and from matchedPeptide Queue
-            matchedTuple = queue.get()
+        if not linCisQueue.empty():
+            linCisSet = linCisSet | linCisQueue.get()
 
-            if not linCisQueue.empty():
-                linCisSet = linCisSet | linCisQueue.get()
+        # if stop is sent to the matchedPeptide Queue, everything has been output,
+        # so we exit the while loop.
+        if matchedTuple == STOPFLAG:
+            logging.info("Everything computed, stop message has been sent")
+            break
 
-            # if stop is sent to the matchedPeptide Queue, everything has been output,
-            # so we exit the while loop.
-            if matchedTuple == STOPFLAG:
-                logging.info("Everything computed, stop message has been sent")
-                break
+        # If mem is sent, we know the max memory has been hit during process generation.
+        if matchedTuple == MEMFLAG:
+            # remove linear/cis peptides from seenPeptides:
+            print('memflag recieved, writing temp file')
+            commonPeptides = linCisSet.intersection(seenPeptides.keys())
+            for peptide in commonPeptides:
+                del seenPeptides[peptide]
+            print('deleted common peptides')
+            # write to ouptut
+            fileCount += 1
+            writeOutputFiles(seenPeptides, protToPepFlag, pepToProtFlag, transFlag, outputPath, fileCount)
+            print('written to output')
+            seenPeptides = {}
+            # put back to procCompleted queue to tell process generating function that it can restart the queue.
+            procCompleted.put(1)
+            continue
 
-            # If mem is sent, we know the max memory has been hit during process generation.
-            if matchedTuple == MEMFLAG:
-                # remove linear/cis peptides from seenPeptides:
-                print('memflag recieved, writing temp file')
-                commonPeptides = linCisSet.intersection(seenPeptides.keys())
-                for peptide in commonPeptides:
-                    del seenPeptides[peptide]
-                print('deleted common peptides')
-                # write current seenPeptides to tempFile
-                tempName = writeTempFasta(seenPeptides)
-                print('written to temp fasta')
-                outputTempFiles.put(tempName)
-                seenPeptides = {}
-                # put back to procCompleted queue to tell process generating function that it can restart the queue.
-                procCompleted.put(1)
-                continue
+        # flag gets put via writer queue everytime a process is finished
+        if matchedTuple == PROC_FINISHED:
+            procCompleted.put(1)
+            continue
 
-            # flag gets put via writer queue everytime a process is finished
-            if matchedTuple == PROC_FINISHED:
-                procCompleted.put(1)
-                continue
+        # if trans, each queue.get that reaches here (ie isn't a flag of some-sort) corresponds to a process
+        # thus, we need to index
+        if transFlag:
+            procCompleted.put(1)
 
-            # if trans, each queue.get that reaches here (ie isn't a flag of some-sort) corresponds to a process
-            # thus, we need to index
-            if transFlag:
-                procCompleted.put(1)
+        # if metchedTuple is not MEMFLAG or STOPFLAG, it is a genuine output and we continue as
+        # normal to add it to seenPeptides.
+        matchedPeptides = matchedTuple[0]
+        if matchedTuple[1]:
+            modCountDict += matchedTuple[1]
 
-            # if metchedTuple is not MEMFLAG or STOPFLAG, it is a genuine output and we continue as
-            # normal to add it to seenPeptides.
-            matchedPeptides = matchedTuple[0]
-            if matchedTuple[1]:
-                modCountDict += matchedTuple[1]
+        # each queue.get() returns the matchedPeptides from an individual process.
+        # Add  the matchedPeptides from the given process to seenPeptides.
+        for key, value in matchedPeptides.items():
+            origins = value.split(';')
+            if key not in seenPeptides.keys():
+                seenPeptides[key] = origins
+            else:
+                for origin in origins:
+                    if origin not in seenPeptides[key]:
+                        seenPeptides[key].append(origin)
 
-            # each queue.get() returns the matchedPeptides from an individual process.
-            # Add  the matchedPeptides from the given process to seenPeptides.
-            for key, value in matchedPeptides.items():
-                origins = value.split(';')
-                if key not in seenPeptides.keys():
-                    seenPeptides[key] = origins
-                else:
-                    for origin in origins:
-                        if origin not in seenPeptides[key]:
-                            seenPeptides[key].append(origin)
-
-        # Was not over memory threshold but last few items left need to be dealt with.
+    if seenPeptides:
+        # Was not over memory threshold but last items need to be dealt with.
         commonPeptides = linCisSet.intersection(seenPeptides.keys())
         for peptide in commonPeptides:
             del seenPeptides[peptide]
 
-        # if no tempFiles have been generated so far, meaning the memory limit was never exceded,
-        # seenPeptides already contains all the peptides generated.
-        if outputTempFiles.empty():
-            finalSeenPeptides = seenPeptides
-        # if we have created at least one tempFile, write the remaining sequences to tempFile
-        # then combine all temp files.
-        else:
-            tempName = writeTempFasta(seenPeptides)
-            outputTempFiles.put(tempName)
-            finalSeenPeptides = combineAllTempFasta(linCisSet, outputTempFiles, saveHandle)
+        # write to ouptut
+        fileCount += 1
+        writeOutputFiles(seenPeptides, protToPepFlag, pepToProtFlag, transFlag, outputPath, fileCount)
 
+    if modCountDict:
+        # need to know if related to cis/lin/trans. Replace the relevant
+        if '_Linear' in saveHandle:
+            title = 'LINEAR MODIFICATION COUNT' + '\n'
+            infoPath = saveHandle.replace("_Linear", "_Info")
+            infoPath = infoPath[0:-6] + '.txt'
+        elif '_Cis' in saveHandle:
+            title = 'CIS MODIFICATION COUNT' + '\n'
+            infoPath = saveHandle.replace("_Cis", "_Info")
+            infoPath = infoPath[0:-6] + '.txt'
+        else:
+            title = 'TRANS MODIFICATION COUNT' + '\n'
+            infoPath = saveHandle.replace("_Trans", "_Info")
+            infoPath = infoPath[0:-6] + '.txt'
+        #print(infoPath)
+        file = open(infoPath, 'a')
+        file.write('\n' + title)
+        for key, value in modCountDict.items():
+            file.write(key + ': ' + str(value) + '\n')
+        #print(modCountDict)
+
+def writeOutputFiles(finalSeenPeptides, protToPepFlag, pepToProtFlag, transFlag, outputPath, fileCount):
+    finalPath = str(outputPath)[0:-17] + '_' + str(fileCount) + '_' + str(outputPath)[-17:]
+    with open(finalPath, 'w') as output_handle:
         # generate backwardSeenPeptides if protToPep is selected
+        backwardsSeenPeptides = {}
         if protToPepFlag:
             # convert seen peptides to backwardsSeenPeptides
             for key, value in finalSeenPeptides.items():
@@ -782,30 +797,7 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, procCom
             writeProtToPep(finalSeenPeptides, 'PepToProt', outputPath)
 
         logging.info("Writing to fasta")
-        if finalSeenPeptides:
-            SeqIO.write(createSeqObj(finalSeenPeptides), output_handle, "fasta")
-
-        if modCountDict:
-            # need to know if related to cis/lin/trans. Replace the relevant
-            if '-Linear' in saveHandle:
-                title = 'LINEAR MODIFICATION COUNT' + '\n'
-                infoPath = saveHandle.replace("-Linear", "-Info")
-                infoPath = infoPath[0:-6] + '.txt'
-            elif '-Cis' in saveHandle:
-                title = 'CIS MODIFICATION COUNT' + '\n'
-                infoPath = saveHandle.replace("-Cis", "-Info")
-                infoPath = infoPath[0:-6] + '.txt'
-            else:
-                title = 'TRANS MODIFICATION COUNT' + '\n'
-                infoPath = saveHandle.replace("-Trans", "-Info")
-                infoPath = infoPath[0:-6] + '.txt'
-            #print(infoPath)
-            file = open(infoPath, 'a')
-            file.write('\n' + title)
-            for key, value in modCountDict.items():
-                file.write(key + ': ' + str(value) + '\n')
-            #print(modCountDict)
-
+        SeqIO.write(createSeqObj(finalSeenPeptides), output_handle, "fasta")
 
 def combineAllTempFasta(linCisSet, outputTempFiles, outputPath):
     counter = 0
@@ -1531,7 +1523,7 @@ def processLockInit(lockVar, toWriteQueue, mgfObj, childTable, linSetQueue):
     genMassDict.toWriteQueue = toWriteQueue
     genMassDict.linSetQueue = linSetQueue
 
-def processLockTrans(lockVar, toWriteQueue, allSplits, allSplitRef, mgfObj, childTable,linCisQueue):
+def processLockTrans(lockVar, toWriteQueue, allSplits, allSplitRef, mgfObj, childTable, linCisQueue):
 
     """
     Designed to set up a global lock for a child processes (child per protein)

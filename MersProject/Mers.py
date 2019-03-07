@@ -28,10 +28,10 @@ TRANS = "Trans"
 LINEAR = "Linear"
 CIS = "Cis"
 
-MEMORY_THRESHOLD = 40
+MEMORY_THRESHOLD = 90
 MEMORY_THRESHOLD_COMBINE = 90
-NUM_PROC_TOTAL = 1000
-MAX_PROC_ALIVE = 40
+NUM_PROC_TOTAL = 10
+MAX_PROC_ALIVE = 5
 MEMFLAG = 'mem'
 STOPFLAG = 'stop'
 
@@ -585,6 +585,12 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
     Compute the peptides for the given protein
     """
     try:
+        matchedPeptides = {}
+        if mgfFlag:
+            modCountDict = False
+        else:
+            modCountDict = Counter()
+
         for protId, protSeq in protDict.items():
             start = time.time()
 
@@ -612,13 +618,16 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
                 allPeptidesDict = {}
                 for peptide in allPeptides:
                     allPeptidesDict[peptide] = protId
-                genMassDict.toWriteQueue.put((allPeptidesDict,False))
+                matchedPeptides.update(allPeptidesDict)
+                #genMassDict.toWriteQueue.put((allPeptidesDict,False))
 
             # If there is an mgf file AND there is a charge selected
             elif mgfData is not None and True in chargeFlags:
                 #fulfillPpmReq(mgfObj, massDict)
-                matchedPeptides, modCountDict = generateMGFList(protId, mgfData, massDict, modList)
-                genMassDict.toWriteQueue.put((matchedPeptides, modCountDict))
+                matchedPeptidesTemp, modCountDictTemp = generateMGFList(protId, mgfData, massDict, modList)
+                matchedPeptides.update(matchedPeptidesTemp)
+                modCountDict += modCountDictTemp
+                #genMassDict.toWriteQueue.put((matchedPeptides, modCountDict))
 
             # If csv is selected, write to csv file
             if csvFlag:
@@ -629,9 +638,7 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
                 lock.release()
                 logging.info("Writing released!")
 
-            end = time.time()
-
-            #logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
+        genMassDict.toWriteQueue.put((matchedPeptides, modCountDict))
         genMassDict.pepCompleted.put(1)
 
     except Exception as e:

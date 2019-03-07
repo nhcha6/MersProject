@@ -28,10 +28,10 @@ TRANS = "Trans"
 LINEAR = "Linear"
 CIS = "Cis"
 
-MEMORY_THRESHOLD = 20
+MEMORY_THRESHOLD = 40
 MEMORY_THRESHOLD_COMBINE = 90
-NUM_PROC_TOTAL = 10
-MAX_PROC_ALIVE = 5
+NUM_PROC_TOTAL = 1000
+MAX_PROC_ALIVE = 40
 MEMFLAG = 'mem'
 STOPFLAG = 'stop'
 
@@ -260,6 +260,7 @@ class Fasta:
                             toWriteQueue.put(MEMFLAG)
                             pool.close()
                             pool.join()
+                            print('Restarting Pool')
                             pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit,
                                                         initargs=(lockVar, toWriteQueue, mgfObj, childTable,
                                                                   linSetQueue, self.pepCompleted))
@@ -584,9 +585,8 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
     Compute the peptides for the given protein
     """
     try:
-        matchedPeptides = {}
-        modCountDict = Counter()
         for protId, protSeq in protDict.items():
+            start = time.time()
 
             # Get the initial peptides and their positions, and the set of linear peptides produced for this protein
             combined, combinedRef, linSet = outputCreate(spliceType, protSeq, mined, maxed, overlapFlag, maxDistance)
@@ -609,18 +609,16 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
             if mgfFlag:
                 #allPeptides = getAllPep(massDict)
                 allPeptides = massDict.keys()
-                allPeptidesTemp = {}
+                allPeptidesDict = {}
                 for peptide in allPeptides:
-                    allPeptidesTemp[peptide] = protId
-                matchedPeptides.update(allPeptidesTemp)
+                    allPeptidesDict[peptide] = protId
+                genMassDict.toWriteQueue.put((allPeptidesDict,False))
 
             # If there is an mgf file AND there is a charge selected
             elif mgfData is not None and True in chargeFlags:
                 #fulfillPpmReq(mgfObj, massDict)
-                allPeptidesTemp, modCountTemp = generateMGFList(protId, mgfData, massDict, modList)
-                modCountDict += modCountTemp
-                matchedPeptides.update(allPeptidesTemp)
-                #genMassDict.toWriteQueue.put((matchedPeptides, modCountDict))
+                matchedPeptides, modCountDict = generateMGFList(protId, mgfData, massDict, modList)
+                genMassDict.toWriteQueue.put((matchedPeptides, modCountDict))
 
             # If csv is selected, write to csv file
             if csvFlag:
@@ -631,11 +629,9 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
                 lock.release()
                 logging.info("Writing released!")
 
-        # add outputs to queue
-        if mgfFlag:
-            genMassDict.toWriteQueue.put((matchedPeptides, False))
-        else:
-            genMassDict.toWriteQueue.put((matchedPeptides, modCountDict))
+            end = time.time()
+
+            #logging.info(peptide[0:5] + ' took: ' + str(end-start) + ' for ' + spliceType)
         genMassDict.pepCompleted.put(1)
 
     except Exception as e:
@@ -682,9 +678,12 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
     outputTempFiles = Queue()
 
     with open(saveHandle, "w") as output_handle:
+        counter = 0
         while True:
             # get from cisLinQueue and from matchedPeptide Queue
             matchedTuple = queue.get()
+            counter += 1
+            print(counter)
             if not linCisQueue.empty():
                 linCisSet = linCisSet | linCisQueue.get()
 
@@ -697,11 +696,14 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, transFl
             # If mem is sent, we know the max memory has been hit during process generation.
             if matchedTuple == MEMFLAG:
                 # remove linear/cis peptides from seenPeptides:
+                print('memflag recieved, writing temp file')
                 commonPeptides = linCisSet.intersection(seenPeptides.keys())
                 for peptide in commonPeptides:
                     del seenPeptides[peptide]
+                print('deleted common peptides')
                 # write current seenPeptides to tempFile
                 tempName = writeTempFasta(seenPeptides)
+                print('written to temp fasta')
                 outputTempFiles.put(tempName)
                 seenPeptides = {}
                 continue

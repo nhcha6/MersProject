@@ -135,18 +135,17 @@ class Fasta:
 
         pool = multiprocessing.Pool(processes=num_workers, initializer=processLockTrans, initargs=(lockVar, toWriteQueue,
                                                                                                    splits,splitRef, mgfObj,
-                                                                                                   modTable, linCisQueue,
-                                                                                                   self.pepCompleted))
+                                                                                                   modTable, linCisQueue))
 
         writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath, linCisQueue, pepToProtFlag,
-                                                                     protToPepFlag, True))
+                                                                     protToPepFlag, self.pepCompleted, True))
         writerProcess.start()
 
         # Create a process for pairs of splits, pairing element 0 with -1, 1 with -2 and so on.
         splitsIndex = []
         procSize = math.ceil(splitLen / (NUM_PROC_TOTAL*2))
 
-        maxMem = psutil.virtual_memory()[1] / 2
+        #maxMem = psutil.virtual_memory()[1] / 2
 
         for i in range(0, math.ceil(splitLen / 2), procSize):
             if i + procSize > math.floor(splitLen / 2):
@@ -169,12 +168,18 @@ class Fasta:
 
             if memory_usage_psutil() > MEMORY_THRESHOLD:
                 print('Memory usage exceded. Waiting for processes to finish.')
-                toWriteQueue.put(MEMFLAG)
                 pool.close()
                 pool.join()
+                toWriteQueue.put(MEMFLAG)
+                comp = self.completedProcs
+                # wait for writer to communicate back that it is done by adding one to self.completedProcs
+                while self.completedProcs == comp:
+                    continue
+                self.completedProcs += -1
+                print('Restarting Pool')
                 pool = multiprocessing.Pool(processes=num_workers, initializer=processLockTrans,
                                             initargs=(lockVar, toWriteQueue, splits, splitRef, mgfObj, modTable,
-                                                      linCisQueue, self.pepCompleted))
+                                                      linCisQueue))
 
         pool.close()
         pool.join()
@@ -354,8 +359,6 @@ def transProcess(splitsIndex, mined, maxed, modList, maxMod, finalPath,
             writeToCsv(massDict, TRANS, finalPath, chargeFlags)
             lock.release()
             logging.info("Writing released!")
-
-        transProcess.pepCompleted.put(1)
 
 
     except Exception as e:
@@ -718,10 +721,14 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, procCom
                 procCompleted.put(1)
                 continue
 
+            # if trans, each queue.get that reaches here (ie isn't a flag of some-sort) corresponds to a process
+            # thus, we need to index
+            if transFlag:
+                procCompleted.put(1)
+
             # if metchedTuple is not MEMFLAG or STOPFLAG, it is a genuine output and we continue as
             # normal to add it to seenPeptides.
             matchedPeptides = matchedTuple[0]
-
             if matchedTuple[1]:
                 modCountDict += matchedTuple[1]
 
@@ -1524,7 +1531,7 @@ def processLockInit(lockVar, toWriteQueue, mgfObj, childTable, linSetQueue):
     genMassDict.toWriteQueue = toWriteQueue
     genMassDict.linSetQueue = linSetQueue
 
-def processLockTrans(lockVar, toWriteQueue, allSplits, allSplitRef, mgfObj, childTable,linCisQueue, pepCompleted):
+def processLockTrans(lockVar, toWriteQueue, allSplits, allSplitRef, mgfObj, childTable,linCisQueue):
 
     """
     Designed to set up a global lock for a child processes (child per protein)
@@ -1541,6 +1548,5 @@ def processLockTrans(lockVar, toWriteQueue, allSplits, allSplitRef, mgfObj, chil
     splitRef = allSplitRef
     transProcess.toWriteQueue = toWriteQueue
     transProcess.linCisQueue = linCisQueue
-    transProcess.pepCompleted = pepCompleted
 
 

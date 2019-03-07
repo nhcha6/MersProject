@@ -648,7 +648,7 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
 
         traceback.print_exc(file=exc_buffer)
 
-        errorString = 'Uncaught exception in worker process: ' + protId + '\n%s'
+        errorString = 'Uncaught exception in protein: ' + protId + '\n%s'
 
         logging.error(
 

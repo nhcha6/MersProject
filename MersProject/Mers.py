@@ -28,7 +28,7 @@ TRANS = "Trans"
 LINEAR = "Linear"
 CIS = "Cis"
 
-MEMORY_THRESHOLD = 85
+MEMORY_THRESHOLD = 30
 MEMORY_THRESHOLD_COMBINE = 90
 NUM_PROC_TOTAL = 1000
 MAX_PROC_ALIVE = 40
@@ -679,6 +679,7 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, procCom
 
     seenPeptides = {}
     linCisSet = set()
+    saveHandle = str(outputPath)
     modCountDict = Counter()
     fileCount = 0
 

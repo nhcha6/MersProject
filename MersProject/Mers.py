@@ -28,7 +28,7 @@ TRANS = "Trans"
 LINEAR = "Linear"
 CIS = "Cis"
 
-MEMORY_THRESHOLD = 30
+MEMORY_THRESHOLD = 85
 MEMORY_THRESHOLD_COMBINE = 90
 NUM_PROC_TOTAL = 1000
 MAX_PROC_ALIVE = 40
@@ -228,6 +228,11 @@ class Fasta:
 
         pepPerProc = math.ceil(totalProt / NUM_PROC_TOTAL)
         print("Process Size: " + str(pepPerProc))
+        # if pepPerProc == 1, it is likely there are less proteins than NUM_PROC_TOTAL. Therefore, we adjust
+        # the self.totalProcs counter (used in the progress bar).
+        if pepPerProc == 1:
+            self.totalProcs = self.totalProcs - NUM_PROC_TOTAL + totalProt
+
 
         # initialise counter variables
         counter = 0

@@ -459,6 +459,7 @@ class MyTableWidget(QWidget):
             clearQ = self.fasta.pepCompleted.get()
         self.fasta.completedProcs = 0
         self.fasta.procGenCounter = 0
+        self.fasta.totalProcs = 0
 
     def nextTabFunc(self):
         self.tabs.setCurrentIndex(1)
@@ -676,11 +677,7 @@ class MyTableWidget(QWidget):
     def updateProgressBar(self):
         if not self.fasta.pepCompleted.empty():
             self.fasta.completedProcs += self.fasta.pepCompleted.get()
-        # if self.totalSize is not 0 and self.finishedPeptides is not 0:
-        #     value = self.finishedPeptides/self.totalSize*100
-        # else:
-        #     value = 2
-
+            
         value = self.fasta.completedProcs/self.fasta.totalProcs*100
         self.progressBar.setValue(value)
         #print(self.fasta.completedProcs)

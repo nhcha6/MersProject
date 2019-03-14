@@ -145,6 +145,11 @@ class Fasta:
         splitsIndex = []
         procSize = math.ceil(splitLen / (NUM_PROC_TOTAL*2))
 
+        # if procSize = 1, NUM_PROC_TOTAL may be much larger than the number of procs actually generated. Thus, to
+        # ensure the progress bar still works readjust self.totalProcs to be splitLen/2 instead.
+        if procSize == 1:
+            self.totalProcs = self.totalProcs - NUM_PROC_TOTAL + math.ceil(splitLen/2)
+
         #maxMem = psutil.virtual_memory()[1] / 2
 
         for i in range(0, math.ceil(splitLen / 2), procSize):

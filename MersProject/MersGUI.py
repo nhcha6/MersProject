@@ -677,7 +677,7 @@ class MyTableWidget(QWidget):
     def updateProgressBar(self):
         if not self.fasta.pepCompleted.empty():
             self.fasta.completedProcs += self.fasta.pepCompleted.get()
-            
+
         value = self.fasta.completedProcs/self.fasta.totalProcs*100
         self.progressBar.setValue(value)
         #print(self.fasta.completedProcs)

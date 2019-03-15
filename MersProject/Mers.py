@@ -23,23 +23,34 @@ import traceback
 from pathlib import Path
 import math
 
-
+# define our the spliceType flags
 TRANS = "Trans"
 LINEAR = "Linear"
 CIS = "Cis"
 
+# MEMORY_THRESHOLD is the percentage of RAM being used at which all computation is paused, the current output data is
+# written to file, after which the output recommences.
 MEMORY_THRESHOLD = 85
+# ** obsolete now that temp files are not being used.
 MEMORY_THRESHOLD_COMBINE = 90
+# NUM_PROC_TOTAL is the total number of processes generated per trans/cis/linear splicing computation.
 NUM_PROC_TOTAL = 1000
+# The generation of processes is slowed to avoid an overload of memory due to spawned but uncompleted processes.
+# MAX_PROC_ALIVE defines the maximum number of processes that have been started (stored in Fasta.procGenCounter) and
+# not yet completed (as counted by Fasta.completedProcs).
 MAX_PROC_ALIVE = 40
+
+# define the flags which are passed between the the writer() function and genMassDict/transProcess to communicate
+# details of the computation process.
 MEMFLAG = 'mem'
 STOPFLAG = 'stop'
 PROC_FINISHED = 'Process Finished'
-TEMP_WRITTEN = "temp written"
 
+# logging module to be used as an alternative to print statements.
 logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 # logging.disable(logging.INFO)
 
+# initialise mgfData as none.
 mgfData = None
 
 # massDict syntax: PEPTIDE: [monoisotopic mass, [referenceLocation], {charge: m/z}]
@@ -50,13 +61,22 @@ mgfData = None
 class Fasta:
 
     """
-    Class that represents the input from a fasta file
+    Class that represents the input from a fasta file.
+    Methods: generateOutput, transOutput, cisAndLinearOutput
+    Class Variables:
+        self.inputFile = a list of the all fasta files uploaded containing input proteins.
+        self.procGenCounter = a counter which stores the total number of processes generated.
+        self.pepCompleted = a multiprocessing queue which is added to every time a the output from a process is pulled
+                            from the toWriteQueue in the writer() function.
+        self.completedProcs = a counter which is indexed everytime a process is finished, which the writer() function
+                              and self.pepCompleted keep track of.
+        self.totalProcs = the number of processes generated in total. This is estimated based on NUM_PROC_TOTAL, and
+                          adjusted if the number of input proteins per process is calculated to be 1.
     """
 
     def __init__(self, inputFile):
 
         self.inputFile = [inputFile]
-        self.allProcessList = []
         self.procGenCounter = 0
         self.pepCompleted = multiprocessing.Queue()
         self.completedProcs = 0
@@ -66,9 +86,38 @@ class Fasta:
                        protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfObj, mgfFlag):
 
         """
-        Function that literally combines everything to generate output
+        This function is called from MersGUI.py to initiate the output process once the user input has been recieved
+        and confirmed suitable.
+
+        :param mined: the minimum length of an output peptide.
+        :param maxed: the maximum length of an ouptut peptide.
+        :param overlapFlag: if True, this flag denotes that combination of splits containing shared amino acids is not
+        permitted. Shared amino acids originate from the same amino-acid in the same peptide.
+        :param transFlag: if True, trans splicing should be completed as part of the output.
+        :param cisFlag: if True, cis splicing should be completed as part of the output.
+        :param linearFlag: if True, linear splicing should be completed as part of the output.
+        :param csvFlag: if True, the data contained in massDict should be printed to a csv file before any b-y Ion
+        or precursor mass comparison is conducted. ** We may look to consider removing this functionality.
+        :param pepToProtFlag: if True, a csv file is written with the output peptides as a heading, and the proteins
+        they originated in listed underneath.
+        :param protToPepFlag: if True, a csv file is written with the input proteins as a heading, and the peptides
+        which they produced listed underneath
+        :param modList: a list of the modifications input by the user. The modifications match the keys in modTable,
+        which can be found in the file MonoAminoAndMods.py.
+        :param maxMod: the max number of modifications allowable per peptide.
+        :param maxDistance: in cis splicing, the maximum distance between any two amino acids in two cleaved peptides
+        that are to be recombined to form a cis spliced peptide. If None, the max distance is infinite.
+        :param outputPath: a dictionary holding the output file name of a trans, cis and linear splice output. The
+        keys are the TRANS, LINEAR and CIS flags defined at the top of this script.
+        :param chargeFlags: a list of bools which defines which charge flags are to be assessed when comparing to the
+        mgf file. The first bool corresponds to +1, the second to +2 and so on up to +5.
+        :param mgfObj: the object that contains the mgf data uploaded in the format required. This is processed before
+        generate ouptut is reached.
+        :param mgfFlag: if True, no the user has selected that no mgf comparison be conducted and the raw splice data
+        is to be ouptut to Fasta.
+        :return:
         """
-        # calculate the total number of processes that will be generated (NUM_PROC_TOTAL for every splice type running)
+        # estimatethe total number of processes that will be generated (NUM_PROC_TOTAL for every splice type running)
         if transFlag:
             self.totalProcs += NUM_PROC_TOTAL
         if cisFlag:
@@ -76,6 +125,8 @@ class Fasta:
         if linearFlag:
             self.totalProcs += NUM_PROC_TOTAL
 
+        # sequentially check if each splice type has been selected by the user, and run the relevant function which
+        # will generate processes for this splice type.
         if transFlag:
             self.transOutput(self.inputFile, TRANS, mined, maxed, modList, maxMod,outputPath[TRANS], chargeFlags, mgfObj,
                         modTable, mgfFlag, csvFlag, pepToProtFlag,protToPepFlag)
@@ -93,14 +144,44 @@ class Fasta:
 
     def transOutput(self, inputFile, spliceType, mined, maxed, modList, maxMod, outputPath, chargeFlags, mgfObj, modTable, mgfFlag, csvFlag,
                     pepToProtFlag, protToPepFlag):
+        """
+        This function is called Fasta.generateOutput() if transFlag == True. It controls the creation of all processes
+        required to conduct trans splicing.
 
+        :param inputFile: the fasta files containing proteins input by the user.
+        :param spliceType: simply holds the TRANS flag. **not needed, as this function is only called by trans splicing.
+        :param mined: the minimum length of an output peptide.
+        :param maxed: the maximum length of an ouptut peptide.
+        :param modList: a list of the modifications input by the user. The modifications match the keys in modTable,
+        which can be found in the file MonoAminoAndMods.py.
+        :param maxMod: the max number of modifications allowable per peptide.
+        :param outputPath: the file name of the output fasta file.
+        :param chargeFlags: a list of bools which defines which charge flags are to be assessed when comparing to the
+        mgf file. The first bool corresponds to +1, the second to +2 and so on up to +5.
+        :param mgfObj: the object that contains the mgf data uploaded in the format required. This is processed before
+        generate ouptut is reached.
+        :param modTable: the modTable dictionary contianing all the modification data. ** does this need to be an input
+        variable, it is globally defined??
+        :param mgfFlag: if True, no the user has selected that no mgf comparison be conducted and the raw splice data
+        is to be ouptut to Fasta.
+        :param csvFlag: if True, the data contained in massDict should be printed to a csv file before any b-y Ion
+        or precursor mass comparison is conducted. ** We may look to consider removing this functionality.
+        :param pepToProtFlag: if True, a csv file is written with the output peptides as a heading, and the proteins
+        they originated in listed underneath.
+        :param protToPepFlag: if True, a csv file is written with the input proteins as a heading, and the peptides
+        which they produced listed underneath
+        :return:
+        """
+
+        # initialise the final path
         finalPath = None
 
-        # Open the csv file if the csv file is selected
+        # Open the csv file if the csv file is selected **do we still need csv
         if csvFlag:
             finalPath = getFinalPath(outputPath, spliceType)
             open(finalPath, 'w')
 
+        # initialise the dictionary to store the protein sequences as values and the protein names as keys
         seqDict = {}
 
         # check number of input files and pass flag into addSequenceList so that the seqId can updated to include file
@@ -114,34 +195,46 @@ class Fasta:
         for file in inputFile:
             seqDict.update(addSequenceList(file, multiFileFlag))
 
-        # if len(seqDict) <= 1:
-        #     logging.info('Only 1 protein, therefore trans not relevant')
-        #     return
-
+        # combine all the proteins into one long sequence, stored in finalPeptide (** rename to finalProtein??).
+        # We also need protIndexList to store the range of each initial protein in this longer protein. Stored as a
+        # list of start and end references: [[0,150],[151,200]....]
+        # protList stores the initial proteins in the same order as the references in protIndexList. That is, the
+        # references at index i of of protIndexList corresponds to the location of protein at reference i in protList.
         finalPeptide, protIndexList, protList = combinePeptides(seqDict)
 
+        # create all the splits and their reference with respect to finalPeptide
         splits, splitRef = splitTransPeptide(spliceType, finalPeptide, mined, maxed, protIndexList)
 
+        # define the length of splits for later calculations
         splitLen = len(splits)
 
-        # configure mutliprocessing functionality
+        # define the number of workers to be input into the multiprocessing.Pool() based on the number of CPUs in the
+        # computer.
         num_workers = multiprocessing.cpu_count()
 
-        # Used to lock write access to file
+        # Used to lock write access to file when writing from separate processes ** do we still need this.
         lockVar = multiprocessing.Lock()
 
+        # initialise the queue which will feed the outputs generated in each process to the writer process.
         toWriteQueue = multiprocessing.Queue()
+        # initialise the queue which will feed all cis and linear peptides dynamically created to the writer queue.
+        # we do not want any cis or linear spliced peptides to appear in the final trans splice output.
         linCisQueue = multiprocessing.Queue()
 
+        # declare the pool.
         pool = multiprocessing.Pool(processes=num_workers, initializer=processLockTrans, initargs=(lockVar, toWriteQueue,
                                                                                                    splits,splitRef, mgfObj,
                                                                                                    modTable, linCisQueue))
 
+        # declare and start the writer process.
         writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath, linCisQueue, pepToProtFlag,
                                                                      protToPepFlag, self.pepCompleted, True))
         writerProcess.start()
 
-        # Create a process for pairs of splits, pairing element 0 with -1, 1 with -2 and so on.
+        # Create a process for groups of splits, pairing element 0 and 1 with -1 and -2 and so on. The indexes of the
+        # splits to be computed in this fashion is stored in splitsIndex.
+        # the size of each process (2 splits from the front and 2 from the end in the above example) is set by
+        # dividing the number of splits by NUM_PROC_TOTAL*2.
         splitsIndex = []
         procSize = math.ceil(splitLen / (NUM_PROC_TOTAL*2))
 
@@ -150,8 +243,9 @@ class Fasta:
         if procSize == 1:
             self.totalProcs = self.totalProcs - NUM_PROC_TOTAL + math.ceil(splitLen/2)
 
-        #maxMem = psutil.virtual_memory()[1] / 2
-
+        # these nested create a list of indexes which denote a single process. This list is stored in splitsIndex.
+        # splitsIndex is altered each iteration.
+        # continuing with the example where procSize = 2: splitsIndex = [0,1,-1,-2] and then [2,3,-3-4] and so on.
         for i in range(0, math.ceil(splitLen / 2), procSize):
             if i + procSize > math.floor(splitLen / 2):
                 for j in range(i, splitLen - i):
@@ -161,16 +255,23 @@ class Fasta:
                     splitsIndex.append(j)
                     splitsIndex.append(splitLen - 1 - j)
 
-            # wait until the number processes started but not completed is less than 40 to begin a new process.
+            # wait until the number processes started but not completed is less than MAX_PROC_ALIVE to begin a new
+            # process.
             self.procGenCounter += 1
             while True:
                 if self.procGenCounter - self.completedProcs < MAX_PROC_ALIVE:
                     break
 
+            # once the above while loop is broken, we can start a new process.
             pool.apply_async(transProcess, args=(splitsIndex, mined, maxed, modList, maxMod,
                                                  finalPath, chargeFlags, mgfFlag, csvFlag, protIndexList, protList))
+            # reset splitsIndex to [] so that the next iteration can begin.
             splitsIndex = []
 
+            # after a process has been completed, check that the memory being used has not exceded MEMORY_THRESHOLD.
+            # if the memory limit has been reached, close the pool and put MEMFLAG to toWriteQueue to tell the
+            # writer() to output all the data that is stored in memory. We then wait for the writing to complete,
+            # restart the pool and continue creating the remaining processes.
             if memory_usage_psutil() > MEMORY_THRESHOLD:
                 print('Memory usage exceded. Waiting for processes to finish.')
                 pool.close()
@@ -186,11 +287,15 @@ class Fasta:
                                             initargs=(lockVar, toWriteQueue, splits, splitRef, mgfObj, modTable,
                                                       linCisQueue))
 
+        # wait for all the processes to finish before continuing.
         pool.close()
         pool.join()
 
+        # send the flag to the toWriteQueue to tell the writer() function that the process is complete.
         toWriteQueue.put(STOPFLAG)
+        # wait for the writer process to finish computing.
         writerProcess.join()
+        # print that the trans computation is completed.
         logging.info("All " + spliceType + " !joined")
 
     def cisAndLinearOutput(self, inputFile, spliceType, mined, maxed, overlapFlag, csvFlag, pepToProtFlag, protToPepFlag,
@@ -301,12 +406,159 @@ class Fasta:
         writerProcess.join()
         logging.info("All " + spliceType + " !joined")
 
-# takes splits index from the multiprocessing pool and adds to writer the output. Splits and SplitRef are global
-# variables within the pool.
+def combinePeptides(seqDict):
+
+    """
+    Takes a dictionary with protein names as keys and proteins sequences as values and concatenates the sequences
+    to form one sequence. It returns a list of the initial protein names and a list of references denoting where
+    the initial proteins appear in the long, concatenated protein.
+
+    :param seqDict: a dictionary with protein names as keys and proteins sequences as values.
+    :return finalPeptide: a single sequence of all the individual protein sequences concatenated together.
+    :return protIndexList: a list of index pairs denoting the start and end position of each individual protein.
+    List is structures as follows: [[0,150], [151,205] ... ]
+    :return protList: a list of the protein names of the individual proteins, where the index of each name corresponds
+    to the index of its location data in protIndexList.
+    """
+
+    # declare variables to be created within for loop.
+    dictlist = []
+    protIndexList = []
+    protList = []
+    # initial ind is 0, and is updated by the length of the protein added each iteration.
+    ind = 0
+    for key, value in seqDict.items():
+        dictlist.append(value)
+        protIndexList.append([ind,ind + len(value) - 1])
+        protList.append(key)
+        ind += len(value)
+
+    # combine all protein sequences in dictList to form a long, concatenated sequence.
+    finalPeptide = ''.join(dictlist)
+    return finalPeptide, protIndexList, protList
+
+def splitTransPeptide(spliceType, peptide, mined, maxed, protIndexList):
+
+    """
+    Creates all the possible splits (peptide cleavages) from the input protein sequence. This differs from
+    splitDictPeptide due to functionality required specifically by trans. The input protein to this function
+    is all the inividual input proteins concatenated together, creating potential splits across the border between
+    two proteins which cannot be formed given the input data. The protIndexList data is thus included to ensure that
+    such cleavages are ignored from the fonal splits output.
+
+    :param spliceType: will always be the TRANS flag ** need to remove.
+    :param peptide: the input proteins sequence, which will be all individual proteins concatenated together.
+    ** rename to proteinSeq.
+    :param mined: the min length of a potential output peptide.
+    :param maxed: the max length of a potential output peptide.
+    :param protIndexList: a list of location pairs denoting the start and end point of original, individual proteins.
+    :return splits: all the potential cleavages which could be recombined to create a trans splice peptide.
+    :return splitRef: where each split originated in the input protein.
+    """
+
+    # Makes it easier to integrate with earlier iteration where linearFlag was being passed as an external flag
+    # instead of spliceType
+    linearFlag = spliceType == LINEAR
+    length = len(peptide)
+
+    # splits will hold all possible splits that can occur
+    splits = []
+    # splitRef will hold a direct reference to the characters making up each split string: for starting peptide ABC,
+    # the split AC = [0,2]
+    splitRef = []
+
+    # embedded for loops build all possible splits
+    for i in range(0, length):
+
+        character = peptide[i]
+        toAdd = ""
+
+        # figure out which protein the splits starts in, and the max index the splits can reach before it becomes
+        # a part of a second peptide
+        initProt, protInd = findInitProt(i, protIndexList)
+
+        # add and append first character and add and append reference number which indexes this character
+        toAdd += character
+        ref = list([i+1])
+        temp = list(ref)  # use list because otherwise shared memory overwrites
+
+        # linear flag to ensure min is correct for cis and trans
+        if linearFlag and minSize(toAdd, mined):
+
+            # Don't need to continue this run as first amino acid is unknown X
+            if 'X' in toAdd or 'U' in toAdd:
+                continue
+            else:
+                splits.append(toAdd)
+                splitRef.append(temp)
+
+        elif not linearFlag and 'X' not in toAdd and 'U' not in toAdd:
+            splits.append(toAdd)
+            splitRef.append(temp)
+
+        # iterates through every character after current and adds it to the most recent string if max size
+        # requirement is satisfied
+        for j in range(i + 1, length):
+            if j > initProt[1]:
+                break
+            toAdd += peptide[j]
+            if linearFlag:
+                ref.append(j+1)
+                if maxSize(toAdd, maxed):
+                    if minSize(toAdd, mined):
+
+                        # All future splits will contain X if an X is found in the current run, hence break
+                        if 'X' in toAdd or 'U' in toAdd:
+                            break
+                        splits.append(toAdd)
+                        temp = list(ref)
+                        splitRef.append(temp)
+                else:
+                    break
+
+            else:
+                if maxSize(toAdd, maxed-1):
+                    # All future splits will contain X if an X is found in the current run, hence break
+                    if 'X' in toAdd or 'U' in toAdd:
+                        break
+                    splits.append(toAdd)
+                    ref.append(j+1)
+                    temp = list(ref)
+                    splitRef.append(temp)
+                else:
+                    break
+
+    return splits, splitRef
+
+
 def transProcess(splitsIndex, mined, maxed, modList, maxMod, finalPath,
                  chargeFlags, mgfFlag, csvFlag, protIndexList, protList):
+    """
+    Controls the flow of computing the trans output of a given subset of splits. It calls functions to create
+    the trans splice peptides, calculate the relevant mass and charge data, apply modifications and conduct
+    required mgf comparison and put the output the toWriteQueue so that the writer queue can process it.
 
+    :param splitsIndex: stores the indexes of the splits which this process will compute the output for.
+    :param mined: the minimum length of an output peptide.
+    :param maxed: the maximum length of an ouptut peptide.
+    :param modList: a list of the modifications input by the user. The modifications match the keys in modTable,
+    which can be found in the file MonoAminoAndMods.py.
+    :param maxMod: the max number of modifications allowable per peptide.
+    :param finalPath: the specific output path of the trans output.
+    :param chargeFlags: a list of bools which defines which charge flags are to be assessed when comparing to the
+    mgf file. The first bool corresponds to +1, the second to +2 and so on up to +5.
+    :param mgfFlag: if True, the user has selected not to compare to any MGF data.
+    :param csvFlag: if True, the data contained in massDict should be printed to a csv file before any b-y Ion
+    or precursor mass comparison is conducted. ** We may look to consider removing this functionality.
+    :param protIndexList: a list of index pairs denoting the start and end position of each individual protein.
+    List is structures as follows: [[0,150], [151,205] ... ]
+    :param protList: a list of the protein names of the individual proteins, where the index of each name corresponds
+    to the index of its location data in protIndexList.
+    :return:
+    """
 
+    # try and except are to ensure that an error message is reported if something doesn't work within an individual
+    # process.
     try:
         # Look to produce only trans spliced peptides - not linear or cis. Do so by not allowing combination of peptides
         # which originate from the same protein as opposed to solving for Cis and Linear and not including that
@@ -387,158 +639,30 @@ def transProcess(splitsIndex, mined, maxed, modList, maxMod, finalPath,
 
         raise e
 
-# Only works if we presume Cis proteins aren't being created in the trans process.
-def findOrigProt(combinedRef, protIndexList, protList):
-    proteinTups = []
-    for i in range(0, len(combinedRef)):
-        protRef1 = ""
-        protRef2 = ""
-        ref = combinedRef[i]
-        protIndex1, protIter1 = findInitProt(ref[0] - 1, protIndexList)
-        #print(protIndex1)
-        prot1 = protList[protIter1]
-
-        # special check if peptide is ovelap spliced
-        if len(set(ref)) != len(ref):
-            protRef1 += ('(' + str(min(ref) - protIndex1[0]))
-            protRef1 += ('-' + str(max(ref) - protIndex1[0]) + ')')
-            proteinTups.append([(prot1, protRef1),('Overlap',"")])
-            continue
-
-        for j in range(1,len(ref)):
-            #print(j)
-            if ref[j] - 1 > protIndex1[1] or ref[j] - 1 < protIndex1[0]:
-                #check to see if the first split is at least 6 amino acids in length.
-                # if so append the location of the split within the peptide to prot1
-                if j > 5:
-                    protRef1 += ('(' + str(ref[0] - protIndex1[0]))
-                    protRef1 += ('-' + str(ref[j-1] - protIndex1[0]) + ')')
-
-                protIndex2, protIter2 = findInitProt(ref[j] - 1, protIndexList)
-                prot2 = protList[protIter2]
-                # same as above, check if second split is at least 6 amino acids long
-                if len(ref) - j > 5:
-                    protRef2 += ('(' + str(ref[j] - protIndex2[0]))
-                    protRef2 += ('-' + str(ref[-1] - protIndex2[0]) + ')')
-
-                proteinTups.append([(prot1,protRef1),(prot2,protRef2)])
-                # combinedRef[i].insert(j, prot2)
-                # combinedRef[i].insert(0,prot1)
-                break
-    return proteinTups
-
-
-def findInitProt(index, protIndexList):
-    length = protIndexList[-1][-1]
-    #print(length)
-    # plus 1 needed for when Protein length is perfectly divisible by protein index length
-    aveLen = math.ceil(length/len(protIndexList)) + 1
-    #print(aveLen)
-    protIter = math.floor(index/aveLen)
-    #print(protIndexList[protIter][0])
-    if protIter == len(protIndexList):
-        protIter -= 1
-        #print(protIter)
-    while True:
-        lower = protIndexList[protIter][0]
-        upper = protIndexList[protIter][1]
-        if lower <= index:
-            if upper >= index:
-                #print(protIndexList[protIter])
-                return protIndexList[protIter], protIter
-            else:
-                protIter += 1
-        else:
-            protIter -= 1
-
-def splitTransPeptide(spliceType, peptide, mined, maxed, protIndexList):
-
-    """
-    Inputs: peptide string, max length of split peptide.
-    Outputs: all possible splits that could be formed that are smaller in length than the maxed input
-    """
-
-    # Makes it easier to integrate with earlier iteration where linearFlag was being passed as an external flag
-    # instead of spliceType
-    linearFlag = spliceType == LINEAR
-    length = len(peptide)
-
-    # splits will hold all possible splits that can occur
-    splits = []
-    # splitRef will hold a direct reference to the characters making up each split string: for starting peptide ABC,
-    # the split AC = [0,2]
-    splitRef = []
-
-    # embedded for loops build all possible splits
-    for i in range(0, length):
-
-        character = peptide[i]
-        toAdd = ""
-
-        # figure out which protein the splits starts in, and the max index the splits can reach before it becomes
-        # a part of a second peptide
-        initProt, protInd = findInitProt(i, protIndexList)
-
-        # add and append first character and add and append reference number which indexes this character
-        toAdd += character
-        ref = list([i+1])
-        temp = list(ref)  # use list because otherwise shared memory overwrites
-
-        # linear flag to ensure min is correct for cis and trans
-        if linearFlag and minSize(toAdd, mined):
-
-            # Don't need to continue this run as first amino acid is unknown X
-            if 'X' in toAdd or 'U' in toAdd:
-                continue
-            else:
-                splits.append(toAdd)
-                splitRef.append(temp)
-
-        elif not linearFlag and 'X' not in toAdd and 'U' not in toAdd:
-            splits.append(toAdd)
-            splitRef.append(temp)
-
-        # iterates through every character after current and adds it to the most recent string if max size
-        # requirement is satisfied
-        for j in range(i + 1, length):
-            if j > initProt[1]:
-                break
-            toAdd += peptide[j]
-            if linearFlag:
-                ref.append(j+1)
-                if maxSize(toAdd, maxed):
-                    if minSize(toAdd, mined):
-
-                        # All future splits will contain X if an X is found in the current run, hence break
-                        if 'X' in toAdd or 'U' in toAdd:
-                            break
-                        splits.append(toAdd)
-                        temp = list(ref)
-                        splitRef.append(temp)
-                else:
-                    break
-
-            else:
-                if maxSize(toAdd, maxed-1):
-                    # All future splits will contain X if an X is found in the current run, hence break
-                    if 'X' in toAdd or 'U' in toAdd:
-                        break
-                    splits.append(toAdd)
-                    ref.append(j+1)
-                    temp = list(ref)
-                    splitRef.append(temp)
-                else:
-                    break
-
-    return splits, splitRef
-
-
 def combineTransPeptide(splits, splitRef, mined, maxed, splitsIndex, protIndexList):
 
     """
-    Input: splits: list of splits, splitRef: list of the character indexes for splits, mined/maxed: min and max
-    size requirements, overlapFlag: boolean value true if overlapping combinations are undesired.
-    Output: all combinations of possible splits which meets criteria
+    Takes splits index from the multiprocessing pool and computes all the possible peptides which can be created
+    from these splits. The entire splits and splitRef are global variables within the pool and can thus be accessed
+    by all processes. This function differs from the lin/cis version as it must check that a created peptide is not
+    a linear or cis peptide, and that it must only iterate through the splits denoted by splits index, as opposed to
+    all of them.
+
+    ** do all the splits need to be passed into the function? Surely this is consuming a lot of unneccesary memory
+    when they are redeclared.
+
+    :param splits: all cleaved peptides which can be recombined to form a trans spliced peptide.
+    :param splitRef: the locations of these cleavages within the concatenated input protein.
+    :param mined: the minimum length of an output peptide.
+    :param maxed: the maximum length of an ouptut peptide.
+    :param splitsIndex: the indexes of the splits to be combined with all other splits in this given process.
+    :param protIndexList: a list of index pairs denoting the start and end position of each individual protein.
+    List is structures as follows: [[0,150], [151,205] ... ]
+    :return combModless: all the trans peptides (combined cleavage/splits) created in this process.
+    :return combModlessRef: the location data of where this trans peptide originated in the concatenated protein
+    sequence
+    :return linCisSet: a set of all the linear and cis spliced peptides that were dynamically produced during
+    the combination process. These will be deleted from the final output later.
     """
     # initialise linCisVariable holder.
     linCisSet = set()
@@ -581,6 +705,70 @@ def combineTransPeptide(splits, splitRef, mined, maxed, splitsIndex, protIndexLi
             toAddReverse = ""
 
     return combModless, combModlessRef, linCisSet
+
+
+# Only works if we presume Cis proteins aren't being created in the trans process.
+def findOrigProt(combinedRef, protIndexList, protList):
+    proteinTups = []
+    for i in range(0, len(combinedRef)):
+        protRef1 = ""
+        protRef2 = ""
+        ref = combinedRef[i]
+        protIndex1, protIter1 = findInitProt(ref[0] - 1, protIndexList)
+        #print(protIndex1)
+        prot1 = protList[protIter1]
+
+        # special check if peptide is ovelap spliced
+        if len(set(ref)) != len(ref):
+            protRef1 += ('(' + str(min(ref) - protIndex1[0]))
+            protRef1 += ('-' + str(max(ref) - protIndex1[0]) + ')')
+            proteinTups.append([(prot1, protRef1),('Overlap',"")])
+            continue
+
+        for j in range(1,len(ref)):
+            #print(j)
+            if ref[j] - 1 > protIndex1[1] or ref[j] - 1 < protIndex1[0]:
+                #check to see if the first split is at least 6 amino acids in length.
+                # if so append the location of the split within the peptide to prot1
+                if j > 5:
+                    protRef1 += ('(' + str(ref[0] - protIndex1[0]))
+                    protRef1 += ('-' + str(ref[j-1] - protIndex1[0]) + ')')
+
+                protIndex2, protIter2 = findInitProt(ref[j] - 1, protIndexList)
+                prot2 = protList[protIter2]
+                # same as above, check if second split is at least 6 amino acids long
+                if len(ref) - j > 5:
+                    protRef2 += ('(' + str(ref[j] - protIndex2[0]))
+                    protRef2 += ('-' + str(ref[-1] - protIndex2[0]) + ')')
+
+                proteinTups.append([(prot1,protRef1),(prot2,protRef2)])
+                # combinedRef[i].insert(j, prot2)
+                # combinedRef[i].insert(0,prot1)
+                break
+    return proteinTups
+
+def findInitProt(index, protIndexList):
+    length = protIndexList[-1][-1]
+    #print(length)
+    # plus 1 needed for when Protein length is perfectly divisible by protein index length
+    aveLen = math.ceil(length/len(protIndexList)) + 1
+    #print(aveLen)
+    protIter = math.floor(index/aveLen)
+    #print(protIndexList[protIter][0])
+    if protIter == len(protIndexList):
+        protIter -= 1
+        #print(protIter)
+    while True:
+        lower = protIndexList[protIter][0]
+        upper = protIndexList[protIter][1]
+        if lower <= index:
+            if upper >= index:
+                #print(protIndexList[protIter])
+                return protIndexList[protIter], protIter
+            else:
+                protIter += 1
+        else:
+            protIter -= 1
 
 def memoryCheck(maxMem):
     process = psutil.Process(os.getpid())
@@ -1383,29 +1571,6 @@ def addSequenceList(input_file, multiFileFlag):
 
         sequenceDictionary[name] = sequence
     return sequenceDictionary
-
-
-def combinePeptides(seqDict):
-
-    """
-    combines an array of strings into one string. Used for ultimately segments from multiple peptides
-    """
-
-    dictlist = []
-    protIndexList = []
-    protList = []
-    ind = 0
-    for key, value in seqDict.items():
-        dictlist.append(value)
-        protIndexList.append([ind,ind + len(value) - 1])
-        protList.append(key)
-        ind += len(value)
-
-    # print(protIndexList)
-
-    finalPeptide = ''.join(dictlist)
-    return finalPeptide, protIndexList, protList
-
 
 def removeDupsQuick(seq, seqRef):
 

@@ -706,64 +706,103 @@ def combineTransPeptide(splits, splitRef, mined, maxed, splitsIndex, protIndexLi
 
     return combModless, combModlessRef, linCisSet
 
-
-# Only works if we presume Cis proteins aren't being created in the trans process.
 def findOrigProt(combinedRef, protIndexList, protList):
+    """
+    Iterates through each combineRef and returns the origin protein names and the index within each protein for
+    every protein.
+
+    :param combinedRef: the location data of where this trans peptide originated in the concatenated protein
+    sequence. Of the form: [[1,2,3,4,5,101,102,103], [6,7,8,9,10,110,111,112,113]....]
+    :param protIndexList: a list of indexes, which store the start and end value within the concatenated protein
+    of each input protein.
+    :param protList: a list of the names of the original input proteins. Ordered to match protIndexList.
+    :return proteinTups: a list of pairs of tuples that stores the name of the original protein a peptide was from,
+    and if the sub-sequence is more than 6 amino acids in length, it stores the location also. This list is also
+    ordered to match the indexes of protList andprotIndexList.
+    Format: proteinTups = [(prot1, "(1-6)"), (prot2,""), (prot3, "(1-6)"), (prot4, "(10-16)")....]
+    """
     proteinTups = []
     for i in range(0, len(combinedRef)):
+        # declare the protRefs for this iteration
         protRef1 = ""
         protRef2 = ""
+        # declare the ref for this iteration
         ref = combinedRef[i]
+        # call findInitProt to return the index of the protein that the first split is from (protIter1), and the relevant reference
+        # to the location of this protein within the overall concatenated protein (protIndex1).
         protIndex1, protIter1 = findInitProt(ref[0] - 1, protIndexList)
-        #print(protIndex1)
+        # return the origin protein via the index protIter1
         prot1 = protList[protIter1]
 
-        # special check if peptide is ovelap spliced
+        # special check if peptide is overlap spliced. If so, let protRef1 equal the subset of peptides that this
+        # splicing is from, and append the tuple pair [(prot1, protRef1),('Overlap',"")] to proteinTups.
         if len(set(ref)) != len(ref):
             protRef1 += ('(' + str(min(ref) - protIndex1[0]))
             protRef1 += ('-' + str(max(ref) - protIndex1[0]) + ')')
             proteinTups.append([(prot1, protRef1),('Overlap',"")])
             continue
 
+        # iterate through all the values in ref to split it into two independent references relating to the two
+        # cleavages which were combined to make the peptide.
         for j in range(1,len(ref)):
-            #print(j)
+            # check if the current ref is outside the range of the origin protein the first split was found to
+            # belong to.
             if ref[j] - 1 > protIndex1[1] or ref[j] - 1 < protIndex1[0]:
-                #check to see if the first split is at least 6 amino acids in length.
+                # check to see if the first split is at least 6 amino acids in length.
                 # if so append the location of the split within the peptide to prot1
                 if j > 5:
                     protRef1 += ('(' + str(ref[0] - protIndex1[0]))
                     protRef1 += ('-' + str(ref[j-1] - protIndex1[0]) + ')')
 
+                # if we have entered the loop, we are at a ref which belongs to the second split.
+                # We know need to find the index of the protein that this split is from (protIter2), and the relevant reference
+                # to the location of this protein within the overall concatenated protein (protIndex2).
                 protIndex2, protIter2 = findInitProt(ref[j] - 1, protIndexList)
                 prot2 = protList[protIter2]
-                # same as above, check if second split is at least 6 amino acids long
+                # same as above, check if second split is at least 6 amino acids long, and if so update protRef2
+                # with the location data.
                 if len(ref) - j > 5:
                     protRef2 += ('(' + str(ref[j] - protIndex2[0]))
                     protRef2 += ('-' + str(ref[-1] - protIndex2[0]) + ')')
 
+                # append the pair of protein tups to proteinTups and break the inner loop.
                 proteinTups.append([(prot1,protRef1),(prot2,protRef2)])
-                # combinedRef[i].insert(j, prot2)
-                # combinedRef[i].insert(0,prot1)
                 break
     return proteinTups
 
 def findInitProt(index, protIndexList):
+    """
+    Takes an index to an amino acid within the concatenated input protein, and locates which range within protIndexList
+    this reference belongs to. It then return this range of values (relating to the range the origin protein occupies
+    in the concatenated sequence) and the index of this range within protIndexList which can be used to return the
+    name of the original protein given by this range.
+    :param index: the input location that we are trying to locate within protIndexList
+    :param protIndexList: a list of index pairs denoting the start and end position of each individual protein.
+    List is structures as follows: [[0,150], [151,205] ... ]
+    :return protIndexList[protIter]: the specific range within the concatenated protein sequence that the
+    input reference is contained within.
+    :return protIter: the index of the located range within protIndexList. This index is used to extract the name
+    of the origin protein which corresponds to the range.
+    """
+    # return the last ref of the last range to acquire the length.
     length = protIndexList[-1][-1]
-    #print(length)
-    # plus 1 needed for when Protein length is perfectly divisible by protein index length
+    # Find the average length. Plus 1 needed for when Protein length is perfectly divisible by protein index length
     aveLen = math.ceil(length/len(protIndexList)) + 1
-    #print(aveLen)
+    # the starting iter that the input index will be at is predicted using the average length and assigned to
+    # protIter.
     protIter = math.floor(index/aveLen)
-    #print(protIndexList[protIter][0])
+    # protIter may be predicted to be the outside the range of indexes (max in can be outside by is 1).
+    # If so reduce it by 1 to bring it within the range.
     if protIter == len(protIndexList):
         protIter -= 1
-        #print(protIter)
+    # check if the index is within the range at the initially predicted protIter. If it is, return the index and range.
+    # if it is not, either increase or decrease protIter depending on if the input index was higher or lower than
+    # the current prediction.
     while True:
         lower = protIndexList[protIter][0]
         upper = protIndexList[protIter][1]
         if lower <= index:
             if upper >= index:
-                #print(protIndexList[protIter])
                 return protIndexList[protIter], protIter
             else:
                 protIter += 1

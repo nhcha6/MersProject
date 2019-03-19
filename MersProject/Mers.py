@@ -302,10 +302,40 @@ class Fasta:
                            modList, maxMod, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag):
 
         """
-        Process that is in charge for dealing with cis and linear. Creates sub processes for every protein to compute
-        their respective output
+        This function is called Fasta.generateOutput() if transFlag == True. It controls the creation of all processes
+        required to conduct trans splicing.
+
+        :param inputFile: the fasta files containing proteins input by the user.
+        :param spliceType: simply holds the TRANS flag. **not needed, as this function is only called by trans splicing.
+        :param mined: the minimum length of an output peptide.
+        :param maxed: the maximum length of an ouptut peptide.
+        :param overlapFlag: if True, this flag denotes that combination of splits containing shared amino acids is not
+        permitted. Shared amino acids originate from the same amino-acid in the same peptide.
+        :param csvFlag: if True, the data contained in massDict should be printed to a csv file before any b-y Ion
+        or precursor mass comparison is conducted. ** We may look to consider removing this functionality.
+        :param pepToProtFlag: if True, a csv file is written with the output peptides as a heading, and the proteins
+        they originated in listed underneath.
+        :param protToPepFlag: if True, a csv file is written with the input proteins as a heading, and the peptides
+        which they produced listed underneath
+        :param modList: a list of the modifications input by the user. The modifications match the keys in modTable,
+        which can be found in the file MonoAminoAndMods.py.
+        :param maxMod: the max number of modifications allowable per peptide.
+        :param maxDistance: in cis splicing, the maximum distance between any two amino acids in two cleaved peptides
+        that are to be recombined to form a cis spliced peptide. If None, the max distance is infinite.
+        :param outputPath: the file name of the output fasta file.
+        :param chargeFlags: a list of bools which defines which charge flags are to be assessed when comparing to the
+        mgf file. The first bool corresponds to +1, the second to +2 and so on up to +5.
+        :param mgfObj: the object that contains the mgf data uploaded in the format required. This is processed before
+        generate ouptut is reached.
+        :param childTable: the modTable dictionary contianing all the modification data. ** does this need to be an input
+        variable, it is globally defined??
+        :param mgfFlag: if True, no the user has selected that no mgf comparison be conducted and the raw splice data
+        is to be ouptut to Fasta.
+
+        :return:
         """
 
+        # declare final path.
         finalPath = None
 
         # Open the csv file if the csv file is selected
@@ -313,13 +343,21 @@ class Fasta:
             finalPath = getFinalPath(outputPath, spliceType)
             open(finalPath, 'w')
 
+        # declare the num_workers, which is to be used when declaring the pool, based on the number of cores available
+        # in the computer.
         num_workers = multiprocessing.cpu_count()
 
-        # Used to lock write access to file
+        # Used to lock write access to files
         lockVar = multiprocessing.Lock()
 
+        # declare toWriteQueue to feed the output of individual processes to the writer queue for processing and
+        # printing
         toWriteQueue = multiprocessing.Queue()
+        # declare linSetQueue to feed linear spliced peptides created during the cis process to the writer queue so
+        # that they can be deleted from the final output.
         linSetQueue = multiprocessing.Queue()
+
+        # start the pool and the writerProcess.
         pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit,
                                     initargs=(lockVar, toWriteQueue, mgfObj, childTable, linSetQueue))
         writerProcess = multiprocessing.Process(target=writer,
@@ -327,29 +365,31 @@ class Fasta:
                                                       protToPepFlag, self.pepCompleted))
         writerProcess.start()
 
-        # maxMem = psutil.virtual_memory()[1] / 2
-
-        # calculate total size of input fasta
+        # calculate total size of input fasta by iterating through each record.
         totalProt = 0
         for file in inputFile:
             with open(file, "rU") as handle:
                 for entry in SeqIO.parse(handle, 'fasta'):
                     totalProt += 1
 
+        # calculate the number of proteins that need too be in each process to approximately create the number of
+        # processes set by NUM_PROC_TOTAL.
+        # ** change to protPerProc
         pepPerProc = math.ceil(totalProt / NUM_PROC_TOTAL)
-        print("Process Size: " + str(pepPerProc))
         # if pepPerProc == 1, it is likely there are less proteins than NUM_PROC_TOTAL. Therefore, we adjust
         # the self.totalProcs counter (used in the progress bar).
         if pepPerProc == 1:
             self.totalProcs = self.totalProcs - NUM_PROC_TOTAL + totalProt
 
-
-        # initialise counter variables
+        # initialise the counter of the number of proteins iterated through, and the protDict which stores the proteins
+        # to be put into each process.
         counter = 0
         protDict = {}
+        # iterate through each record in each file.
         for file in inputFile:
             with open(file, "rU") as handle:
                 for record in SeqIO.parse(handle, 'fasta'):
+                    # add to the protein counter and extract the seq and seqId from the record.
                     counter += 1
                     seq = str(record.seq)
                     seqId = record.name
@@ -363,27 +403,37 @@ class Fasta:
                     # add seqId and seq to protDict
                     protDict[seqId] = seq
 
+                    # if counter % pepPerProc == 0, we are ready to create a process which will compute the cis and/or
+                    # linear peptides which can be generated by the proteins in protDict.
                     if counter % pepPerProc == 0:
+                        # add 1 to self.procGenCounter which will be used to control the creation of processes.
                         self.procGenCounter += 1
-                        # if more than the max number of processes has been generated, wait for a process
-                        # to finish before another one is started
+                        # the code is stalled in the while loop until the number of processes that have been created
+                        # but not had their output retrieved from the toWriteQueue is less tha MAX_PROC_ALIVE.
                         while True:
                             if self.procGenCounter - self.completedProcs < MAX_PROC_ALIVE:
                                 break
-                        # logging.info(spliceType + " process started for: " + seq[0:5])
-                        # Start the processes for each protein with the targe function being genMassDict
+                        # Once the while loop is passed, start the processes for this set of processes with the
+                        # target function being genMassDict
                         pool.apply_async(genMassDict, args=(spliceType, protDict, mined, maxed, overlapFlag,
                                                             csvFlag, modList, maxMod, maxDistance, finalPath,
                                                             chargeFlags, mgfFlag))
+                        # reset protDict to be empty, ready for the next set of proteins for the next process.
                         protDict = {}
 
+                        # check if the percentage of RAM used is approaching the upper limit set by MEMORY_THRESHOLD
+                        # if the threshold has been exceded, close the pool and wait for all processes to finish via
+                        # join(). Then put the MEMFLAG to the toWriteQueue, which instructs the writer() function
+                        # to write all the computed peptides to file.
                         if memory_usage_psutil() > MEMORY_THRESHOLD:
                             print('Memory usage exceded. Waiting for processes to finish.')
                             pool.close()
                             pool.join()
                             toWriteQueue.put(MEMFLAG)
                             comp = self.completedProcs
-                            # wait for writer to communicate back that it is done by adding one to self.completedProcs
+                            # wait for writer to communicate back that it is done by adding 1 to self.completedProcs.
+                            # when we see self.completedProcs has increased, we are ready to restart the pool (after
+                            # we have decremented self.completedProcs).
                             while self.completedProcs == comp:
                                 continue
                             self.completedProcs += -1
@@ -392,17 +442,20 @@ class Fasta:
                                                         initargs=(lockVar, toWriteQueue, mgfObj, childTable,
                                                                   linSetQueue))
 
-        # add left over to pool if there is any
+        # once all records are iterated through, a process is created for the remaining proteins in protDict.
         if protDict:
             self.procGenCounter += 1
             pool.apply_async(genMassDict, args=(spliceType, protDict, mined, maxed, overlapFlag,
                                                 csvFlag, modList, maxMod, maxDistance, finalPath,
                                                 chargeFlags, mgfFlag))
 
+        # wait for all processes to finish before continuing.
         pool.close()
         pool.join()
 
+        # send STOPFLAG to the writer queue to communicate that all processes have been completed.
         toWriteQueue.put(STOPFLAG)
+        # wait for the writerQueue to finish via the .join() command.
         writerProcess.join()
         logging.info("All " + spliceType + " !joined")
 
@@ -809,50 +862,67 @@ def findInitProt(index, protIndexList):
         else:
             protIter -= 1
 
-def memoryCheck(maxMem):
-    process = psutil.Process(os.getpid())
-    #print(process.memory_info().rss)
-    if process.memory_info().rss > maxMem:
-        return True
-    else:
-        return False
-
-def memoryCheck2():
-    memUsed = psutil.virtual_memory()[2]
-    #print(memUsed)
-    if memUsed > 60:
-        return True
-    else:
-        return False
-
 def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modList, maxMod,
                 maxDistance, finalPath, chargeFlags, mgfFlag):
 
     """
-    Compute the peptides for the given protein
+    Called by Fasta.cisAndLinearOutput(), this is the worker function which controls the computation and output of
+    a given process for cis and linear splicing. It calls functions to create the cis or linear peptides, calculates
+    relevant masses and m/z ratios, applies modifications and compares this data to an MGF file is desire.
+
+    :param spliceType: holds either the CIS or TRANS flag so that the appropriate splicing can be computed.
+    :param protDict:
+    :param mined: the minimum length of an output peptide.
+    :param maxed: the maximum length of an ouptut peptide.
+    :param overlapFlag: if True, this flag denotes that combination of splits containing shared amino acids is not
+    permitted. Shared amino acids originate from the same amino-acid in the same peptide.
+    :param csvFlag: if True, the data contained in massDict should be printed to a csv file before any b-y Ion
+    or precursor mass comparison is conducted. ** We may look to consider removing this functionality.
+    :param modList: a list of the modifications input by the user. The modifications match the keys in modTable,
+    which can be found in the file MonoAminoAndMods.py.
+    :param maxMod: the max number of modifications allowable per peptide.
+    :param maxDistance: in cis splicing, the maximum distance between any two amino acids in two cleaved peptides
+    that are to be recombined to form a cis spliced peptide. If None, the max distance is infinite.
+    :param finalPath: the specific output path/file name for the cis or linear output file
+    :param chargeFlags: a list of bools which defines which charge flags are to be assessed when comparing to the
+    mgf file. The first bool corresponds to +1, the second to +2 and so on up to +5.
+    :param mgfFlag: if True, no the user has selected that no mgf comparison be conducted and the raw splice data
+    is to be ouptut to Fasta.
+
+    :return:
     """
+
+    # try and except included so that miscellaneous bugs in the code can be picked up within processes generated by
+    # the pool.
     try:
+        # iterate through each entry in the protDict.
         for protId, protSeq in protDict.items():
-            start = time.time()
 
             # Get the initial peptides and their positions, and the set of linear peptides produced for this protein
+            # if conducting cis splicing.
             combined, combinedRef, linSet = outputCreate(spliceType, protSeq, mined, maxed, overlapFlag, maxDistance)
 
-            # add this set of linear proteins to the linProt queue
+            # add this set of linear proteins to the linSetQueue
             genMassDict.linSetQueue.put(linSet)
 
-            # Convert it into a dictionary that has a mass
+            # Convert combined and combinedRef into a dictionary which has a mass.
+            # data structure: peptideSequence: [monoisotopic mass, [referenceLocation]]
             massDict = combMass(combined, combinedRef)
 
             # Apply mods to the dictionary values and update the dictionary
             massDict = applyMods(massDict, modList, maxMod)
 
-            # Add the charge information along with their masses
+            # Add m/z ratios for each selected charge to the massDict.
             massDict = chargeIonMass(massDict, chargeFlags)
 
-            # Get the positions in range form, instead of individuals (0,1,2) -> (0-2)
+            # Get the combinedRef data in range form, instead of individuals (0,1,2) -> (0-2)
             massDict = editRefMassDict(massDict)
 
+            # if memFlag is True, the user has selected not to conduct any mgf comparison. Thus, we simply want to
+            # extract the peptide sequences from massDict and add them to the tooWriteQueue. modCountDict is set
+            # to False as it is irrelevant given no mgf comparison has occured.
+            # ** move this to after linsetQueue and break genMassDict after completed, as we do not need to create
+            # massDict at all if mgf comparison isn't occuring.
             if mgfFlag:
                 #allPeptides = getAllPep(massDict)
                 allPeptides = massDict.keys()
@@ -861,24 +931,29 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
                     allPeptidesDict[peptide] = protId
                 genMassDict.toWriteQueue.put((allPeptidesDict,False))
 
-            # If there is an mgf file AND there is a charge selected
+            # If there is an mgf file AND there is a charge selected, call functions to compare the potential spliced
+            # proteins in massDict to the spectra in the MGF file.
             elif mgfData is not None and True in chargeFlags:
-                #fulfillPpmReq(mgfObj, massDict)
+                # matched peptides is all the peptides which passed the MGF comparison. modCountDict contains data
+                # on the number of times certain mods were included in the output which passed. This information
+                # is otherwise lost as all modded peptides which pass MGF comparison are returned to their unmodded
+                # form before being added to matchedPeptides.
                 matchedPeptides, modCountDict = generateMGFList(protId, mgfData, massDict, modList)
                 genMassDict.toWriteQueue.put((matchedPeptides, modCountDict))
 
             # If csv is selected, write to csv file
+            # ** decide on relevance of this.
             if csvFlag:
                 logging.info("Writing locked :(")
                 lock.acquire()
-
                 writeToCsv(massDict, protId, finalPath, chargeFlags)
                 lock.release()
                 logging.info("Writing released!")
 
-        # put PROC_FINISHED flag to toWriteQueue
+        # put PROC_FINISHED flag to toWriteQueue, so that it can update Fasta.completedProcs.
         genMassDict.toWriteQueue.put(PROC_FINISHED)
 
+    # if an error is raised, it is caught by this exception and its details are printed to console.
     except Exception as e:
 
         exc_buffer = io.StringIO()
@@ -894,6 +969,185 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
             exc_buffer.getvalue())
 
         raise e
+
+# set default maxDistance to be absurdly high incase of trans
+def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance=10000000):
+
+    # Splits eg: ['A', 'AB', 'AD', 'B', 'BD']
+    # SplitRef eg: [[0], [0,1], [0,2], [1], [1,2]]
+    # Produces splits and splitRef arrays which are passed through combined
+    splits, splitRef = splitDictPeptide(spliceType, peptide, mined, maxed)
+    combined, combinedRef = None, None
+
+    if spliceType == CIS:
+        # combined eg: ['ABC', 'BCA', 'ACD', 'DCA']
+        # combinedRef eg: [[0,1,2], [1,0,2], [0,2,3], [3,2,0]]
+        # pass splits through combined overlap peptide and then delete all duplicates
+        combined, combinedRef, linSet = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
+
+    elif spliceType == LINEAR:
+        # Explicit change for high visibility regarding what's happening
+        combined, combinedRef = splits, splitRef
+        linSet = set()
+
+    return combined, combinedRef, linSet
+
+def splitDictPeptide(spliceType, peptide, mined, maxed):
+
+    """
+    Inputs: peptide string, max length of split peptide.
+    Outputs: all possible splits that could be formed that are smaller in length than the maxed input
+    """
+    # Makes it easier to integrate with earlier iteration where linearFlag was being passed as an external flag
+    # instead of spliceType
+    linearFlag = spliceType == LINEAR
+    length = len(peptide)
+
+    # splits will hold all possible splits that can occur
+    splits = []
+    # splitRef will hold a direct reference to the characters making up each split string: for starting peptide ABC,
+    # the split AC = [0,2]
+    splitRef = []
+
+    # embedded for loops build all possible splits
+    for i in range(0, length):
+
+        character = peptide[i]
+        toAdd = ""
+        # add and append first character and add and append reference number which indexes this character
+
+        toAdd += character
+        ref = list([i+1])
+        temp = list(ref)  # use list because otherwise shared memory overwrites
+
+        # linear flag to ensure min is correct for cis and trans
+        if linearFlag and minSize(toAdd, mined):
+
+            # Don't need to continue this run as first amino acid is unknown X
+            if 'X' in toAdd or 'U' in toAdd:
+                continue
+            else:
+                splits.append(toAdd)
+                splitRef.append(temp)
+
+        elif not linearFlag and 'X' not in toAdd and 'U' not in toAdd:
+            splits.append(toAdd)
+            splitRef.append(temp)
+
+        # iterates through every character after current and adds it to the most recent string if max size
+        # requirement is satisfied
+        for j in range(i + 1, length):
+            toAdd += peptide[j]
+            if linearFlag:
+                ref.append(j+1)
+                if maxSize(toAdd, maxed):
+                    if minSize(toAdd, mined):
+
+                        # All future splits will contain X if an X is found in the current run, hence break
+                        if 'X' in toAdd or 'U' in toAdd:
+                            break
+                        splits.append(toAdd)
+                        temp = list(ref)
+                        splitRef.append(temp)
+                else:
+                    break
+
+            else:
+                if maxSize(toAdd, maxed-1):
+                    # All future splits will contain X if an X is found in the current run, hence break
+                    if 'X' in toAdd or 'U' in toAdd:
+                        break
+                    splits.append(toAdd)
+                    ref.append(j+1)
+                    temp = list(ref)
+                    splitRef.append(temp)
+                else:
+                    break
+
+    return splits, splitRef
+
+
+def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance):
+
+    """
+    Input: splits: list of splits, splitRef: list of the character indexes for splits, mined/maxed: min and max
+    size requirements, overlapFlag: boolean value true if overlapping combinations are undesired.
+    Output: all combinations of possible splits which meets criteria
+    """
+    # initialise linSet
+    linSet = set()
+    # initialise combinations array to hold the possible combinations from the input splits
+    massDict = {}
+    combModless = []
+    combModlessRef = []
+    # iterate through all of the splits and build up combinations which meet min/max/overlap criteria
+    for i in range(0, len(splits)):
+
+        # toAdd variables hold temporary combinations for insertion in final matrix if it meets criteria
+        toAddForward = ""
+
+        toAddReverse = ""
+
+        for j in range(i, len(splits)):
+            # create forward combination of i and j
+            toAddForward += splits[i]
+            toAddForward += splits[j]
+            addForwardRef = splitRef[i] + splitRef[j]
+            toAddReverse += splits[j]
+            toAddReverse += splits[i]
+            addReverseRef = splitRef[j] + splitRef[i]
+
+            # max, min and max distance checks combined into one function for clarity for clarity
+            if combineCheck(toAddForward, mined, maxed, splitRef[i], splitRef[j], maxDistance):
+                # V. messy, need a way to get better visual
+                if overlapFlag:
+                    if overlapComp(splitRef[i], splitRef[j]):
+                        massDict[toAddReverse] = addReverseRef
+                        #check if toAdd forward is linear and add to linearSet if so
+                        if linCisPepCheck(addForwardRef, False):
+                            linSet.add(toAddForward)
+                        else:
+                            massDict[toAddForward] = addForwardRef
+
+
+                else:
+                    massDict[toAddReverse] = addReverseRef
+                    # check if toAddForward is linear and add to linearSet if so
+                    if linCisPepCheck(addForwardRef, False):
+                        linSet.add(toAddForward)
+                    else:
+                        massDict[toAddForward] = addForwardRef
+
+            elif not maxDistCheck(splitRef[i], splitRef[j], maxDistance):
+                break
+
+            toAddForward = ""
+            toAddReverse = ""
+
+    for peptide, ref in massDict.items():
+        if peptide in linSet:
+            continue
+        else:
+            combModless.append(peptide)
+            combModlessRef.append(ref)
+
+    return combModless, combModlessRef, linSet
+
+def memoryCheck(maxMem):
+    process = psutil.Process(os.getpid())
+    #print(process.memory_info().rss)
+    if process.memory_info().rss > maxMem:
+        return True
+    else:
+        return False
+
+def memoryCheck2():
+    memUsed = psutil.virtual_memory()[2]
+    #print(memUsed)
+    if memUsed > 60:
+        return True
+    else:
+        return False
 
 def getAllPep(massDict):
 
@@ -1202,29 +1456,6 @@ def createSeqObj(matchedPeptides):
 
     # return seqRecords
 
-
-# set default maxDistance to be absurdly high incase of trans
-def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance=10000000):
-
-    # Splits eg: ['A', 'AB', 'AD', 'B', 'BD']
-    # SplitRef eg: [[0], [0,1], [0,2], [1], [1,2]]
-    # Produces splits and splitRef arrays which are passed through combined
-    splits, splitRef = splitDictPeptide(spliceType, peptide, mined, maxed)
-    combined, combinedRef = None, None
-
-    if spliceType == CIS:
-        # combined eg: ['ABC', 'BCA', 'ACD', 'DCA']
-        # combinedRef eg: [[0,1,2], [1,0,2], [0,2,3], [3,2,0]]
-        # pass splits through combined overlap peptide and then delete all duplicates
-        combined, combinedRef, linSet = combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance)
-
-    elif spliceType == LINEAR:
-        # Explicit change for high visibility regarding what's happening
-        combined, combinedRef = splits, splitRef
-        linSet = set()
-
-    return combined, combinedRef, linSet
-
 def applyMods(combineModlessDict, modList, maxMod):
 
     """
@@ -1301,147 +1532,6 @@ def genericMod(combineModlessDict, character, massChange, modNo, maxMod):
                     modDict[temp] = newValue
                 seqToIter += newMods
     return modDict
-
-def splitDictPeptide(spliceType, peptide, mined, maxed):
-
-    """
-    Inputs: peptide string, max length of split peptide.
-    Outputs: all possible splits that could be formed that are smaller in length than the maxed input
-    """
-    # Makes it easier to integrate with earlier iteration where linearFlag was being passed as an external flag
-    # instead of spliceType
-    linearFlag = spliceType == LINEAR
-    length = len(peptide)
-
-    # splits will hold all possible splits that can occur
-    splits = []
-    # splitRef will hold a direct reference to the characters making up each split string: for starting peptide ABC,
-    # the split AC = [0,2]
-    splitRef = []
-
-    # embedded for loops build all possible splits
-    for i in range(0, length):
-
-        character = peptide[i]
-        toAdd = ""
-        # add and append first character and add and append reference number which indexes this character
-
-        toAdd += character
-        ref = list([i+1])
-        temp = list(ref)  # use list because otherwise shared memory overwrites
-
-        # linear flag to ensure min is correct for cis and trans
-        if linearFlag and minSize(toAdd, mined):
-
-            # Don't need to continue this run as first amino acid is unknown X
-            if 'X' in toAdd or 'U' in toAdd:
-                continue
-            else:
-                splits.append(toAdd)
-                splitRef.append(temp)
-
-        elif not linearFlag and 'X' not in toAdd and 'U' not in toAdd:
-            splits.append(toAdd)
-            splitRef.append(temp)
-
-        # iterates through every character after current and adds it to the most recent string if max size
-        # requirement is satisfied
-        for j in range(i + 1, length):
-            toAdd += peptide[j]
-            if linearFlag:
-                ref.append(j+1)
-                if maxSize(toAdd, maxed):
-                    if minSize(toAdd, mined):
-
-                        # All future splits will contain X if an X is found in the current run, hence break
-                        if 'X' in toAdd or 'U' in toAdd:
-                            break
-                        splits.append(toAdd)
-                        temp = list(ref)
-                        splitRef.append(temp)
-                else:
-                    break
-
-            else:
-                if maxSize(toAdd, maxed-1):
-                    # All future splits will contain X if an X is found in the current run, hence break
-                    if 'X' in toAdd or 'U' in toAdd:
-                        break
-                    splits.append(toAdd)
-                    ref.append(j+1)
-                    temp = list(ref)
-                    splitRef.append(temp)
-                else:
-                    break
-
-    return splits, splitRef
-
-
-def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance):
-
-    """
-    Input: splits: list of splits, splitRef: list of the character indexes for splits, mined/maxed: min and max
-    size requirements, overlapFlag: boolean value true if overlapping combinations are undesired.
-    Output: all combinations of possible splits which meets criteria
-    """
-    # initialise linSet
-    linSet = set()
-    # initialise combinations array to hold the possible combinations from the input splits
-    massDict = {}
-    combModless = []
-    combModlessRef = []
-    # iterate through all of the splits and build up combinations which meet min/max/overlap criteria
-    for i in range(0, len(splits)):
-
-        # toAdd variables hold temporary combinations for insertion in final matrix if it meets criteria
-        toAddForward = ""
-
-        toAddReverse = ""
-
-        for j in range(i, len(splits)):
-            # create forward combination of i and j
-            toAddForward += splits[i]
-            toAddForward += splits[j]
-            addForwardRef = splitRef[i] + splitRef[j]
-            toAddReverse += splits[j]
-            toAddReverse += splits[i]
-            addReverseRef = splitRef[j] + splitRef[i]
-
-            # max, min and max distance checks combined into one function for clarity for clarity
-            if combineCheck(toAddForward, mined, maxed, splitRef[i], splitRef[j], maxDistance):
-                # V. messy, need a way to get better visual
-                if overlapFlag:
-                    if overlapComp(splitRef[i], splitRef[j]):
-                        massDict[toAddReverse] = addReverseRef
-                        #check if toAdd forward is linear and add to linearSet if so
-                        if linCisPepCheck(addForwardRef, False):
-                            linSet.add(toAddForward)
-                        else:
-                            massDict[toAddForward] = addForwardRef
-
-
-                else:
-                    massDict[toAddReverse] = addReverseRef
-                    # check if toAddForward is linear and add to linearSet if so
-                    if linCisPepCheck(addForwardRef, False):
-                        linSet.add(toAddForward)
-                    else:
-                        massDict[toAddForward] = addForwardRef
-
-            elif not maxDistCheck(splitRef[i], splitRef[j], maxDistance):
-                break
-
-            toAddForward = ""
-            toAddReverse = ""
-
-    for peptide, ref in massDict.items():
-        if peptide in linSet:
-            continue
-        else:
-            combModless.append(peptide)
-            combModlessRef.append(ref)
-
-    return combModless, combModlessRef, linSet
 
 
 def linCisPepCheck(refs, transOrigins):

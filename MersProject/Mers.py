@@ -1241,6 +1241,7 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, procCom
     saveHandle = str(outputPath)
     modCountDict = Counter()
     fileCount = 0
+    memThreshFlag = False
 
     # run on repeat to get from the queue continuously.
     while True:
@@ -1259,6 +1260,8 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, procCom
         # everything in seenPeptides to file and then communicate back to the main thread that it can continue
         # generating processes.
         if matchedTuple == MEMFLAG:
+            # update memThreshFlag so that linCisPeptides can be removed from the file at the end
+            memThreshFlag = True
             # remove linear/cis peptides from seenPeptides:
             print('memflag recieved, writing temp file')
             commonPeptides = linCisSet.intersection(seenPeptides.keys())
@@ -1317,6 +1320,15 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, procCom
         fileCount += 1
         writeOutputFiles(seenPeptides, protToPepFlag, pepToProtFlag, transFlag, outputPath, fileCount)
 
+    # if memThreshFlag is True, we have written a tempFile. We must therefore go back and check that all peptides
+    # in linCisSet haven't made their way into the these outputs.
+    if memThreshFlag:
+        # check that there is anything in linCisSet to compare to (for linear splicing it will be empty)
+        if linCisSet:
+            # we now want to read each output file into memory, delete peptides in linCisQueue, and write it
+            # to file again.
+            remFinalCisLin(linCisSet, saveHandle, fileCount)
+
     # if modCountDict contains meaningful data, we need to add it to the info file.
     if modCountDict:
         # need to know if related to cis/lin/trans. Replace the relevant portion of the saveHandle with info to
@@ -1366,6 +1378,36 @@ def memory_usage_psutil():
     mem = psutil.virtual_memory()
 
     return mem.percent
+
+def remFinalCisLin(linCisSet, saveHandle, fileCount):
+    # iterate through each file, excluding the most recently written file.
+    for i in range(1, fileCount):
+        # declare the path of the file for this iteration
+        finalPath = str(saveHandle)[0:-17] + '_' + str(i) + '_' + str(saveHandle)[-17:]
+        # open the file to read its contents into the new dictionary.
+        with open(finalPath, 'rU') as handle:
+            # initialise the dictionary to store the peptides for each file.
+            outputDict = {}
+            # two counters: one to count the peptide we are up to, one to count the peptide we are adding
+            oldPepCount = 0
+            newPepCount = 0
+            # iterate through each record
+            for record in SeqIO.parse(handle, 'fasta'):
+                oldPepCount += 1
+                peptide = str(record.seq)
+                name = str(record.name)
+                # if this peptide is in linCisSet, continue to the next peptide. Otherwise add it to outputDict.
+                if peptide in linCisSet:
+                    continue
+                else:
+                    newPepCount += 1
+                    finalId = name.replace(str(oldPepCount), str(newPepCount), 1)
+                    outputDict[peptide] = finalId
+
+        # open the same file path and replace its contents with the
+        with open(finalPath, 'w') as handle:
+            for peptide, finalId in outputDict.items():
+                SeqIO.write(SeqRecord(Seq(peptide), id=finalId, description=""), handle, "fasta")
 
 def writeOutputFiles(finalSeenPeptides, protToPepFlag, pepToProtFlag, transFlag, outputPath, fileCount):
     finalPath = str(outputPath)[0:-17] + '_' + str(fileCount) + '_' + str(outputPath)[-17:]

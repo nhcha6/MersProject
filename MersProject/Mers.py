@@ -665,7 +665,6 @@ def transProcess(splitsIndex, mined, maxed, modList, maxMod, finalPath,
 
         # If there is an mgf file AND there is a charge selected
         elif mgfData is not None and True in chargeFlags:
-            #fulfillPpmReq(mgfObj, massDict)
             matchedPeptides, modCountDict = generateMGFList(TRANS, mgfData, massDict, modList)
             transProcess.toWriteQueue.put((matchedPeptides, modCountDict))
 
@@ -1380,6 +1379,17 @@ def memory_usage_psutil():
     return mem.percent
 
 def remFinalCisLin(linCisSet, saveHandle, fileCount):
+    """
+    Called by writer(), this function is run at the end of all output files being written if the memory threshold
+    was hit and thus there is more than 1 file. It iterates through each output file excluding the last one, and
+    deletes peptides that are also in the linCisSet. Such files were written before the linCisSet was complete, and
+    thus not all had been deleted in the original writing.
+    :param linCisSet: the final set of linear peptides (for cis splice) or linear and cis peptides (for trans splice)
+    which are to be deleted from the output files.
+    :param saveHandle: the standard saveHandle of all outputs which is edited to add the output file number.
+    :param fileCount: the number of files created in total.
+    :return:
+    """
     # iterate through each file, excluding the most recently written file.
     for i in range(1, fileCount):
         # declare the path of the file for this iteration
@@ -1410,6 +1420,26 @@ def remFinalCisLin(linCisSet, saveHandle, fileCount):
                 SeqIO.write(SeqRecord(Seq(peptide), id=finalId, description=""), handle, "fasta")
 
 def writeOutputFiles(finalSeenPeptides, protToPepFlag, pepToProtFlag, transFlag, outputPath, fileCount):
+    """
+    Called from writer() every time an output file is to be written. This file simply writes finalSeenPeptides to
+    an output fasta file, and edits the name of this file to include what number the file is. If pepToProtFlag is True,
+    it will also write a csv file with the input proteins as headings, and all peptides to be created from it listed
+    below. If protToPepFlag is True, a csv file with peptides as headers and all proteins the peptide originated from
+    listed below.
+
+    :param finalSeenPeptides: a dictionary with peptide sequences as keys and a list of the proteins the peptide
+    originated from as values.
+    :param pepToProtFlag: if True, a csv file is written with the output peptides as a heading, and the proteins
+    they originated in listed underneath.
+    :param protToPepFlag: if True, a csv file is written with the input proteins as a heading, and the peptides
+    which they produced listed underneath.
+    :param transFlag: True if the writer process is dealing with a trans splicing output. This allows the trans origin
+    data, which is distinct from cis and linear, to be formatted sufficiently for output.
+    :param outputPath: the generic output path that this data is to be written to. It must first be updated to include
+    the file number.
+    :param fileCount: the number of output files that will have been written once this one has been completed.
+    :return:
+    """
     finalPath = str(outputPath)[0:-17] + '_' + str(fileCount) + '_' + str(outputPath)[-17:]
     with open(finalPath, 'w') as output_handle:
         # generate backwardSeenPeptides if protToPep is selected
@@ -1438,107 +1468,25 @@ def writeOutputFiles(finalSeenPeptides, protToPepFlag, pepToProtFlag, transFlag,
         logging.info("Writing to fasta")
         SeqIO.write(createSeqObj(finalSeenPeptides), output_handle, "fasta")
 
-def combineAllTempFasta(linCisSet, outputTempFiles, outputPath):
-    counter = 0
-    while not outputTempFiles.empty():
-
-        # Get the two files at the top of the tempFiles queue for combination.
-        # Note that there will never be one temp file in the queue when the
-        # while loop is being checked, so you will always be able to get two
-        # temp files from the queue if it passes the not empty check.
-        fileOne = outputTempFiles.get()
-        fileTwo = outputTempFiles.get()
-
-        # if this reduces the queue to empty, break the loop. We do this to avoid merging
-        # the last two temp files, adding the result to the queue and then passing a queue with
-        # only one temp file in it into the while loop.
-        if outputTempFiles.empty():
-            break
-
-        # when there are still more temp files in the queue, extract seenPeptides from the
-        # current two temp files, write them to a new tempFile and add it to the temp file Queue.
-        seenPeptides, counter = combineTempFile(fileOne, fileTwo, linCisSet, counter, outputPath)
-        tempName = writeTempFasta(seenPeptides)
-        outputTempFiles.put(tempName)
-
-    # once the while loop breaks, return the finalSeenPetides from the remaining two tempFiles.
-    finalSeenPeptides, counter = combineTempFile(fileOne, fileTwo, linCisSet, counter, outputPath)
-
-    # Return the last combination of two files remaining
-    return finalSeenPeptides
-
-
-def combineTempFile(fileOne, fileTwo, linCisSet, counter, outputPath):
-    seenPeptides = {}
-    with open(fileOne, 'rU') as handle:
-        for record in SeqIO.parse(handle, 'fasta'):
-
-            peptide = str(record.seq)
-            protein = str(record.name)
-
-            origins = protein.split(';')
-            if peptide not in seenPeptides.keys():
-                seenPeptides[peptide] = origins
-            else:
-                for origin in origins:
-                    if origin not in seenPeptides[peptide]:
-                        seenPeptides[peptide].append(origin)
-
-    with open(fileTwo, 'rU') as handle:
-        for record in SeqIO.parse(handle, 'fasta'):
-
-            peptide = str(record.seq)
-            protein = str(record.name)
-
-            origins = protein.split(';')
-            if peptide not in seenPeptides.keys():
-                seenPeptides[peptide] = origins
-            else:
-                for origin in origins:
-                    if origin not in seenPeptides[peptide]:
-                        seenPeptides[peptide].append(origin)
-
-            if memory_usage_psutil() > MEMORY_THRESHOLD_COMBINE:
-                if seenPeptides:
-                    commonPeptides = linCisSet.intersection(seenPeptides.keys())
-                    for peptide in commonPeptides:
-                        del seenPeptides[peptide]
-
-                outputPath = outputPath.split('.fasta')[0]
-                finalPath = outputPath + "-file" + str(counter) + '.fasta'
-                with open(finalPath, 'w') as output_handle:
-                    SeqIO.write(createSeqObj(seenPeptides), output_handle, "fasta")
-                seenPeptides = {}
-                counter += 1
-
-    # Delete temp files as they are used up
-    os.remove(fileOne)
-    os.remove(fileTwo)
-    # In case final record
-    if seenPeptides:
-        commonPeptides = linCisSet.intersection(seenPeptides.keys())
-        for peptide in commonPeptides:
-            del seenPeptides[peptide]
-
-    return seenPeptides, counter
-
-
-def writeTempFasta(seenPeptides):
-    temp = tempfile.NamedTemporaryFile(mode='w+t', suffix=".fasta", delete=False)
-    for key, value in seenPeptides.items():
-        temp.writelines(">")
-        counter = 0
-        for protein in value:
-            if counter != 0:
-                temp.writelines(';')
-            temp.writelines(str(protein))
-            counter += 1
-        temp.writelines("\n")
-        temp.writelines(str(key))
-        temp.writelines("\n")
-    return temp.name
-
 def writeProtToPep(seenPeptides, groupedBy, outputPath):
+    """
+    Called by writeOutputFiles(), this function produces a csv file with either the proteins as headings followed by
+    the peptides each protein produces underneath, or with the peptides as headings and the proteins each peptide
+    could have come from listed underneath. Which format is used depends on the groupedBy flag, and the format of
+    seenPeptides.
+    ** Does this functionality work with trans.
+
+    :param seenPeptides: a dictionary containing peptide sequences and details of where each peptide was generated
+    from. Which of these two variables is the key and which is the value depends on what the value of groupedBy is.
+    :param groupedBy: will contain 'ProtToPep' if the output file is to have proteins as headings, with the
+    corresponding produced peptides listed underneath. If so, seenPeptides.keys() will contain each origin protein
+    and seenPeptides.values() will contain a list of peptides.
+    This param will contain 'PepToProt' if the output file is to have the peptides as headings, with the corresponding
+    origin peptides listed underneath. In this scenario, seenPeptides.keys() will contain peptides, and
+    seenPeptides.values() will be a list of origin proteins.
+    :param outputPath: the generic output location, which will be edited to include the groupedBy flag.
+    :return:
+    """
     newPath = outputPath.parent / (outputPath.name + groupedBy + '.csv')
     with open(newPath, 'a', newline='') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
@@ -1555,6 +1503,16 @@ def writeProtToPep(seenPeptides, groupedBy, outputPath):
             writer.writerow([])
 
 def editTransOrigins(origins):
+    """
+    Called by writeOutputFiles(), this function alters the trans origin data so that only proteins that contribute a
+    cleavage of at least 6 amino acids are include in the ProtToPep csv.
+
+    :param origins: a list of origins. It will have the syntax:
+    ['Overlap/P04439(13-18)', 'Overlap/P04439(13-19)', 'P04439(13-19)/P30456']
+    :return list(set(newOrigins)): a list unique the protein/reference strings which refer to cleavages that contributed
+    at least 6 amino acids to the creation of a given trans peptide. The list will have the following format:
+    [P04439(13-18), P04439(13-19)]
+    """
     newOrigins = []
     for entry in origins:
         prots = entry.split('/')
@@ -1563,45 +1521,31 @@ def editTransOrigins(origins):
                 newOrigins.append(prot)
     return list(set(newOrigins))
 
-
-def fulfillPpmReq(mgfObj, massDict):
-    """
-    Assumption there are charges. Get the peptides that match, and writes them to the output fasta file
-    """
-
-    matchedPeptides = generateMGFList(mgfObj, massDict)
-
-    lock.acquire()
-    logging.info("Writing to fasta")
-    with open("OutputMaster.fasta", "a") as output_handle:
-        SeqIO.write(createSeqObj(matchedPeptides), output_handle, "fasta")
-
-    lock.release()
-    logging.info("Writing complete")
-
-
 def createSeqObj(matchedPeptides):
     """
-    Given the set of matchedPeptides, converts all of them into SeqRecord objects and passes back a generator
+    Given the dictionary of matchedPeptides, converts all of them into SeqRecord objects and adds them to an iterable
+    via the yield statement. This iterable is passed back to the SeqIO.write() method which writes the created
+    SeqRecord to fasta file.
+
+    :param matchedPeptides: a dictionary with peptide sequences as keys and a list of origin proteins as values.
+    :return:
     """
+    # declare counter variable
     count = 1
-    seqRecords = []
-    try:
-        for sequence, value in matchedPeptides.items():
 
-            finalId = "ipd|pep"+str(count)+';'
+    # iterate through each entry in matchedPeptides
+    for sequence, value in matchedPeptides.items():
+        # initialise the final peptide name that is to be written to fasta.
+        finalId = "ipd|pep"+str(count)+';'
+        # iterate through each origin protein and add it to finalId
+        for protein in value:
+            finalId+=protein+';'
 
-            for protein in value:
-                finalId+=protein+';'
+        # return an iterable where each element is a record to written to fasta file.
+        yield SeqRecord(Seq(sequence), id=finalId, description="")
 
-            yield SeqRecord(Seq(sequence), id=finalId, description="")
-
-            count += 1
-    except AttributeError:
-        print(str(matchedPeptides))
-
-
-    # return seqRecords
+        # index the count, ready for the next entry.
+        count += 1
 
 def applyMods(combineModlessDict, modList, maxMod):
 
@@ -2010,3 +1954,119 @@ def memoryCheck2():
         return True
     else:
         return False
+
+#** Temp file code moved to bottom, and could possibly be deleted.
+def combineAllTempFasta(linCisSet, outputTempFiles, outputPath):
+    counter = 0
+    while not outputTempFiles.empty():
+
+        # Get the two files at the top of the tempFiles queue for combination.
+        # Note that there will never be one temp file in the queue when the
+        # while loop is being checked, so you will always be able to get two
+        # temp files from the queue if it passes the not empty check.
+        fileOne = outputTempFiles.get()
+        fileTwo = outputTempFiles.get()
+
+        # if this reduces the queue to empty, break the loop. We do this to avoid merging
+        # the last two temp files, adding the result to the queue and then passing a queue with
+        # only one temp file in it into the while loop.
+        if outputTempFiles.empty():
+            break
+
+        # when there are still more temp files in the queue, extract seenPeptides from the
+        # current two temp files, write them to a new tempFile and add it to the temp file Queue.
+        seenPeptides, counter = combineTempFile(fileOne, fileTwo, linCisSet, counter, outputPath)
+        tempName = writeTempFasta(seenPeptides)
+        outputTempFiles.put(tempName)
+
+    # once the while loop breaks, return the finalSeenPetides from the remaining two tempFiles.
+    finalSeenPeptides, counter = combineTempFile(fileOne, fileTwo, linCisSet, counter, outputPath)
+
+    # Return the last combination of two files remaining
+    return finalSeenPeptides
+
+
+def combineTempFile(fileOne, fileTwo, linCisSet, counter, outputPath):
+    seenPeptides = {}
+    with open(fileOne, 'rU') as handle:
+        for record in SeqIO.parse(handle, 'fasta'):
+
+            peptide = str(record.seq)
+            protein = str(record.name)
+
+            origins = protein.split(';')
+            if peptide not in seenPeptides.keys():
+                seenPeptides[peptide] = origins
+            else:
+                for origin in origins:
+                    if origin not in seenPeptides[peptide]:
+                        seenPeptides[peptide].append(origin)
+
+    with open(fileTwo, 'rU') as handle:
+        for record in SeqIO.parse(handle, 'fasta'):
+
+            peptide = str(record.seq)
+            protein = str(record.name)
+
+            origins = protein.split(';')
+            if peptide not in seenPeptides.keys():
+                seenPeptides[peptide] = origins
+            else:
+                for origin in origins:
+                    if origin not in seenPeptides[peptide]:
+                        seenPeptides[peptide].append(origin)
+
+            if memory_usage_psutil() > MEMORY_THRESHOLD_COMBINE:
+                if seenPeptides:
+                    commonPeptides = linCisSet.intersection(seenPeptides.keys())
+                    for peptide in commonPeptides:
+                        del seenPeptides[peptide]
+
+                outputPath = outputPath.split('.fasta')[0]
+                finalPath = outputPath + "-file" + str(counter) + '.fasta'
+                with open(finalPath, 'w') as output_handle:
+                    SeqIO.write(createSeqObj(seenPeptides), output_handle, "fasta")
+                seenPeptides = {}
+                counter += 1
+
+    # Delete temp files as they are used up
+    os.remove(fileOne)
+    os.remove(fileTwo)
+    # In case final record
+    if seenPeptides:
+        commonPeptides = linCisSet.intersection(seenPeptides.keys())
+        for peptide in commonPeptides:
+            del seenPeptides[peptide]
+
+    return seenPeptides, counter
+
+
+def writeTempFasta(seenPeptides):
+    temp = tempfile.NamedTemporaryFile(mode='w+t', suffix=".fasta", delete=False)
+    for key, value in seenPeptides.items():
+        temp.writelines(">")
+        counter = 0
+        for protein in value:
+            if counter != 0:
+                temp.writelines(';')
+            temp.writelines(str(protein))
+            counter += 1
+        temp.writelines("\n")
+        temp.writelines(str(key))
+        temp.writelines("\n")
+    return temp.name
+
+def fulfillPpmReq(mgfObj, massDict):
+    """
+    Assumption there are charges. Get the peptides that match, and writes them to the output fasta file
+    """
+
+    matchedPeptides = generateMGFList(mgfObj, massDict)
+
+    lock.acquire()
+    logging.info("Writing to fasta")
+    with open("OutputMaster.fasta", "a") as output_handle:
+        SeqIO.write(createSeqObj(matchedPeptides), output_handle, "fasta")
+
+    lock.release()
+    logging.info("Writing complete")

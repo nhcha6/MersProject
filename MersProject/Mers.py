@@ -1550,8 +1550,18 @@ def createSeqObj(matchedPeptides):
 def applyMods(combineModlessDict, modList, maxMod):
 
     """
-    Calls the genericMod function and accesses the modification table to
-    append modified combinations to the end of the combination dictionary
+    Called from genMassDict() and transProcess() to add modified peptides massDict. This function iterates through
+    each modification and each amino acid per modification, accesses the finalModTable and calls genericMod() for
+    each amino acid to be modified. Note that it applies additional modifications to already modified peptides to
+    ensure all potential modifications are produced. It then appends the output of generic mod to the input massDict
+    and returns massDict back to the calling function.
+
+    :param combineModlessDict: the dictionary created by genMassDict() and trancProcess() which stores the
+    created splice peptides along with location data and mass and charge data. At this stage of computation, massDict
+    has the following syntax: massDict[PEPTIDE] = [monoisotopic mass, [referenceLocation]].
+    :param modList: a list of the modifications input by the user to be applied to all generated peptides.
+    :param maxMod: the maximum number of modifications that can be made per peptide.
+    :return combineModlessDict: the input dictionary with the additional modified peptides appended to the end.
     """
 
     modNo = 0
@@ -1577,32 +1587,55 @@ def applyMods(combineModlessDict, modList, maxMod):
 
 def genericMod(combineModlessDict, character, massChange, modNo, maxMod):
     """
-    From the modless dictionary of possible combinations, this function returns a
-    dictionary containing all the modifications that arise from changing character. The
-    key of the output is simply the modified peptide, and the value is the mass which
-    results as set by massChange
+    Called from applyMods(), this function creates a dictionary containing all the modified peptides which are formed
+    by changing the input character. It also applies the relevant mass change to the monoisotopic mass of the
+    unmodified peptide to calculate the modified peptide mass. The modified peptides include all permutations of the
+    modification within the max mod per peptide set by the user:
+    Eg: modifying M in MAMAM will create m1AMAM, MAm1AM, MAMAm1 etc for all permutation.
+
+    :param combineModlessDict: the current version massDict containing all peptides, including peptides with
+    modifications that have already been run.
+    :param character: the amino acid to be modified.
+    :param massChange: the change in mass which results this modification being applied to a single amino acid.
+    :param modNo: used to differentiate between different types of modification. The first modification input by
+    the user will be 1, the second 2 and the last 3. A modified amino acid is represented by the lower case letter
+    followed by the modNo. Eg: MAMAm1 means that the last M has been modified by the first modification.
+    :param maxMod: the maximum number of modified peptides allowed per peptide, as input by the user.
+
+    :return modDict: a dictionary of the same structure as massDict which holds all the new modified peptides. These
+    are returned to applyMods and added to combineModlessDict ready to either be returned to genMassDict() or
+    transProcess(), or put back into this function for the next modification to be applied.
     """
 
+    # set maxMod to 100 if 'None' has been input by the user.
     if maxMod == 'None':
         maxMod = 100
     else:
         maxMod = int(maxMod)
 
-    # A, B, C  convert to ai, bi, ci where i is the modNo
+    # initialise the modDict
     modDict = {}
 
-    # Go through each combination and mod it if necessary
+    # Go through each peptide and mod it if necessary
     for string in combineModlessDict.keys():
+        # extract the currentMass so that massChange can be added to it
         currentMass = combineModlessDict[string][0]
+        # count how many of the current mod have already been applied to this peptide. This will occur if
+        # more than one amino acid is subject to the mod, and is important to know when calculating the mass.
         modsInOrig = string.count(modNo)
+        # extract the location data of the peptide which will identical for the modified peptide.
         currentRef = combineModlessDict[string][1]
 
         # Only need to mod it if it exists (ie : A in ABC)
+        # ** should this be at the start so that we don't waste time declaring the above variables.
         if character in string:
-
+            # count the number of times the amino acid to be modified occurs in the peptide.
             numOccur = string.count(character)
+            # declare the seqToIter variable, which will be added to after separate iterations to ensure all
+            # permutation of the modification are applied to this peptide.
             seqToIter = [string]
-            # Generate all permutations with the mods
+
+            # Algorithm for generating all permutations with the mods
             for j in range(numOccur, 0, -1):
                 newMods = []
                 for seq in seqToIter:
@@ -1626,6 +1659,21 @@ def genericMod(combineModlessDict, character, massChange, modNo, maxMod):
 
 
 def linCisPepCheck(refs, transOrigins):
+    """
+    Called by combineTransPeptide() and combineOverlapPeptide(). This function checks if a given peptide location
+    corresponds to a linear (when cis and trans splicing is running) or cis (only trans is running) peptide. This is
+    done so that when trans is being run linear and cis peptides are recognised in the combination process and added
+    to a set to be deleted from the final output. The same applies for linear peptides in the cis output.
+
+    :param refs: a list of integers corresponding to where a certain peptide was located within the input
+    protein/proteins
+    :param transOrigins: if trans is being run, this contains a list of index pairs denoting the start and end
+    position of each individual protein within the concatenated sequence. Structure: [[0,150], [151,205] ... ].
+    If cis is being run, it is set to False. Thus, this variable also serves to ensure only linear peptides are
+    recognised when cis splicing is being run.
+
+    :return bool: returns True if the peptide is found to be cis/linear spliced, returns False if it is not.
+    """
     # if transOrigins is not False, we know we are checking from a trans process and we need to check it the pep is Cis or Linear.
     if transOrigins != False:
         # return the protein and index that the peptide is from.
@@ -1653,64 +1701,78 @@ def linCisPepCheck(refs, transOrigins):
 def chargeIonMass(massDict, chargeFlags):
 
     """
-    chargeFlags: [True, False, True, False, True]
+    Called by genMassDict() and transProcess(). This function takes the massDict after modification have been applied
+    and converts the monoisotopic mass of each peptide to m/z ratios for each charge states selected by the user.
+    These m/z ratios are stored in a dictionary which is added to the third element of the values of massDict.
+
+    :param massDict: the dictionary storing the peptide sequence, monoisotopic mass and location data. Has the form:
+    massDict[PEPTIDE] = [monoisotopic mass, [referenceLocation]]
+    :param chargeFlags: the charge states that are to be considered as input by the user. Stored as a list of booleans,
+    where the first element corresponds to if +1 is to be considered, the second to +2 and so on.
+    Eg: [True, False, True, False, True]
+
+    :return chargeMassDict: the updated dictionary with charge states and m/z ratios included. Has the form:
+    massDict[PEPTIDE] = [monoisotopic mass, [referenceLocation], {charge: m/z ratio}]
     """
 
     chargeMassDict = {}
 
+    # iterate through each item in massDict
     for key, value in massDict.items():
+        # initialise dictionary for storing charge and corresponding m/z for each peptide.
         chargeAssoc = {}
+        # iterete through each bool in chargeFlags. Use an index as this will directly correspond to the charge state.
         for z in range(0, len(chargeFlags)):
+            # if the bool is True we need to add the m/z ratio for the given charge.
             if chargeFlags[z]:
-                chargeMass = massCharge(value[0], z+1)  # +1 for actual value
+                # mass charge function returns the m/z ratio given monoisotopic mass and charge.
+                chargeMass = massCharge(value[0], z+1)  # +1 to z for actual charge value
+
+                # if no mgf data simply add the chargeMass to the chargeAssoc dictionary.
                 if mgfData is None:
                     chargeAssoc[z+1] = chargeMass
 
                 # Make sure the chargemass is less than the maximum possible charge mass in the mgf
                 elif chargeMass <= mgfData.chargeMaxDict[z+1]:
                     chargeAssoc[z+1] = chargeMass
+
         # if ChargeAssoc has been added to, we update the value and add both the key and newVal to an updated dict
         if chargeAssoc:
             # Add it to the 2 as the rest of code acceses it at index 2
             newVal = value
             newVal.insert(2, chargeAssoc)
             chargeMassDict[key] = newVal
+
     return chargeMassDict
 
 def massCharge(predictedMass, z):
+    """
+    Called by chargeIonMass() this function calculates the m/z ratio which corresponds to the input monoisotopic mass
+    and charge state.
+
+    :param predictedMass: the monoisotopic mass which is to be converted to an m/z ratio.
+    :param z: an integer representing the charge state, where i corresponds to +i.
+
+    :return chargeMass: the calculated m/z ratio.
+    """
     chargeMass = (predictedMass + (z * 1.00794))/z
     return chargeMass
 
 
-def writeToCsv(massDict, header, finalPath, chargeFlags):
-
-    chargeHeaders = getChargeIndex(chargeFlags)
-
-    with open(finalPath, 'a', newline='') as csv_file:
-
-        writer = csv.writer(csv_file, delimiter=',')
-        writer.writerow([header, ' ', ' '])
-        headerRow = ['Peptide', 'Mass', 'Positions']
-
-        for chargeIndex in chargeHeaders:
-
-            headerRow.append('+' + str(chargeIndex+1))
-
-        writer.writerow(headerRow)
-        for key, value in massDict.items():
-            infoRow = [key, value[0], value[1]]
-            for chargeIndex in chargeHeaders:
-                chargeMass = value[2][chargeIndex+1]
-                infoRow.append(str(chargeMass))
-            writer.writerow(infoRow)
-
-
-def getChargeIndex(chargeFlags):
-    chargeHeaders = [i for i, e in enumerate(chargeFlags) if e]
-    return chargeHeaders
-
-
 def maxDistCheck(ref1, ref2, maxDistance):
+    """
+    called by combineOverlapPeptide(). Given the locations of two cleavages within the input protein, this function
+    calculates if the two references are within the maxDistance or not. If they are within the maxDistance, the
+    function returns True and maxDistCheck will continue with combining the cleavages to produce a cis spliced peptide.
+
+    :param ref1: a list of integers corresponding to the location of a given cleavage/split.
+    :param ref2: a list of integers corresponding to the location of a second cleavage/split.
+    :param maxDistance: an integer containing the maximum distance that two cleavages can be a part if they are to be
+    combined to produce a cis spliced peptide. the distance between the two is considered to be the distance between
+    the two closest peptides. It will be set 'None' if the maximum distance is infinte.
+
+    :return bool: True if the peptides are within the maxDistance, False if they are too far apart.
+    """
     if maxDistance == 'None':
         return True
     # max distance defined as the number of peptides between to peptide strands
@@ -1723,7 +1785,13 @@ def maxDistCheck(ref1, ref2, maxDistance):
 def maxSize(split, maxed):
 
     """
-    ensures length of split is smaller than or equal to max
+    Called by splitDictPeptide(), splitTransPeptide(), combineOverlapPeptide() and combineTransPeptide() to ensure
+    that a given cleavage or peptide is smaller than a given maxSize.
+
+    :param split: the cleavage or peptide that is to have its size checked against max size.
+    :param maxed: the max size that the cleavage or peptide is allowed to be.
+
+    :return bool: False if the split is longer than maxed, True if it is shorter.
     """
 
     if len(split) > maxed:
@@ -2070,3 +2138,37 @@ def fulfillPpmReq(mgfObj, massDict):
 
     lock.release()
     logging.info("Writing complete")
+
+def writeToCsv(massDict, header, finalPath, chargeFlags):
+    """
+    ** delete this function???
+    """
+
+    chargeHeaders = getChargeIndex(chargeFlags)
+
+    with open(finalPath, 'a', newline='') as csv_file:
+
+        writer = csv.writer(csv_file, delimiter=',')
+        writer.writerow([header, ' ', ' '])
+        headerRow = ['Peptide', 'Mass', 'Positions']
+
+        for chargeIndex in chargeHeaders:
+
+            headerRow.append('+' + str(chargeIndex+1))
+
+        writer.writerow(headerRow)
+        for key, value in massDict.items():
+            infoRow = [key, value[0], value[1]]
+            for chargeIndex in chargeHeaders:
+                chargeMass = value[2][chargeIndex+1]
+                infoRow.append(str(chargeMass))
+            writer.writerow(infoRow)
+
+def getChargeIndex(chargeFlags):
+    """
+    ** called from writeToCsv, so will probably delete
+    :param chargeFlags:
+    :return:
+    """
+    chargeHeaders = [i for i, e in enumerate(chargeFlags) if e]
+    return chargeHeaders

@@ -1766,7 +1766,8 @@ def maxDistCheck(ref1, ref2, maxDistance):
     function returns True and maxDistCheck will continue with combining the cleavages to produce a cis spliced peptide.
 
     :param ref1: a list of integers corresponding to the location of a given cleavage/split.
-    :param ref2: a list of integers corresponding to the location of a second cleavage/split.
+    :param ref2: a list of integers corresponding to the location of a second cleavage/split which is potentially
+    to be combined with the first.
     :param maxDistance: an integer containing the maximum distance that two cleavages can be a part if they are to be
     combined to produce a cis spliced peptide. the distance between the two is considered to be the distance between
     the two closest peptides. It will be set 'None' if the maximum distance is infinte.
@@ -1785,8 +1786,7 @@ def maxDistCheck(ref1, ref2, maxDistance):
 def maxSize(split, maxed):
 
     """
-    Called by splitDictPeptide(), splitTransPeptide(), combineOverlapPeptide() and combineTransPeptide() to ensure
-    that a given cleavage or peptide is smaller than a given maxSize.
+    Called by combinedCheck to ensure that a given cleavage or peptide is smaller than a given maxSize.
 
     :param split: the cleavage or peptide that is to have its size checked against max size.
     :param maxed: the max size that the cleavage or peptide is allowed to be.
@@ -1802,7 +1802,12 @@ def maxSize(split, maxed):
 def minSize(split, mined):
 
     """
-    ensures length of split is greater than min
+    Called by combineCheck() to ensure that a given cleavage or peptide is larger than a given minSize.
+
+    :param split: the cleavage or peptide that is to have its size checked against max size.
+    :param mined: the min size that the cleavage or peptide is allowed to be.
+
+    :return bool: False if the split is shorter than mined, True if it is longer.
     """
 
     if len(split) < mined:
@@ -1811,26 +1816,37 @@ def minSize(split, mined):
 
 
 def combineCheck(split, mined, maxed, ref1, ref2, maxDistance='None'):
+    """
+    Called by splitDictPeptide(), splitTransPeptide(), combineOverlapPeptide() and combineTransPeptide() to check that
+    a peptide meets the min length, max length and max distance criteria input by the user. It returns True if all
+    of these checks pass, and False if at least one is False.
+
+    :param split: the cleavage or peptide that is to have its size checked against max size.
+    :param mined: the min size that the cleavage or peptide is allowed to be.
+    :param maxed: the max size that the cleavage or peptide is allowed to be.
+    :param ref1: a list of integers corresponding to the location of a given cleavage/split.
+    :param ref2: a list of integers corresponding to the location of a second cleavage/split.
+    :param maxDistance: an integer containing the maximum distance that two cleavages can be a part if they are to be
+    combined to produce a cis spliced peptide. the distance between the two is considered to be the distance between
+    the two closest peptides. It will be set 'None' if the maximum distance is infinte.
+
+    :return bool: True if maxSize(), minSize() and maxDistCheck() functions all return True, False if any of them
+    return False.
+    """
     booleanCheck = maxSize(split, maxed) and minSize(split, mined) and maxDistCheck(ref1, ref2, maxDistance)
     return booleanCheck
 
-
-def linearCheck(toAdd, combinedLinearSet):
-    # Look to do this better, not comparing to combineLinearSet, instead checking that the splitsRefs aren't linearly
-    # ordered: [1, 2, 3] and [4, 5, 6] are obviously linearly ordered.
-    if combinedLinearSet is None:
-        return True
-    if toAdd in combinedLinearSet:
-        return False
-    return True
-
-
 def overlapComp(ref1, ref2):
-
     """
-    checks if there is an intersection between two strings. Likely input it the splitRef data.
-    Outputs True if no intersection
-    overlapComp needs to delete paired reference number if being applied to the splits output
+    Called by combineOverlapPeptide(), this function checks if two lists contain any identical elements. The input data
+    in this case will be lists containing cleavage location indexes. Thus, this function checks if the cleavages
+    corresponding to input location references share any amino acids in the origin protein.
+
+    :param ref1: a list of integers corresponding to the location of a given cleavage/split.
+    :param ref2: a list of integers corresponding to the location of a second cleavage/split which is to potentially
+    be combined with the first.
+
+    :return bool: True if there is no overlap between refs, False if there is overlap.
     """
     S1 = set(ref1)
     S2 = set(ref2)
@@ -1840,10 +1856,16 @@ def overlapComp(ref1, ref2):
 
 
 def addSequenceList(input_file, multiFileFlag):
-
     """
-    input_file is the file path to the fasta file.
-    The function reads the fasta file into a dictionary with the format {proteinRef: protein}
+    Called by transProcess(). This function takes a path to a fasta file and stores all input records in a dictionary.
+    The dictionary has the protein name as a key and protein sequence as a value. The name is editted so that it
+    includes the file name if more than one file has been uploaded
+    :param input_file: a file path which contains a fasta file of proteins.
+    :param multiFileFlag: set to True if the user as uploaded more than one file, and in turn information on which
+    file a protein comes from has to be added to the name.
+
+    :return sequenceDictionary: the dictionary containing the protein names as keys and protein sequences as values for
+    all proteins in the input fasta file.
     """
 
     fasta_sequences = SeqIO.parse(open(input_file), 'fasta')
@@ -1860,42 +1882,59 @@ def addSequenceList(input_file, multiFileFlag):
         sequenceDictionary[name] = sequence
     return sequenceDictionary
 
-def removeDupsQuick(seq, seqRef):
-
-    seen = set()
-    seen_add = seen.add
-    initial = []
-    initialRef = []
-    # initial = [x for x in seq if not (x in seen or seen_add(x))]
-    for i in range(0, len(seq)):
-        if not (seq[i] in seen or seen_add(seq[i])):
-            initial.append(seq[i])
-            initialRef.append(seqRef[i])
-
-    return initial, initialRef
-
-
 def combMass(combine, combineRef, origProtTups = None):
+    """
+    Called by genMassDict() and transProcess() to convert a list of peptides and their location references to a
+    dictionary. It also calculates the monoisotopic mass of each peptide and adds this to the dictionary. It firstly
+    checks that the mass is not greater than the max monoisotopic mass in the input MGF file, and if it is, this
+    peptide is discarded. The output dictionary has the format: massDict[PEPTIDE] = [monoisotopic mass, [referenceLocation]]
+
+    :param combine: a list of peptides.
+    :param combineRef:  list of the locations of corresponding to where the peptides in combine were situated within
+    the input protein. Has the form:[[1,2,3,4], [2,3,4,5]... ]
+    :param origProtTups: if trans is being run, the origin data is stored in a series of tuples instead of the
+    references contained in combineRef. Each peptide has a pair of tuples, with each tuple storing the origin protein
+    and location within that protein of a cleavage used to create the peptide.
+    Eg: [[(prot1, "(1-6)"), (prot2,"")], [(prot3, "(1-6)"), (prot4, "(10-16)")]....]
+
+    :return massDict: a dictionary with peptide sequences as keys, and a list containing the monoisotopic mass and
+    location data as values. Eg: massDict[PEPTIDE] = [monoisotopic mass, [referenceLocation], originTups]. Note
+    that the value will not have a third element "originTups" when cis and linear are being run.
+    """
+
     massDict = {}
+
+    # if mgfData exists, set maxMass to equal it.
     try:
         maxMass = mgfData.maxMass
         # print('in maxmass')
+    # if it doesn't exist, let maxMass == 1000000 (outrageously large)
     except:
         maxMass = 1000000
+
+    # iterate through each peptide/location
     for i in range(0, len(combine)):
+        # initialise totalMass
         totalMass = 0
+        # iterate through each amino-acid, extract its mass from the monoAminoMass dictionary and add it to totalMass.
         for j in range(0, len(combine[i])):
             totalMass += monoAminoMass[combine[i][j]]
+        # add the mass of water to get final monoisotopic mass.
         totalMass += H20_MASS
+        # check if totalMass is greater than the max mass in the MGF file. If so continue as it will not match to
+        # any spectra and thus won't appear in the output.
         if totalMass > maxMass:
             print(combine[i])
             continue
+        # if originProtTups == None, we are dealing with a cis/linear splice and do not need to consider originProtTups.
         if origProtTups == None:
             massRefPair = [totalMass, combineRef[i]]
             massDict[combine[i]] = massRefPair
-        # when trans is being run, peptide which have already been added to massDict need their original peptide location
-        # information updated so it is not lost in the running process.
+        # when trans is being run,  we need to configure a third element in the value containing the origin protein
+        # information in the form of a pair of tuples.
         else:
+            # check if this specific peptide has already been added to the massDict (not that this is only possible
+            # trans splicing) and add the value to the dictionary in appropriate fashion.
             if combine[i] in massDict.keys():
                     massDict[combine[i]][2].append(origProtTups[i][0])
                     massDict[combine[i]][2].append(origProtTups[i][1])
@@ -1907,6 +1946,9 @@ def combMass(combine, combineRef, origProtTups = None):
 
 
 def changeRefToDash(ref):
+    """
+    
+    """
     newRef = []
     for i in range(0,len(ref)):
         refVal = ref[i]

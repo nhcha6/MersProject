@@ -36,6 +36,8 @@ class MGF:
         self.byIonFlag = byIonFlag
 
 
+# check b/y ion creation isn't being run continuously.
+# reconfigure algorithm for iterating forward and back through pepmasses.
 def generateMGFList(protId, mgfObj, massDict, modList):
     """
 

@@ -1887,7 +1887,8 @@ def combMass(combine, combineRef, origProtTups = None):
     Called by genMassDict() and transProcess() to convert a list of peptides and their location references to a
     dictionary. It also calculates the monoisotopic mass of each peptide and adds this to the dictionary. It firstly
     checks that the mass is not greater than the max monoisotopic mass in the input MGF file, and if it is, this
-    peptide is discarded. The output dictionary has the format: massDict[PEPTIDE] = [monoisotopic mass, [referenceLocation]]
+    peptide is discarded. The output dictionary has the format:
+    massDict[PEPTIDE] = [monoisotopic mass, [referenceLocation]]
 
     :param combine: a list of peptides.
     :param combineRef:  list of the locations of corresponding to where the peptides in combine were situated within
@@ -1947,7 +1948,11 @@ def combMass(combine, combineRef, origProtTups = None):
 
 def changeRefToDash(ref):
     """
-    
+    Called by editRefMassDict, this function takes a location reference in the form [1,2,3,4,5,6] and converts it to a
+    range [1-6]
+
+    :param ref: the location reference to be converted to a range: [1,2,3,4,5,6].\
+    :return newRef: the location reference in the form of a range: [1-6]
     """
     newRef = []
     for i in range(0,len(ref)):
@@ -1975,6 +1980,16 @@ def changeRefToDash(ref):
 
 
 def editRefMassDict(massDict):
+    """
+    Called by genMassDict() and transProcess(), this function converts all the location lists contained in the
+    value of massDict to a range. That is, from the form [1,2,3,4,5] to [1-5]
+
+    :param massDict: the dictionary containing peptide sequences as keys and a list of location data, monoisotpic mass
+    and m/z ratios as the value. Has the form:
+    massDict[PEPTIDE] = [monoisotopic mass, [referenceLocation], {charge: m/z ratio}]
+
+    :return:
+    """
     for key, value in massDict.items():
         refNew = changeRefToDash(value[1])
         value[1] = refNew

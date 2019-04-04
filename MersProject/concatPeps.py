@@ -44,6 +44,7 @@ def createOverlap(peptideList,i):
             peptideList.insert(i,overlapPeptide)
             #print(overlapPeptide)
             return
+    # just in case the peptide couldn't match with anything (very unlikely) add it back so it is not lost.
     print(peptide)
     peptideList.insert(i, peptide)
 
@@ -83,11 +84,23 @@ def createSeqObj(seenPeptides):
         count += 1
     return seqRecords
 
+def checkOutput(inputFile, outputFile):
+    peptideList = []
+    with open(outputFile, 'rU') as handle:
+        for record in SeqIO.parse(handle, 'fasta'):
+            peptideList.append(str(record.seq))
+    print(peptideList)
 
-
-
-
-
+    with open(inputFile, "rU") as handle:
+        for record in SeqIO.parse(handle, 'fasta'):
+            flag = True
+            for peptide in peptideList:
+                if str(record.seq) in peptide:
+                    flag = False
+                    break
+            if flag:
+                print(record.seq)
+                
 pepList = createPepList(OUTPUT_PATH)
 print(len(pepList))
 concatPepList = overlapList(pepList)
@@ -96,3 +109,5 @@ print(len(concatPepList))
 # write to file
 with open('concatOutput.fasta', "w") as output_handle:
     SeqIO.write(createSeqObj(concatPepList), output_handle, "fasta")
+
+

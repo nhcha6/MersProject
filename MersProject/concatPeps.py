@@ -8,47 +8,49 @@ import math
 OUTPUT_PATH = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
 NO_RECORDS = 4000
 
-def createPepList(OUTPUT_PATH):
-    pepList = []
-    with open(OUTPUT_PATH, "rU") as handle:
-        for record in SeqIO.parse(handle, 'fasta'):
-            pepList.append(str(record.seq))
-        pepList.sort()
-    return pepList
+class ConcatList:
 
-def overlapList(peptideList):
-    i = 0
-    while(True):
-        try:
-            createOverlap(peptideList, i)
-            i+=1
-        except IndexError:
-            break
-    return peptideList
+    def __init__(self, pepList):
+        self.peptideList = pepList
 
-def createOverlap(peptideList,i):
-    # store peptide and check that a number hasn't been added to the front of it.
-    peptide = peptideList[i]
-    if not peptide.isalpha():
-        print('woooo')
+    def overlapList(self):
+        i = 0
+        while(True):
+            try:
+                self.createOverlap(i)
+                i+=1
+            except IndexError:
+                break
         return
 
-    # loop through the different suffixes
-    for j in range(1,len(peptide)):
-        # extract suffix
-        suffix = peptide[j:]
-        # extract location of matching prefixIndexfrom the list, if there is one.
-        prefixIndex = findSuff(suffix, peptideList, 0)
-        if prefixIndex != False:
-            # store the prefixPeptide, and replace its location in the list with None
-            prefixPeptide = peptideList[prefixIndex]
-            peptideList[prefixIndex] = prefixPeptide + '1'
-            print(prefixPeptide)
-            overlapPeptide = concatOverlapPep(peptide, j, prefixPeptide)
-            # replace the current peptide with the new, overlapping peptide.
-            peptideList[i] = overlapPeptide
+    def createOverlap(self,i):
+        # store peptide and check that a number hasn't been added to the front of it.
+        peptide = self.peptideList[i]
+        print(peptide)
+        if not peptide.isalpha():
+            print('woooo')
             return
 
+        # loop through the different suffixes
+        for j in range(1,len(peptide)):
+            # extract suffix
+            suffix = peptide[j:]
+            print(suffix)
+            # extract location of matching prefixIndexfrom the list, if there is one.
+            prefixIndex = findSuff(suffix, self.peptideList, 0)
+            if prefixIndex != False:
+                # store the prefixPeptide, and replace its location in the list with None
+                prefixPeptide = self.peptideList[prefixIndex]
+                self.peptideList[prefixIndex] = prefixPeptide + '1'
+                print(prefixPeptide)
+                overlapPeptide = concatOverlapPep(peptide, j, prefixPeptide)
+                # replace the current peptide with the new, overlapping peptide.
+                self.peptideList[i] = overlapPeptide
+                return
+
+# need to rewrite this function so that we do not create a subset of the peptideList each time. This is the only
+# place i can find that is causing inefficiencies.
+# find suff is essentially a binary search algorithm.
 def findSuff(suffix, peptideList, zeroIndex):
     if len(peptideList) == 1:
         guessPeptide = peptideList[0]
@@ -71,6 +73,13 @@ def findSuff(suffix, peptideList, zeroIndex):
             smallerPeptideList = peptideList[index:]
             return findSuff(suffix, smallerPeptideList, index+zeroIndex)
 
+def createPepList(OUTPUT_PATH):
+    pepList = []
+    with open(OUTPUT_PATH, "rU") as handle:
+        for record in SeqIO.parse(handle, 'fasta'):
+            pepList.append(str(record.seq))
+        pepList.sort()
+    return pepList
 
 def concatOverlapPep(peptide, j, prefixPeptide):
     concatPep = peptide[0:j] + prefixPeptide
@@ -109,13 +118,14 @@ def checkOutput(inputFile, outputFile):
                 print(record.seq)
 
 pepList = createPepList(OUTPUT_PATH)
-print(len(pepList))
-concatPepList = overlapList(pepList)
-print(len(concatPepList))
+concatListObject = ConcatList(pepList)
+print(len(concatListObject.peptideList))
+concatListObject.overlapList()
+
 
 # write to file
 with open('concatOutput.fasta', "w") as output_handle:
-    SeqIO.write(createSeqObj(concatPepList), output_handle, "fasta")
+    SeqIO.write(createSeqObj(concatListObject.peptideList), output_handle, "fasta")
 
 checkOutput(OUTPUT_PATH, 'concatOutput.fasta')
 

@@ -27,45 +27,50 @@ def overlapList(peptideList):
     return peptideList
 
 def createOverlap(peptideList,i):
-    # delete the peptide from the list
+    # store peptide and check that a number hasn't been added to the front of it.
     peptide = peptideList[i]
-    del peptideList[i]
+    if not peptide.isalpha():
+        print('woooo')
+        return
+
     # loop through the different suffixes
-    for j in range(0,len(peptide)):
+    for j in range(1,len(peptide)):
         # extract suffix
         suffix = peptide[j:]
-        #print(suffix)
-        # extract matching prefixPeptide from the list, if there is one.
-        prefixPeptide = findSuff(suffix, peptideList)
-        #print(prefixPeptide)
-        if prefixPeptide != False:
-            peptideList.remove(prefixPeptide)
+        # extract location of matching prefixIndexfrom the list, if there is one.
+        prefixIndex = findSuff(suffix, peptideList, 0)
+        if prefixIndex != False:
+            # store the prefixPeptide, and replace its location in the list with None
+            prefixPeptide = peptideList[prefixIndex]
+            peptideList[prefixIndex] = prefixPeptide + '1'
+            print(prefixPeptide)
             overlapPeptide = concatOverlapPep(peptide, j, prefixPeptide)
-            peptideList.insert(i,overlapPeptide)
-            #print(overlapPeptide)
+            # replace the current peptide with the new, overlapping peptide.
+            peptideList[i] = overlapPeptide
             return
-    # just in case the peptide couldn't match with anything (very unlikely) add it back so it is not lost.
-    print(peptide)
-    peptideList.insert(i, peptide)
 
-def findSuff(suffix, peptideList):
+def findSuff(suffix, peptideList, zeroIndex):
     if len(peptideList) == 1:
         guessPeptide = peptideList[0]
-        if guessPeptide[0:len(suffix)] == suffix:
-            return guessPeptide
+        # check that the peptide we are up to is not None. If it is None, we want to return False as there are no
+        # peptides left to iterate through
+        if guessPeptide[0:len(suffix)] == suffix and guessPeptide.isalpha():
+            return zeroIndex
         else:
             return False
     else:
         index = math.ceil(len(peptideList)/2)
         guessPeptide = peptideList[index]
-        if guessPeptide[0:len(suffix)] == suffix:
-            return guessPeptide
+        if guessPeptide[0:len(suffix)] == suffix and guessPeptide.isalpha():
+            return zeroIndex+index
         guessPair = [suffix, guessPeptide]
         if sorted(guessPair)[0] == suffix:
             smallerPeptideList = peptideList[0:index]
+            return findSuff(suffix, smallerPeptideList, zeroIndex)
         else:
             smallerPeptideList = peptideList[index:]
-        return findSuff(suffix, smallerPeptideList)
+            return findSuff(suffix, smallerPeptideList, index+zeroIndex)
+
 
 def concatOverlapPep(peptide, j, prefixPeptide):
     concatPep = peptide[0:j] + prefixPeptide
@@ -79,17 +84,19 @@ def createSeqObj(seenPeptides):
     seqRecords = []
 
     for sequence in seenPeptides:
+        if not sequence.isalpha():
+            continue
         finalId = "ipd|pep" + str(count) + ';'
         yield SeqRecord(Seq(sequence), id=finalId, description="")
         count += 1
     return seqRecords
 
 def checkOutput(inputFile, outputFile):
+    print("\nCHECKING OUTPUT")
     peptideList = []
     with open(outputFile, 'rU') as handle:
         for record in SeqIO.parse(handle, 'fasta'):
             peptideList.append(str(record.seq))
-    print(peptideList)
 
     with open(inputFile, "rU") as handle:
         for record in SeqIO.parse(handle, 'fasta'):
@@ -100,7 +107,7 @@ def checkOutput(inputFile, outputFile):
                     break
             if flag:
                 print(record.seq)
-                
+
 pepList = createPepList(OUTPUT_PATH)
 print(len(pepList))
 concatPepList = overlapList(pepList)
@@ -110,4 +117,5 @@ print(len(concatPepList))
 with open('concatOutput.fasta', "w") as output_handle:
     SeqIO.write(createSeqObj(concatPepList), output_handle, "fasta")
 
+checkOutput(OUTPUT_PATH, 'concatOutput.fasta')
 

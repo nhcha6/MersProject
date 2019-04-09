@@ -5,9 +5,9 @@ import time
 import os
 import math
 
-OUTPUT_PATH2 = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
-OUTPUT_PATH = 'C:/Users/Administrator/Desktop/Remove Subseqs/a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
-NO_RECORDS = 4000
+OUTPUT_PATH = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
+OUTPUT_PATH2 = 'C:/Users/Administrator/Desktop/Remove Subseqs/a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
+NO_RECORDS = 6000
 
 class ConcatList:
 
@@ -29,17 +29,19 @@ class ConcatList:
     def createOverlap(self,i):
         # store peptide and check that a number hasn't been added to the front of it.
         peptide = self.peptideList[i]
-        print(peptide)
+        #print(peptide)
         if not peptide.isalpha():
-            print('woooo')
+            #print('woooo')
             return
 
         # loop through the different suffixes
         for j in range(1,len(peptide)):
             # extract suffix
             suffix = peptide[j:]
+            #print(suffix)
             # extract location of matching prefixIndexfrom the list, if there is one.
-            prefixIndex = self.findSuff(suffix, (0,self.pepListLen))
+            prefixIndex = self.findSuff(suffix, (0,self.pepListLen-1))
+
             if prefixIndex != False:
                 # store the prefixPeptide, and replace its location in the list with None
                 prefixPeptide = self.peptideList[prefixIndex]
@@ -73,6 +75,23 @@ class ConcatList:
             else:
                 newRange = (index, range[1])
             return self.findSuff(suffix, newRange)
+
+    def updatePepList(self):
+        newList = []
+        for peptide in self.peptideList:
+            if peptide.isalpha():
+                newList.append(peptide)
+        self.peptideList = newList
+        self.pepListLen = len(self.peptideList)
+
+    def createOutput(self):
+        concatListObject.overlapList()
+        print("first concat loop finished")
+        while(self.pepListLen > NO_RECORDS*2):
+            concatListObject.updatePepList()
+            concatListObject.overlapList()
+            print("concat loop finished")
+
 
 def createPepList(OUTPUT_PATH):
     pepList = []
@@ -143,10 +162,7 @@ def findSuffOld(suffix, peptideList, zeroIndex):
 
 pepList = createPepList(OUTPUT_PATH)
 concatListObject = ConcatList(pepList)
-print(len(concatListObject.peptideList))
-concatListObject.overlapList()
-
-
+concatListObject.createOutput()
 # write to file
 with open('concatOutput.fasta', "w") as output_handle:
     SeqIO.write(createSeqObj(concatListObject.peptideList), output_handle, "fasta")

@@ -5,8 +5,8 @@ import time
 import os
 import math
 
-OUTPUT_PATH = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
-OUTPUT_PATH2 = 'C:/Users/Administrator/Desktop/Remove Subseqs/a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
+OUTPUT_PATH2 = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
+OUTPUT_PATH = 'C:/Users/Administrator/Desktop/Remove Subseqs/a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
 NO_RECORDS = 6000
 
 class ConcatList:
@@ -167,5 +167,5 @@ concatListObject.createOutput()
 with open('concatOutput.fasta', "w") as output_handle:
     SeqIO.write(createSeqObj(concatListObject.peptideList), output_handle, "fasta")
 
-checkOutput(OUTPUT_PATH, 'concatOutput.fasta')
+#checkOutput(OUTPUT_PATH, 'concatOutput.fasta')
 

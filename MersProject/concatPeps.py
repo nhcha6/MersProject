@@ -5,7 +5,8 @@ import time
 import os
 import math
 
-OUTPUT_PATH = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
+OUTPUT_PATH2 = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
+OUTPUT_PATH = 'C:/Users/Administrator/Desktop/Remove Subseqs/a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
 NO_RECORDS = 4000
 
 class ConcatList:
@@ -18,6 +19,7 @@ class ConcatList:
         i = 0
         while(True):
             try:
+                print(i)
                 self.createOverlap(i)
                 i+=1
             except IndexError:
@@ -36,14 +38,12 @@ class ConcatList:
         for j in range(1,len(peptide)):
             # extract suffix
             suffix = peptide[j:]
-            print(suffix)
             # extract location of matching prefixIndexfrom the list, if there is one.
             prefixIndex = self.findSuff(suffix, (0,self.pepListLen))
             if prefixIndex != False:
                 # store the prefixPeptide, and replace its location in the list with None
                 prefixPeptide = self.peptideList[prefixIndex]
                 self.peptideList[prefixIndex] = prefixPeptide + '1'
-                print(prefixPeptide)
                 overlapPeptide = concatOverlapPep(peptide, j, prefixPeptide)
                 # replace the current peptide with the new, overlapping peptide.
                 self.peptideList[i] = overlapPeptide

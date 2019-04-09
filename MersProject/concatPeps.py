@@ -12,6 +12,7 @@ class ConcatList:
 
     def __init__(self, pepList):
         self.peptideList = pepList
+        self.pepListLen = len(pepList)
 
     def overlapList(self):
         i = 0
@@ -37,7 +38,7 @@ class ConcatList:
             suffix = peptide[j:]
             print(suffix)
             # extract location of matching prefixIndexfrom the list, if there is one.
-            prefixIndex = findSuff(suffix, self.peptideList, 0)
+            prefixIndex = self.findSuff(suffix, (0,self.pepListLen))
             if prefixIndex != False:
                 # store the prefixPeptide, and replace its location in the list with None
                 prefixPeptide = self.peptideList[prefixIndex]
@@ -48,30 +49,30 @@ class ConcatList:
                 self.peptideList[i] = overlapPeptide
                 return
 
-# need to rewrite this function so that we do not create a subset of the peptideList each time. This is the only
-# place i can find that is causing inefficiencies.
-# find suff is essentially a binary search algorithm.
-def findSuff(suffix, peptideList, zeroIndex):
-    if len(peptideList) == 1:
-        guessPeptide = peptideList[0]
-        # check that the peptide we are up to is not None. If it is None, we want to return False as there are no
-        # peptides left to iterate through
-        if guessPeptide[0:len(suffix)] == suffix and guessPeptide.isalpha():
-            return zeroIndex
+    # need to rewrite this function so that we do not create a subset of the peptideList each time. This is the only
+    # place i can find that is causing inefficiencies.
+    # find suff is essentially a binary search algorithm.
+    def findSuff(self, suffix, range):
+        if range[0] == range[1]:
+            index = range[0]
+            guessPeptide = self.peptideList[index]
+            # check that the peptide we are up to is not None. If it is None, we want to return False as there are no
+            # peptides left to iterate through
+            if guessPeptide[0:len(suffix)] == suffix and guessPeptide.isalpha():
+                return index
+            else:
+                return False
         else:
-            return False
-    else:
-        index = math.ceil(len(peptideList)/2)
-        guessPeptide = peptideList[index]
-        if guessPeptide[0:len(suffix)] == suffix and guessPeptide.isalpha():
-            return zeroIndex+index
-        guessPair = [suffix, guessPeptide]
-        if sorted(guessPair)[0] == suffix:
-            smallerPeptideList = peptideList[0:index]
-            return findSuff(suffix, smallerPeptideList, zeroIndex)
-        else:
-            smallerPeptideList = peptideList[index:]
-            return findSuff(suffix, smallerPeptideList, index+zeroIndex)
+            index = math.ceil((range[1] - range[0]) / 2) + range[0]
+            guessPeptide = self.peptideList[index]
+            if guessPeptide[0:len(suffix)] == suffix and guessPeptide.isalpha():
+                return index
+            guessPair = [suffix, guessPeptide]
+            if sorted(guessPair)[0] == suffix:
+                newRange = (range[0], index - 1)
+            else:
+                newRange = (index, range[1])
+            return self.findSuff(suffix, newRange)
 
 def createPepList(OUTPUT_PATH):
     pepList = []
@@ -116,6 +117,29 @@ def checkOutput(inputFile, outputFile):
                     break
             if flag:
                 print(record.seq)
+
+# old find suff function
+def findSuffOld(suffix, peptideList, zeroIndex):
+    if len(peptideList) == 1:
+        guessPeptide = peptideList[0]
+        # check that the peptide we are up to is not None. If it is None, we want to return False as there are no
+        # peptides left to iterate through
+        if guessPeptide[0:len(suffix)] == suffix and guessPeptide.isalpha():
+            return zeroIndex
+        else:
+            return False
+    else:
+        index = math.ceil(len(peptideList)/2)
+        guessPeptide = peptideList[index]
+        if guessPeptide[0:len(suffix)] == suffix and guessPeptide.isalpha():
+            return zeroIndex+index
+        guessPair = [suffix, guessPeptide]
+        if sorted(guessPair)[0] == suffix:
+            smallerPeptideList = peptideList[0:index]
+            return findSuffOld(suffix, smallerPeptideList, zeroIndex)
+        else:
+            smallerPeptideList = peptideList[index:]
+            return findSuffOld(suffix, smallerPeptideList, index+zeroIndex)
 
 pepList = createPepList(OUTPUT_PATH)
 concatListObject = ConcatList(pepList)

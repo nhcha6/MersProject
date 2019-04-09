@@ -6,8 +6,8 @@ import os
 import math
 
 OUTPUT_PATH = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
-OUTPUT_PATH2 = 'C:/Users/Administrator/Desktop/Remove Subseqs/a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
-NO_RECORDS = 6000
+OUTPUT_PATH1 = 'C:/Users/Administrator/Desktop/Remove Subseqs/a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
+NO_RECORDS = 40
 
 class ConcatList:
 
@@ -85,11 +85,11 @@ class ConcatList:
         self.pepListLen = len(self.peptideList)
 
     def createOutput(self):
-        concatListObject.overlapList()
+        self.overlapList()
         print("first concat loop finished")
         while(self.pepListLen > NO_RECORDS*2):
-            concatListObject.updatePepList()
-            concatListObject.overlapList()
+            self.updatePepList()
+            self.overlapList()
             print("concat loop finished")
 
 
@@ -137,6 +137,24 @@ def checkOutput(inputFile, outputFile):
             if flag:
                 print(record.seq)
 
+def concatPepsFromFile():
+    pepList = createPepList(OUTPUT_PATH)
+    concatListObject = ConcatList(pepList)
+    concatListObject.createOutput()
+    # write to file
+    with open('concatOutput.fasta', "w") as output_handle:
+        SeqIO.write(createSeqObj(concatListObject.peptideList), output_handle, "fasta")
+    #checkOutput(OUTPUT_PATH, 'concatOutput.fasta')
+
+def concatPepsFromSet(pepSet):
+    pepList = list(pepSet)
+    pepList.sort()
+    concatListObject = ConcatList(pepList)
+    concatListObject.createOutput()
+    # write to file
+    with open('concatOutput.fasta', "w") as output_handle:
+        SeqIO.write(createSeqObj(concatListObject.peptideList), output_handle, "fasta")
+
 # old find suff function
 def findSuffOld(suffix, peptideList, zeroIndex):
     if len(peptideList) == 1:
@@ -160,12 +178,4 @@ def findSuffOld(suffix, peptideList, zeroIndex):
             smallerPeptideList = peptideList[index:]
             return findSuffOld(suffix, smallerPeptideList, index+zeroIndex)
 
-pepList = createPepList(OUTPUT_PATH)
-concatListObject = ConcatList(pepList)
-concatListObject.createOutput()
-# write to file
-with open('concatOutput.fasta', "w") as output_handle:
-    SeqIO.write(createSeqObj(concatListObject.peptideList), output_handle, "fasta")
-
-checkOutput(OUTPUT_PATH, 'concatOutput.fasta')
-
+#concatPepsFromFile()

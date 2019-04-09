@@ -1,8 +1,4 @@
-from Bio import SeqIO
-from Bio.SeqRecord import SeqRecord
-from Bio.Seq import Seq
-import time
-import os
+from concatPeps import *
 
 # boolean which sets if the origin data in the fasta record name is ignored or not. True means it is ignored.
 ignoreNames = True
@@ -173,7 +169,8 @@ def removeSubsetSeq(ignoreNames, writeSubsets, outputPath):
 
     # write the new, smaller seenPeptides to file
     with open(noSubseqPath, "w") as output_handle:
-        SeqIO.write(createSeqObj(seenPeptides), output_handle, "fasta")
+        #SeqIO.write(createSeqObj(seenPeptides), output_handle, "fasta")
+        concatPepsFromSet(seenPeptides)
 
     # if writeSubsets is True, write seenSubsets to file
     if writeSubsets:

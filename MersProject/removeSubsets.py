@@ -118,6 +118,7 @@ def removeSubsetSeq(ignoreNames, writeSubsets, outputPath):
     sortedPath = outputPath + "_Sorted.fasta"
     noSubseqPath = outputPath + "_NoSubsets.fasta"
     onlySubseqPath = outputPath + "_OnlySubsets.fasta"
+    concatPath = outputPath + "_concat.fasta"
 
     # multiple timing variables used to time separate parts of the code
     time1 = time.time()
@@ -169,12 +170,12 @@ def removeSubsetSeq(ignoreNames, writeSubsets, outputPath):
 
     # write the new, smaller seenPeptides to file
     with open(noSubseqPath, "w") as output_handle:
-        #SeqIO.write(createSeqObj(seenPeptides), output_handle, "fasta")
-        concatPepsFromSet(seenPeptides)
+        SeqIO.write(createSeqObj(seenPeptides), output_handle, "fasta")
+        concatPepsFromSet(seenPeptides, concatPath)
 
-    # if writeSubsets is True, write seenSubsets to file
-    if writeSubsets:
-        with open(onlySubseqPath, "w") as output_handle:
-            SeqIO.write(createSeqObj(seenSubseqs), output_handle, "fasta")
+    # # if writeSubsets is True, write seenSubsets to file
+    # if writeSubsets:
+    #     with open(onlySubseqPath, "w") as output_handle:
+    #         SeqIO.write(createSeqObj(seenSubseqs), output_handle, "fasta")
 
-removeSubsetSeq(ignoreNames, writeSubseqs, outputPath)
+#removeSubsetSeq(ignoreNames, writeSubseqs, outputPath)

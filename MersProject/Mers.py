@@ -22,6 +22,7 @@ import io
 import traceback
 from pathlib import Path
 import math
+from removeSubsets import *
 
 # define our the spliceType flags
 TRANS = "Trans"
@@ -1328,6 +1329,10 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, procCom
             # to file again.
             remFinalCisLin(linCisSet, saveHandle, fileCount)
 
+    concatFlag = True
+    if concatFlag:
+        concatOutput(saveHandle, fileCount)
+
     # if modCountDict contains meaningful data, we need to add it to the info file.
     if modCountDict:
         # need to know if related to cis/lin/trans. Replace the relevant portion of the saveHandle with info to
@@ -1418,6 +1423,15 @@ def remFinalCisLin(linCisSet, saveHandle, fileCount):
         with open(finalPath, 'w') as handle:
             for peptide, finalId in outputDict.items():
                 SeqIO.write(SeqRecord(Seq(peptide), id=finalId, description=""), handle, "fasta")
+
+def concatOutput(saveHandle, fileCount):
+    # iterate through each file, excluding the most recently written file.
+    for i in range(1, fileCount+1):
+        # declare the path of the file for this iteration
+        finalPath = str(saveHandle)[0:-17] + '_' + str(i) + '_' + str(saveHandle)[-17:-6]
+        # remove subseqs from that file.
+        removeSubsetSeq(True, False, finalPath)
+
 
 def writeOutputFiles(finalSeenPeptides, protToPepFlag, pepToProtFlag, transFlag, outputPath, fileCount):
     """

@@ -146,13 +146,13 @@ def concatPepsFromFile():
         SeqIO.write(createSeqObj(concatListObject.peptideList), output_handle, "fasta")
     #checkOutput(OUTPUT_PATH, 'concatOutput.fasta')
 
-def concatPepsFromSet(pepSet):
+def concatPepsFromSet(pepSet, outputPath):
     pepList = list(pepSet)
     pepList.sort()
     concatListObject = ConcatList(pepList)
     concatListObject.createOutput()
     # write to file
-    with open('concatOutput.fasta', "w") as output_handle:
+    with open(outputPath, "w") as output_handle:
         SeqIO.write(createSeqObj(concatListObject.peptideList), output_handle, "fasta")
 
 # old find suff function

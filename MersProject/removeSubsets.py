@@ -15,7 +15,7 @@ def createSeqObj(seenPeptides):
         finalId = "ipd|pep" + str(count) + ';'
         yield SeqRecord(Seq(sequence), id=finalId, description="")
         count += 1
-        
+
     return seqRecords
 
 def seenPepList(filePath):

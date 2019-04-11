@@ -6,14 +6,16 @@ import os
 import math
 
 OUTPUT_PATH1 = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
-OUTPUT_PATH = 'C:/Users/Administrator/Desktop/Remove Subseqs/a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
-NO_RECORDS = 6000
+OUTPUT_PATH = 'concatOutputStop.fasta'
+OUTPUT_PATH2 = 'C:/Users/Administrator/Desktop/Remove Subseqs/a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
+NO_RECORDS = 4000
 
 class ConcatList:
 
     def __init__(self, pepList):
         self.peptideList = pepList
         self.pepListLen = len(pepList)
+        self.pepListLenOld = 0
 
     def overlapList(self):
         i = 0
@@ -30,7 +32,6 @@ class ConcatList:
     def createOverlap(self,i):
         # store peptide and check that a number hasn't been added to the front of it.
         peptide = self.peptideList[i]
-        #print(peptide)
         if peptide[-1]=='1':
             #print('woooo')
             return
@@ -45,11 +46,10 @@ class ConcatList:
         for j in range(startIter,len(peptide)):
             # extract suffix
             suffix = peptide[j:]
-            #print(suffix)
             # extract location of matching prefixIndexfrom the list, if there is one.
             prefixIndex = self.findSuff(suffix, (0,self.pepListLen-1))
 
-            if prefixIndex != False:
+            if prefixIndex != None:
                 # store the prefixPeptide, and replace its location in the list with None
                 prefixPeptide = self.peptideList[prefixIndex]
                 self.peptideList[prefixIndex] = prefixPeptide + '1'
@@ -70,7 +70,7 @@ class ConcatList:
             if guessPeptide[0:len(suffix)] == suffix and guessPeptide[-1]!=1:
                 return index
             else:
-                return False
+                return None
         else:
             index = math.ceil((range[1] - range[0]) / 2) + range[0]
             guessPeptide = self.peptideList[index]
@@ -101,7 +101,7 @@ class ConcatList:
                         else:
                             break
                     # if neither loop yields a match, we will not find this split and return False.
-                    return False
+                    return None
 
             # if the suffix didn't match, simply continue.
             guessPair = [suffix, guessPeptide]
@@ -117,13 +117,28 @@ class ConcatList:
             if peptide[-1]!='1':
                 newList.append(peptide)
         self.peptideList = newList
+        self.pepListLenOld = self.pepListLen
         self.pepListLen = len(self.peptideList)
+
+    def concatRemaining(self):
+        noSeqPerConcat = math.ceil(self.pepListLen/NO_RECORDS)
+        newSeq = ""
+        finalSeq = []
+        for i in range(0, self.pepListLen):
+            if i % noSeqPerConcat == 0:
+                finalSeq.append(newSeq)
+                newSeq = ""
+            newSeq += self.peptideList[i]
+        self.peptideList = finalSeq
 
     def createOutput(self):
         self.overlapList()
         print("concat loop finished")
         while(self.pepListLen > NO_RECORDS*2):
             self.updatePepList()
+            if self.pepListLenOld == self.pepListLen:
+                self.concatRemaining()
+                break
             print("new length: " + str(self.pepListLen))
             self.overlapList()
             print("concat loop finished")
@@ -214,6 +229,6 @@ def findSuffOld(suffix, peptideList, zeroIndex):
             smallerPeptideList = peptideList[index:]
             return findSuffOld(suffix, smallerPeptideList, index+zeroIndex)
 
-#concatPepsFromFile()
+concatPepsFromFile()
 #checkOutput(OUTPUT_PATH, "concatOutput.fasta")
 

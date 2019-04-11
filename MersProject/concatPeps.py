@@ -75,7 +75,7 @@ class ConcatList:
                     j = 1
                     while True:
                         guessPeptide = self.peptideList[index+j]
-                        if guessPeptide[0:len(suffix)==suffix]:
+                        if guessPeptide[0:len(suffix)]==suffix:
                             if guessPeptide.isalpha():
                                 return index+j
                             else:
@@ -86,7 +86,7 @@ class ConcatList:
                     j = -1
                     while True:
                         guessPeptide = self.peptideList[index + j]
-                        if guessPeptide[0:len(suffix) == suffix]:
+                        if guessPeptide[0:len(suffix)] == suffix:
                             if guessPeptide.isalpha():
                                 return index - j
                             else:

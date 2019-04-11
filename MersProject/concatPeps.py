@@ -5,9 +5,9 @@ import time
 import os
 import math
 
-OUTPUT_PATH = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
-OUTPUT_PATH1 = 'C:/Users/Administrator/Desktop/Remove Subseqs/small_Linear_1_100419_0608.fasta'
-NO_RECORDS = 40
+OUTPUT_PATH1 = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
+OUTPUT_PATH = 'C:/Users/Administrator/Desktop/Remove Subseqs/a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
+NO_RECORDS = 6000
 
 class ConcatList:
 
@@ -19,7 +19,8 @@ class ConcatList:
         i = 0
         while(True):
             try:
-                print(i)
+                if i % 10000 == 0:
+                    print(i)
                 self.createOverlap(i)
                 i+=1
             except IndexError:
@@ -120,9 +121,10 @@ class ConcatList:
 
     def createOutput(self):
         self.overlapList()
-        print("first concat loop finished")
+        print("concat loop finished")
         while(self.pepListLen > NO_RECORDS*2):
             self.updatePepList()
+            print("new length: " + str(self.pepListLen))
             self.overlapList()
             print("concat loop finished")
 
@@ -212,6 +214,6 @@ def findSuffOld(suffix, peptideList, zeroIndex):
             smallerPeptideList = peptideList[index:]
             return findSuffOld(suffix, smallerPeptideList, index+zeroIndex)
 
-#concatPepsFromFile()
+concatPepsFromFile()
 checkOutput(OUTPUT_PATH, "concatOutput.fasta")
 

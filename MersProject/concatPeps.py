@@ -5,9 +5,9 @@ import time
 import os
 import math
 
-OUTPUT_PATH = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
-OUTPUT_PATH1 = 'C:/Users/Administrator/Desktop/Remove Subseqs/a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
-NO_RECORDS = 4000
+OUTPUT_PATH1 = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
+OUTPUT_PATH = 'C:/Users/Administrator/Desktop/Remove Subseqs/small_Linear_1_100419_0608.fasta'
+NO_RECORDS = 40
 
 class ConcatList:
 
@@ -88,7 +88,7 @@ class ConcatList:
                         guessPeptide = self.peptideList[index + j]
                         if guessPeptide[0:len(suffix)] == suffix:
                             if guessPeptide.isalpha():
-                                return index - j
+                                return index + j
                             else:
                                 j -= 1
                         else:
@@ -207,5 +207,5 @@ def findSuffOld(suffix, peptideList, zeroIndex):
             return findSuffOld(suffix, smallerPeptideList, index+zeroIndex)
 
 concatPepsFromFile()
-#checkOutput(OUTPUT_PATH, "concatOutput.fasta")
+checkOutput(OUTPUT_PATH, "concatOutput.fasta")
 

@@ -5,8 +5,8 @@ import time
 import os
 import math
 
-OUTPUT_PATH1 = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
-OUTPUT_PATH = 'C:/Users/Administrator/Desktop/Remove Subseqs/small_Linear_1_100419_0608.fasta'
+OUTPUT_PATH = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
+OUTPUT_PATH1 = 'C:/Users/Administrator/Desktop/Remove Subseqs/small_Linear_1_100419_0608.fasta'
 NO_RECORDS = 40
 
 class ConcatList:
@@ -30,7 +30,7 @@ class ConcatList:
         # store peptide and check that a number hasn't been added to the front of it.
         peptide = self.peptideList[i]
         #print(peptide)
-        if not peptide.isalpha():
+        if peptide[-1]=='1':
             #print('woooo')
             return
 
@@ -60,7 +60,7 @@ class ConcatList:
             guessPeptide = self.peptideList[index]
             # check that the peptide we are up to is not None. If it is None, we want to return False as there are no
             # peptides left to iterate through
-            if guessPeptide[0:len(suffix)] == suffix and guessPeptide.isalpha():
+            if guessPeptide[0:len(suffix)] == suffix and guessPeptide[-1]!=1:
                 return index
             else:
                 return False
@@ -68,7 +68,7 @@ class ConcatList:
             index = math.ceil((range[1] - range[0]) / 2) + range[0]
             guessPeptide = self.peptideList[index]
             if guessPeptide[0:len(suffix)] == suffix:
-                if guessPeptide.isalpha():
+                if guessPeptide[-1]!='1':
                     return index
                 else:
                     # iterate forward through self.peptideList and try find a match without the 1 on the end.
@@ -76,7 +76,7 @@ class ConcatList:
                     while True:
                         guessPeptide = self.peptideList[index+j]
                         if guessPeptide[0:len(suffix)]==suffix:
-                            if guessPeptide.isalpha():
+                            if guessPeptide[-1]!='1':
                                 return index+j
                             else:
                                 j+=1
@@ -87,7 +87,7 @@ class ConcatList:
                     while True:
                         guessPeptide = self.peptideList[index + j]
                         if guessPeptide[0:len(suffix)] == suffix:
-                            if guessPeptide.isalpha():
+                            if guessPeptide[-1]!='1':
                                 return index + j
                             else:
                                 j -= 1
@@ -107,7 +107,7 @@ class ConcatList:
     def updatePepList(self):
         newList = []
         for peptide in self.peptideList:
-            if peptide.isalpha():
+            if peptide[-1]!='1':
                 newList.append(peptide)
         self.peptideList = newList
         self.pepListLen = len(self.peptideList)

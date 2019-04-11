@@ -34,8 +34,14 @@ class ConcatList:
             #print('woooo')
             return
 
+        # as concated peptides get longer we do not want to iterate through all suffixes. Max suffix length is set
+        # to be 20
+        startIter = len(peptide) - 20
+        if startIter < 1:
+            startIter = 1
+
         # loop through the different suffixes
-        for j in range(1,len(peptide)):
+        for j in range(startIter,len(peptide)):
             # extract suffix
             suffix = peptide[j:]
             #print(suffix)

@@ -214,6 +214,6 @@ def findSuffOld(suffix, peptideList, zeroIndex):
             smallerPeptideList = peptideList[index:]
             return findSuffOld(suffix, smallerPeptideList, index+zeroIndex)
 
-concatPepsFromFile()
-checkOutput(OUTPUT_PATH, "concatOutput.fasta")
+#concatPepsFromFile()
+#checkOutput(OUTPUT_PATH, "concatOutput.fasta")
 

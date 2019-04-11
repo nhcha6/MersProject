@@ -174,6 +174,8 @@ class Fasta:
         they originated in listed underneath.
         :param protToPepFlag: if True, a csv file is written with the input proteins as a heading, and the peptides
         which they produced listed underneath
+        :param concatFlag: if True, an additional file will be output containing the output peptides concatenated to
+        into approximately 6000 sequences.
         :return:
         """
 
@@ -336,6 +338,8 @@ class Fasta:
         variable, it is globally defined??
         :param mgfFlag: if True, no the user has selected that no mgf comparison be conducted and the raw splice data
         is to be ouptut to Fasta.
+        :param concatFlag: if True, an additional file will be output containing the output peptides concatenated to
+        into approximately 6000 sequences.
 
         :return:
         """
@@ -1232,6 +1236,8 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, procCom
     :param procCompleted: the queue which each processes puts to once it has finished calculating all the input
     proteins which were allocated to it. It is used to control the progress bar and to stall process generation
     so that a backlog of unfinished processes in the writer queue doesn't clog memory.
+    :param concatFlag: if True, an additional file will be output containing the output peptides concatenated to
+    into approximately 6000 sequences.
     :param transFlag: True if the writer process is dealing with a trans splicing output. This allows the trans origin
     data, which is distinct from cis and linear, to be formatted sufficiently for output.
     :return:
@@ -1431,7 +1437,7 @@ def concatOutput(saveHandle, fileCount):
         # declare the path of the file for this iteration
         finalPath = str(saveHandle)[0:-17] + '_' + str(i) + '_' + str(saveHandle)[-17:-6]
         # remove subseqs from that file.
-        removeSubsetSeq(True, False, finalPath)
+        removeSubsetSeq(finalPath)
 
 
 def writeOutputFiles(finalSeenPeptides, protToPepFlag, pepToProtFlag, transFlag, outputPath, fileCount):

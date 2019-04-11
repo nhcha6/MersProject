@@ -425,7 +425,7 @@ class MyTableWidget(QWidget):
             mgfGen = MGFImporter(self.uploadMgf, self.mgfPath, self.ppmVal, self.intensityThreshold, self.minSimBy,
                                  self.byIonAccuracy, self.byIonFlag, self.chargeFlags)
             mgfGen.signals.finished.connect(functools.partial(self.importedMGF, self.mined, self.maxed, self.overlapFlag,
-                                                              self.transFlag, self.cisFlag, self.linearFlag, self.csvFlag,
+                                                              self.concatFlag, self.transFlag, self.cisFlag, self.linearFlag, self.csvFlag,
                                                               self.pepToProtFlag, self.protToPepFlag, self.modList, self.maxMod,
                                                               self.maxDistance, outputFiles, self.chargeFlags))
             # add label informing the user that the mgf is uploading
@@ -435,7 +435,7 @@ class MyTableWidget(QWidget):
             self.threadpool.start(mgfGen)
         # if mgfFlag is checked, no need to import the mgf, can skip straight to running importedMGF()
         else:
-            self.importedMGF(self.mined, self.maxed, self.overlapFlag, self.transFlag, self.cisFlag, self.linearFlag, self.csvFlag, self.pepToProtFlag,
+            self.importedMGF(self.mined, self.maxed, self.overlapFlag, self.concatFlag, self.transFlag, self.cisFlag, self.linearFlag, self.csvFlag, self.pepToProtFlag,
                              self.protToPepFlag, self.modList, self.maxMod, self.maxDistance, outputFiles, self.chargeFlags, True)
 
         # close the output name box.
@@ -577,8 +577,9 @@ class MyTableWidget(QWidget):
         """
 
         # save the input variables as in the MyTableWidget class so that they can be accessed by all methods in the GUI.
-        self.ppmVal, self.intensityThreshold, self.mined, self.maxed, self.maxDistance, self.overlapFlag, self.transFlag, self.cisFlag, self.linearFlag, self.csvFlag, \
-        self.pepToProtFlag, self.protToPepFlag,  self.modList, self.maxMod, self.outputFlag, self.chargeFlags, self.minSimBy, self.byIonAccuracy, \
+        self.ppmVal, self.intensityThreshold, self.mined, self.maxed, self.maxDistance, self.overlapFlag, self.concatFlag, \
+        self.transFlag, self.cisFlag, self.linearFlag, self.csvFlag, self.pepToProtFlag, self.protToPepFlag,  \
+        self.modList, self.maxMod, self.outputFlag, self.chargeFlags, self.minSimBy, self.byIonAccuracy, \
         self.byIonFlag, self.useMgf = self.getInputParams()
 
         # if transFlag is selected, we check the size of the input to avoid the user unknowingly starting a huge computation.
@@ -638,7 +639,7 @@ class MyTableWidget(QWidget):
             # and name the output file. Once the user hits generate output on the file name dialog, the GUI initiates the splicing code.
             self.getOutputPath()
 
-    def importedMGF(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
+    def importedMGF(self, mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
                     protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag=False):
 
         print("MGF FILE UPLOADED")
@@ -650,7 +651,7 @@ class MyTableWidget(QWidget):
         except AttributeError:
             pass
 
-        self.outputPreStep(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
+        self.outputPreStep(mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
                            protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag)
     def outputFinished(self):
 
@@ -709,6 +710,7 @@ class MyTableWidget(QWidget):
         self.tab2.maximumCombo.setEnabled(False)
         self.tab2.maxDistCombo.setEnabled(False)
         self.tab2.overlap.setEnabled(False)
+        self.tab2.concat.setEnabled(False)
         self.tab2.trans.setEnabled(False)
         self.tab2.cis.setEnabled(False)
         self.tab2.linear.setEnabled(False)
@@ -761,6 +763,7 @@ class MyTableWidget(QWidget):
         self.tab2.maximumCombo.setEnabled(True)
         self.tab2.maxDistCombo.setEnabled(True)
         self.tab2.overlap.setEnabled(True)
+        self.tab2.concat.setEnabled(True)
         self.tab2.trans.setEnabled(True)
         self.tab2.cis.setEnabled(True)
         self.tab2.linear.setEnabled(True)
@@ -782,7 +785,7 @@ class MyTableWidget(QWidget):
             self.tab2.chargeLabel.setEnabled(True)
 
 
-    def outputPreStep(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
+    def outputPreStep(self, mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
                       protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag):
 
         """
@@ -795,7 +798,7 @@ class MyTableWidget(QWidget):
         self.progressBar = QProgressBar(self)
         self.tab2.layout.addWidget(self.progressBar, 17, 3, 1, 4)
 
-        self.outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag,
+        self.outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag,
                                          csvFlag, pepToProtFlag, protToPepFlag,
                                          modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag)
 
@@ -825,7 +828,7 @@ class MyTableWidget(QWidget):
             self.tab2.overlap.setChecked(True)
             self.tab2.overlap.setEnabled(False)
 
-    def output(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag, protToPepFlag,
+    def output(self, mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag, protToPepFlag,
                modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag):
 
         """
@@ -840,7 +843,7 @@ class MyTableWidget(QWidget):
         if maxDistance != 'None':
             maxDistance = int(maxDistance)
 
-        self.fasta.generateOutput(mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
+        self.fasta.generateOutput(mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
                                   protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, self.mgf, mgfFlag)
         end = time.time()
 
@@ -1052,6 +1055,7 @@ class MyTableWidget(QWidget):
         maxDistance = self.tab2.maxDistCombo.currentText()
 
         overlapFlag = self.tab2.overlap.isChecked()
+        concatFlag = self.tab2.concat.isChecked()
         transFlag = self.tab2.trans.isChecked()
         cisFlag = self.tab2.cis.isChecked()
         linearFlag = self.tab2.linear.isChecked()
@@ -1078,7 +1082,7 @@ class MyTableWidget(QWidget):
         maxMod = self.tab2.maxModCombo.currentText()
 
 
-        return ppmVal, toleranceLevel, mined, maxed, maxDistance, overlapFlag, transFlag, cisFlag, \
+        return ppmVal, toleranceLevel, mined, maxed, maxDistance, overlapFlag, concatFlag, transFlag, cisFlag, \
                linearFlag, csvFlag, pepToProtFlag, protToPepFlag, modList, maxMod, outputFlag, chargeFlags, minByIon,\
                byIonAccuracy, byIonFlag, mgfFlag
 
@@ -1109,6 +1113,7 @@ class MyTableWidget(QWidget):
 
         # initialise overlap, trans, cis and linear check boxes
         self.tab2.overlap = QCheckBox('Cis Overlap Off', self)
+        self.tab2.concat = QCheckBox('Concat Output', self)
         self.tab2.trans = QCheckBox('Trans', self)
         self.tab2.trans.stateChanged.connect(self.enableControl)
         self.tab2.cis = QCheckBox('Cis', self)
@@ -1332,6 +1337,7 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.cis, 9, 3)
         self.tab2.layout.addWidget(self.tab2.trans, 10, 3)
         self.tab2.layout.addWidget(self.tab2.overlap, 11, 3)
+        self.tab2.layout.addWidget(self.tab2.concat, 11, 4)
 
         self.tab2.layout.addWidget(self.tab2.csv, 8, 4, 1, 3)
         self.tab2.layout.addWidget(self.tab2.pepToProt, 9, 4, 1, 3)
@@ -1371,6 +1377,7 @@ class MyTableWidget(QWidget):
         # set to true as defaults for linear, cis and overlap off. Set trans off for now.
         self.tab2.minimumCombo.setCurrentIndex(minIndex)
         self.tab2.overlap.setChecked(True)
+        self.tab2.concat.setChecked(True)
         self.tab2.cis.setChecked(True)
         self.tab2.linear.setChecked(True)
         self.tab2.trans.setEnabled(True)

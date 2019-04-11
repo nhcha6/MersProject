@@ -83,7 +83,7 @@ class Fasta:
         self.completedProcs = 0
         self.totalProcs = 0
 
-    def generateOutput(self, mined, maxed, overlapFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
+    def generateOutput(self, mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
                        protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfObj, mgfFlag):
 
         """
@@ -95,6 +95,8 @@ class Fasta:
         :param overlapFlag: if True, this flag denotes that combination of splits containing shared amino acids is not
         permitted. Shared amino acids originate from the same amino-acid in the same peptide. This is only relevant to
         cis spliced peptides.
+        :param concatFlag: if True, an additional file will be output containing the output peptides concatenated to
+        into approximately 6000 sequences.
         :param transFlag: if True, trans splicing should be completed as part of the output.
         :param cisFlag: if True, cis splicing should be completed as part of the output.
         :param linearFlag: if True, linear splicing should be completed as part of the output.
@@ -131,21 +133,21 @@ class Fasta:
         # will generate processes for this splice type.
         if transFlag:
             self.transOutput(self.inputFile, TRANS, mined, maxed, modList, maxMod,outputPath[TRANS], chargeFlags, mgfObj,
-                        modTable, mgfFlag, csvFlag, pepToProtFlag,protToPepFlag)
+                        modTable, mgfFlag, csvFlag, pepToProtFlag,protToPepFlag, concatFlag)
 
         if cisFlag:
             self.cisAndLinearOutput(self.inputFile, CIS, mined, maxed,overlapFlag, csvFlag, pepToProtFlag,
                                     protToPepFlag, modList, maxMod, maxDistance, outputPath[CIS], chargeFlags, mgfObj,
-                                    modTable, mgfFlag)
+                                    modTable, mgfFlag, concatFlag)
 
         if linearFlag:
             self.cisAndLinearOutput(self.inputFile, LINEAR, mined, maxed, overlapFlag, csvFlag, pepToProtFlag,
                                     protToPepFlag, modList, maxMod, maxDistance, outputPath[LINEAR], chargeFlags,
-                                    mgfObj, modTable, mgfFlag)
+                                    mgfObj, modTable, mgfFlag, concatFlag)
 
 
     def transOutput(self, inputFile, spliceType, mined, maxed, modList, maxMod, outputPath, chargeFlags, mgfObj, modTable, mgfFlag, csvFlag,
-                    pepToProtFlag, protToPepFlag):
+                    pepToProtFlag, protToPepFlag, concatFlag):
         """
         This function is called Fasta.generateOutput() if transFlag == True. It controls the creation of all processes
         required to conduct trans splicing.
@@ -230,7 +232,7 @@ class Fasta:
 
         # declare and start the writer process.
         writerProcess = multiprocessing.Process(target=writer, args=(toWriteQueue, outputPath, linCisQueue, pepToProtFlag,
-                                                                     protToPepFlag, self.pepCompleted, True))
+                                                                     protToPepFlag, self.pepCompleted, concatFlag, True))
         writerProcess.start()
 
         # Create a process for groups of splits, pairing element 0 and 1 with -1 and -2 and so on. The indexes of the
@@ -301,7 +303,7 @@ class Fasta:
         logging.info("All " + spliceType + " !joined")
 
     def cisAndLinearOutput(self, inputFile, spliceType, mined, maxed, overlapFlag, csvFlag, pepToProtFlag, protToPepFlag,
-                           modList, maxMod, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag):
+                           modList, maxMod, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag, concatFlag):
 
         """
         This function is called Fasta.generateOutput() if cisFlag == True and if linFlag == True. It controls
@@ -365,7 +367,7 @@ class Fasta:
                                     initargs=(lockVar, toWriteQueue, mgfObj, childTable, linSetQueue))
         writerProcess = multiprocessing.Process(target=writer,
                                                 args=(toWriteQueue, outputPath, linSetQueue, pepToProtFlag,
-                                                      protToPepFlag, self.pepCompleted))
+                                                      protToPepFlag, self.pepCompleted, concatFlag))
         writerProcess.start()
 
         # calculate total size of input fasta by iterating through each record.
@@ -1208,7 +1210,7 @@ def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistan
     return combModless, combModlessRef, linSet
 
 
-def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, procCompleted, transFlag=False):
+def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, procCompleted, concatFlag, transFlag=False):
     """
     This function is called as the worker to the writerProcess, which is generated for each individual splice type
     from either Fasta.cisAndLinearOutput() or Fasta.transOutput(). It accesses the output data put the toWriteQueue
@@ -1329,7 +1331,6 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, procCom
             # to file again.
             remFinalCisLin(linCisSet, saveHandle, fileCount)
 
-    concatFlag = True
     if concatFlag:
         concatOutput(saveHandle, fileCount)
 

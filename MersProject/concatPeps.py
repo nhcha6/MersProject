@@ -7,7 +7,7 @@ import math
 
 OUTPUT_PATH = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
 OUTPUT_PATH1 = 'C:/Users/Administrator/Desktop/Remove Subseqs/a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
-NO_RECORDS = 40
+NO_RECORDS = 4000
 
 class ConcatList:
 
@@ -67,8 +67,36 @@ class ConcatList:
         else:
             index = math.ceil((range[1] - range[0]) / 2) + range[0]
             guessPeptide = self.peptideList[index]
-            if guessPeptide[0:len(suffix)] == suffix and guessPeptide.isalpha():
-                return index
+            if guessPeptide[0:len(suffix)] == suffix:
+                if guessPeptide.isalpha():
+                    return index
+                else:
+                    # iterate forward through self.peptideList and try find a match without the 1 on the end.
+                    j = 1
+                    while True:
+                        guessPeptide = self.peptideList[index+j]
+                        if guessPeptide[0:len(suffix)==suffix]:
+                            if guessPeptide.isalpha():
+                                return index+j
+                            else:
+                                j+=1
+                        else:
+                            break
+                    # iterate backwards if the forward iteration failed.
+                    j = -1
+                    while True:
+                        guessPeptide = self.peptideList[index + j]
+                        if guessPeptide[0:len(suffix) == suffix]:
+                            if guessPeptide.isalpha():
+                                return index - j
+                            else:
+                                j -= 1
+                        else:
+                            break
+                    # if neither loop yields a match, we will not find this split and return False.
+                    return False
+
+            # if the suffix didn't match, simply continue.
             guessPair = [suffix, guessPeptide]
             if sorted(guessPair)[0] == suffix:
                 newRange = (range[0], index - 1)
@@ -178,4 +206,6 @@ def findSuffOld(suffix, peptideList, zeroIndex):
             smallerPeptideList = peptideList[index:]
             return findSuffOld(suffix, smallerPeptideList, index+zeroIndex)
 
-#concatPepsFromFile()
+concatPepsFromFile()
+#checkOutput(OUTPUT_PATH, "concatOutput.fasta")
+

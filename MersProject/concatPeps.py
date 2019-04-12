@@ -5,10 +5,12 @@ import time
 import os
 import math
 
-OUTPUT_PATH1 = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
-OUTPUT_PATH = 'concatOutputStop.fasta'
+OUTPUT_PATH = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
+OUTPUT_PATH1 = 'a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
 OUTPUT_PATH2 = 'C:/Users/Administrator/Desktop/Remove Subseqs/a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
-NO_RECORDS = 4000
+NO_RECORDS = 10
+
+missingPeps = ['QVQSETENL', 'LLKEDSTLK', 'LKEDSTLKA', 'KAAGIASETEI', 'KEDSTLKAAGI', 'KEDSTLKAA', 'LRWELSSQPTIPIV']
 
 class ConcatList:
 
@@ -32,6 +34,10 @@ class ConcatList:
     def createOverlap(self,i):
         # store peptide and check that a number hasn't been added to the front of it.
         peptide = self.peptideList[i]
+        for missingPep in missingPeps:
+            if missingPep in peptide:
+                self.createOverlap2(i)
+                return
         if peptide[-1]=='1':
             #print('woooo')
             return
@@ -103,13 +109,94 @@ class ConcatList:
                     # if neither loop yields a match, we will not find this split and return False.
                     return None
 
+    def createOverlap2(self, i):
+        # store peptide and check that a number hasn't been added to the front of it.
+        peptide = self.peptideList[i]
+        print('\nPEPTIDE: ' + peptide + '\n')
+        if peptide[-1] == '1':
+            # print('woooo')
+            return
+
+        # as concated peptides get longer we do not want to iterate through all suffixes. Max suffix length is set
+        # to be 20
+        startIter = len(peptide) - 20
+        if startIter < 1:
+            startIter = 1
+
+        # loop through the different suffixes
+        for j in range(startIter, len(peptide)):
+            # extract suffix
+            suffix = peptide[j:]
+            print('SUFFIX: ' + suffix)
+            # extract location of matching prefixIndexfrom the list, if there is one.
+            prefixIndex = self.findSuff2(suffix, (0, self.pepListLen - 1))
+            print('PREFIX INDEX: ' + str(prefixIndex))
+
+            if prefixIndex != None:
+                # store the prefixPeptide, and replace its location in the list with None
+                prefixPeptide = self.peptideList[prefixIndex]
+                self.peptideList[prefixIndex] = prefixPeptide + '1'
+                overlapPeptide = concatOverlapPep(peptide, j, prefixPeptide)
+                print('CONCAT PEP: ' + overlapPeptide)
+                # replace the current peptide with the new, overlapping peptide.
+                self.peptideList[i] = overlapPeptide
+                return
+
+    # need to rewrite this function so that we do not create a subset of the peptideList each time. This is the only
+    # place i can find that is causing inefficiencies.
+    # find suff is essentially a binary search algorithm.
+    def findSuff2(self, suffix, range):
+        print("RANGE: " + str(range))
+        if range[0] == range[1]:
+            index = range[0]
+            guessPeptide = self.peptideList[index]
+            print("GUESS PEPTIDE: " + guessPeptide)
+            # check that the peptide we are up to is not None. If it is None, we want to return False as there are no
+            # peptides left to iterate through
+            if guessPeptide[0:len(suffix)] == suffix and guessPeptide[-1] != 1:
+                return index
+            else:
+                return None
+        else:
+            index = math.ceil((range[1] - range[0]) / 2) + range[0]
+            guessPeptide = self.peptideList[index]
+            print("GUESS PEPTIDE: " + guessPeptide)
+            if guessPeptide[0:len(suffix)] == suffix:
+                if guessPeptide[-1] != '1':
+                    return index
+                else:
+                    # iterate forward through self.peptideList and try find a match without the 1 on the end.
+                    j = 1
+                    while True:
+                        guessPeptide = self.peptideList[index + j]
+                        if guessPeptide[0:len(suffix)] == suffix:
+                            if guessPeptide[-1] != '1':
+                                return index + j
+                            else:
+                                j += 1
+                        else:
+                            break
+                    # iterate backwards if the forward iteration failed.
+                    j = -1
+                    while True:
+                        guessPeptide = self.peptideList[index + j]
+                        if guessPeptide[0:len(suffix)] == suffix:
+                            if guessPeptide[-1] != '1':
+                                return index + j
+                            else:
+                                j -= 1
+                        else:
+                            break
+                    # if neither loop yields a match, we will not find this split and return False.
+                    return None
+
             # if the suffix didn't match, simply continue.
             guessPair = [suffix, guessPeptide]
             if sorted(guessPair)[0] == suffix:
                 newRange = (range[0], index - 1)
             else:
                 newRange = (index, range[1])
-            return self.findSuff(suffix, newRange)
+            return self.findSuff2(suffix, newRange)
 
     def updatePepList(self):
         newList = []
@@ -230,5 +317,5 @@ def findSuffOld(suffix, peptideList, zeroIndex):
             return findSuffOld(suffix, smallerPeptideList, index+zeroIndex)
 
 concatPepsFromFile()
-#checkOutput(OUTPUT_PATH, "concatOutput.fasta")
+checkOutput(OUTPUT_PATH, "concatOutput.fasta")
 

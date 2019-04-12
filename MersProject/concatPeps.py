@@ -5,10 +5,10 @@ import time
 import os
 import math
 
-OUTPUT_PATH1 = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
-OUTPUT_PATH = 'concatOutputStop.fasta'
+OUTPUT_PATH = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
+OUTPUT_PATH1 = 'concatOutputStop.fasta'
 OUTPUT_PATH2 = 'C:/Users/Administrator/Desktop/Remove Subseqs/a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
-NO_RECORDS = 4000
+NO_RECORDS = 1
 
 class ConcatList:
 
@@ -125,10 +125,11 @@ class ConcatList:
         newSeq = ""
         finalSeq = []
         for i in range(0, self.pepListLen):
+            newSeq += self.peptideList[i]
             if i % noSeqPerConcat == 0:
                 finalSeq.append(newSeq)
                 newSeq = ""
-            newSeq += self.peptideList[i]
+        finalSeq.append(newSeq)
         self.peptideList = finalSeq
 
     def createOutput(self):
@@ -230,5 +231,5 @@ def findSuffOld(suffix, peptideList, zeroIndex):
             return findSuffOld(suffix, smallerPeptideList, index+zeroIndex)
 
 concatPepsFromFile()
-#checkOutput(OUTPUT_PATH, "concatOutput.fasta")
+checkOutput(OUTPUT_PATH, "concatOutput.fasta")
 

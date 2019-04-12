@@ -1,7 +1,7 @@
 from concatPeps import *
 
 # input file name and sortedFile name
-outputPath = 'example6-14_Linear_1_040419_0925'
+outputPath = 'C:/Users/Administrator/Desktop/Remove Subseqs/a2Maxmods3-Linear050219_2324'
 
 # create sequence object adapted from the Mers code to account for the input of either a dict or a a set
 def createSeqObj(seenPeptides):

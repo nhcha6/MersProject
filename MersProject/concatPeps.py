@@ -8,7 +8,7 @@ import math
 OUTPUT_PATH = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
 OUTPUT_PATH1 = 'concatOutputStop.fasta'
 OUTPUT_PATH2 = 'C:/Users/Administrator/Desktop/Remove Subseqs/a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
-NO_RECORDS = 1
+NO_RECORDS = 4000
 
 class ConcatList:
 
@@ -122,13 +122,16 @@ class ConcatList:
 
     def concatRemaining(self):
         noSeqPerConcat = math.ceil(self.pepListLen/NO_RECORDS)
+        print(self.pepListLen)
+        print(noSeqPerConcat)
         newSeq = ""
         finalSeq = []
         for i in range(0, self.pepListLen):
-            newSeq += self.peptideList[i]
-            if i % noSeqPerConcat == 0:
+            if (i+1) % noSeqPerConcat == 0:
+                print(i)
                 finalSeq.append(newSeq)
                 newSeq = ""
+            newSeq += self.peptideList[i]
         finalSeq.append(newSeq)
         self.peptideList = finalSeq
 
@@ -230,6 +233,6 @@ def findSuffOld(suffix, peptideList, zeroIndex):
             smallerPeptideList = peptideList[index:]
             return findSuffOld(suffix, smallerPeptideList, index+zeroIndex)
 
-concatPepsFromFile()
-checkOutput(OUTPUT_PATH, "concatOutput.fasta")
+#concatPepsFromFile()
+#checkOutput(OUTPUT_PATH, "concatOutput.fasta")
 

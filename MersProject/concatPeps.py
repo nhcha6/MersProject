@@ -10,7 +10,7 @@ OUTPUT_PATH1 = 'a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
 OUTPUT_PATH2 = 'C:/Users/Administrator/Desktop/Remove Subseqs/a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
 NO_RECORDS = 10
 
-CHECK_PEPS = ['QHAAAAAAAAAA', 'RKEEAAAAAAAAAAA', 'KGGAAAAAAAAAA']
+CHECK_PEPS = []#['QHAAAAAAAAAA', 'RKEEAAAAAAAAAAA', 'KGGAAAAAAAAAA']
 
 class ConcatList:
 

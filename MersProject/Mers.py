@@ -2016,12 +2016,6 @@ def editRefMassDict(massDict):
         value[1] = refNew
     return massDict
 
-
-def getFinalPath(outputPath, spliceType):
-    outputPathSmall = str(outputPath)[0:-6]
-    newPath = str(outputPathSmall) + '-' + spliceType + '.csv'
-    return Path(newPath)
-
 def nth_replace(string, old, new, n=1, option='only nth'):
 
     # https://stackoverflow.com/questions/35091557/replace-nth-occurrence-of-substring-in-string
@@ -2031,6 +2025,14 @@ def nth_replace(string, old, new, n=1, option='only nth'):
     1) 'only nth' replaces only nth occurrence (default).
     2) 'all left' replaces nth occurrence and all occurrences to the left.
     3) 'all right' replaces nth occurrence and all occurrences to the right.
+
+    :param string: the string from which you want to replace a substring.
+    :param old: the substring you want replaced.
+    :param new: the substring you want to replace the old substring with.
+    :param n: which occurence of the old string you want replaced, will work in conjunction with the only nth flag.
+    :param option: if you want to replace only the nth occurence, all to the right of the nth ocurrence or all to the
+    left of the nth occurence.
+    :return:
     """
 
     if option == 'only nth':
@@ -2053,7 +2055,19 @@ def nth_replace(string, old, new, n=1, option='only nth'):
 def processLockInit(lockVar, toWriteQueue, mgfObj, childTable, linSetQueue):
 
     """
-    Designed to set up a global lock for a child processes (child per protein)
+    Called by cisAndLinearOutput before the multiprocessing pool is created to set up a global lock for a child
+    processes and to give all processes access to important queues and shared variables.
+
+    :param lockVar: the multiprocessing.Lock() variable used for to control the access of process to certain tasks.
+    :param toWriteQueue: the queue which all processes need to be able to access to enable them to push their output
+    to the writer() function.
+    :param mgfObj: the object which stores all the data needed from the mgf file, which all processes require access
+    to. It was too large to initialise for each process, thus we can initialise it once by giving all processes
+    global access.
+    :param childTable: a list of all modifications, which has been updated to include custom modifications.
+    :param linSetQueue: the queue which all processes require access to so they can push all generated lin peptides
+    to the writer() function for deletion from the final cis output.
+    :return:
     """
 
     global lock
@@ -2068,7 +2082,20 @@ def processLockInit(lockVar, toWriteQueue, mgfObj, childTable, linSetQueue):
 def processLockTrans(lockVar, toWriteQueue, allSplits, allSplitRef, mgfObj, childTable, linCisQueue):
 
     """
-    Designed to set up a global lock for a child processes (child per protein)
+    :param lockVar: the multiprocessing.Lock() variable used for to control the access of process to certain tasks.
+    :param toWriteQueue: the queue which all processes need to be able to access to enable them to push their output
+    to the writer() function.
+    :param allSplits: a list of all the generate linear cleavages from all input peptides which will be used to
+    generate all trans spliced peptide.
+    :param allSplitRef: a list of references to the locations of allSplits peptides within the sequence resulting
+    from concetenating all input proteins.
+    :param mgfObj: the object which stores all the data needed from the mgf file, which all processes require access
+    to. It was too large to initialise for each process, thus we can initialise it once by giving all processes
+    global access.
+    :param childTable: a list of all modifications, which has been updated to include custom modifications.
+    :param linSetQueue: the queue which all processes require access to so they can push all generated lin/cis peptides
+    to the writer() function for deletion from the final output.
+    :return:
     """
     global lock
     lock = lockVar
@@ -2250,3 +2277,15 @@ def getChargeIndex(chargeFlags):
     """
     chargeHeaders = [i for i, e in enumerate(chargeFlags) if e]
     return chargeHeaders
+
+
+def getFinalPath(outputPath, spliceType):
+    """
+    called only if writeToCsv is called, probably delete.
+    :param outputPath:
+    :param spliceType:
+    :return:
+    """
+    outputPathSmall = str(outputPath)[0:-6]
+    newPath = str(outputPathSmall) + '-' + spliceType + '.csv'
+    return Path(newPath)

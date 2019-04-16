@@ -5,21 +5,83 @@ import time
 import os
 import math
 
-OUTPUT_PATH = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta'
-OUTPUT_PATH1 = 'a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
-OUTPUT_PATH2 = 'C:/Users/Administrator/Desktop/Remove Subseqs/a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
-NO_RECORDS = 10
+# define the input file containing peptides that you wish to concatenate. If this script is being run via the splicing
+# program, this variable will not be needed.
+OUTPUT_PATH = 'example6-14_Linear_1_040419_0925_NoSubsets.fasta' #'C:/Users/Administrator/Desktop/Remove Subseqs/a2Maxmods3-Linear050219_2324_NoSubsets.fasta'
 
+# the max number of sequences you want the input peptides to be concatenated to. The actual number of output peptides
+# will likely be slightly less.
+NO_RECORDS = 4000
+
+# define peptides you want to check are passing through the code correctly. They are directed to a separate function
+# which enables targeted error checking.
+# **can be deleted from final code.
 CHECK_PEPS = []#['QHAAAAAAAAAA', 'RKEEAAAAAAAAAAA', 'KGGAAAAAAAAAA']
 
 class ConcatList:
+    """
+        Class that handles the concatenation of peptide sequences that have shared prefixes and suffixes. It allows
+        a single list of peptides to shared across a series of functions.
+
+        Methods: self.overlapList(), self.createOverlap(), self.findSuff(), self.updatePepList(),
+                 self.concatRemaining(), self.createOutput().
+
+        Class Variables:
+            self.peptideList = a list of peptides which are to be concatenated. This list is reduced in a series of
+                               concatenations until it is under the NO_RECORDS.
+            self.pepListLen = the length of the current self.peptideList.
+            self.pepListLenOld = the length of the previous self.peptideList. When this equals self.pepList,
+                                 concatenation using prefix/suffix is no longer having an impact, and the code
+                                 turns to direct concatenation.
+
+    """
 
     def __init__(self, pepList):
+        """
+        A list of peptides is required to create a ConcatList object.
+
+        :param pepList: a list of peptides.
+        """
         self.peptideList = pepList
         self.pepListLen = len(pepList)
         self.pepListLenOld = 0
 
+    def createOutput(self):
+        """
+        Called by concatPepsFromFile() or concatPepsFromSet(). This function controls a series of concatenation cycles,
+        and updates the peptide list after each cycle. It also checks if self.pepListLen == self.pepListLenOld and
+        concatenates the remaining peptides without looking for peptides with similar prefixes/suffixes.
+
+        :return:
+        """
+
+        # call self.overlapList to initiate the first round of concatenation
+        self.overlapList()
+        print("concat loop finished")
+
+        # while self.pepListLen is more than twice the prescribed NO_RECORDS, we want to run another round of
+        # concatenation.
+        while(self.pepListLen > NO_RECORDS*2):
+            # update the peptide list (this consists of removing peptides which have been flagged for deletion by
+            # inserting a 1 on the end.
+            self.updatePepList()
+            # check that the prefix/suffix concatenation technique is still concatenating peptides.
+            if self.pepListLenOld == self.pepListLen:
+                # if it has stopped working, concatenate the remaining peptides arbitrarily and finish the program.
+                self.concatRemaining()
+                break
+            # otherwise, print the new length of self.peptideList and run another round of concatenation.
+            print("new length: " + str(self.pepListLen))
+            self.overlapList()
+            print("concat loop finished")
+
     def overlapList(self):
+        """
+        Called by self.createOutput(), this function controls a single round of concatenation by finding peptides
+        with similar prefix and suffix sequences. It indexes i and passed it into self.createOverlap(), allowing
+        self.createOverlap() to move through each peptide in self.peptideList and concatenate it with another peptide.
+        :return:
+        """
         i = 0
         while(True):
             try:
@@ -32,6 +94,16 @@ class ConcatList:
         return
 
     def createOverlap(self,i):
+        """
+        Called by overlapList(), this function takes an index which references a peptide in self.peptideList. This
+        peptide is extracted, and each potential suffix of it is iterated through from longest to shortest.
+        When a suffix is found as a prefix in another peptide the two peptides are concatenated together. This
+        concatenated peptide replace the original peptide at self.peptideList[i], and the second peptide is combined
+        with gets a 1 added to the end of it to flag it for later deletion.
+
+        :param i: the index location of the peptide to be concatenated.
+        :return:
+        """
         # store peptide and check that a number hasn't been added to the front of it.
         peptide = self.peptideList[i]
 
@@ -118,6 +190,31 @@ class ConcatList:
                 newRange = (index, range[1])
             return self.findSuff(suffix, newRange)
 
+    def updatePepList(self):
+        newList = []
+        for peptide in self.peptideList:
+            if peptide[-1]!='1':
+                newList.append(peptide)
+        self.peptideList = newList
+        self.pepListLenOld = self.pepListLen
+        self.pepListLen = len(self.peptideList)
+
+    def concatRemaining(self):
+        noSeqPerConcat = math.ceil(self.pepListLen/NO_RECORDS)
+        print(self.pepListLen)
+        print(noSeqPerConcat)
+        newSeq = ""
+        finalSeq = []
+        for i in range(0, self.pepListLen):
+            if (i+1) % noSeqPerConcat == 0:
+                print(i)
+                finalSeq.append(newSeq)
+                newSeq = ""
+            newSeq += self.peptideList[i]
+        finalSeq.append(newSeq)
+        self.peptideList = finalSeq
+
+    # **delete these functions once output is confirmed to be a ok.
     def createOverlap2(self,i):
         # store peptide and check that a number hasn't been added to the front of it.
         peptide = self.peptideList[i]
@@ -214,43 +311,6 @@ class ConcatList:
                 newRange = (index, range[1])
             return self.findSuff2(suffix, newRange)
 
-    def updatePepList(self):
-        newList = []
-        for peptide in self.peptideList:
-            if peptide[-1]!='1':
-                newList.append(peptide)
-        self.peptideList = newList
-        self.pepListLenOld = self.pepListLen
-        self.pepListLen = len(self.peptideList)
-
-    def concatRemaining(self):
-        noSeqPerConcat = math.ceil(self.pepListLen/NO_RECORDS)
-        print(self.pepListLen)
-        print(noSeqPerConcat)
-        newSeq = ""
-        finalSeq = []
-        for i in range(0, self.pepListLen):
-            if (i+1) % noSeqPerConcat == 0:
-                print(i)
-                finalSeq.append(newSeq)
-                newSeq = ""
-            newSeq += self.peptideList[i]
-        finalSeq.append(newSeq)
-        self.peptideList = finalSeq
-
-    def createOutput(self):
-        self.overlapList()
-        print("concat loop finished")
-        while(self.pepListLen > NO_RECORDS*2):
-            self.updatePepList()
-            if self.pepListLenOld == self.pepListLen:
-                self.concatRemaining()
-                break
-            print("new length: " + str(self.pepListLen))
-            self.overlapList()
-            print("concat loop finished")
-
-
 def createPepList(OUTPUT_PATH):
     pepList = []
     with open(OUTPUT_PATH, "rU") as handle:
@@ -278,23 +338,6 @@ def createSeqObj(seenPeptides):
         count += 1
     return seqRecords
 
-def checkOutput(inputFile, outputFile):
-    print("\nCHECKING OUTPUT")
-    peptideList = []
-    with open(outputFile, 'rU') as handle:
-        for record in SeqIO.parse(handle, 'fasta'):
-            peptideList.append(str(record.seq))
-
-    with open(inputFile, "rU") as handle:
-        for record in SeqIO.parse(handle, 'fasta'):
-            flag = True
-            for peptide in peptideList:
-                if str(record.seq) in peptide:
-                    flag = False
-                    break
-            if flag:
-                print(record.seq)
-
 def concatPepsFromFile():
     pepList = createPepList(OUTPUT_PATH)
     concatListObject = ConcatList(pepList)
@@ -313,7 +356,7 @@ def concatPepsFromSet(pepSet, outputPath):
     with open(outputPath, "w") as output_handle:
         SeqIO.write(createSeqObj(concatListObject.peptideList), output_handle, "fasta")
 
-# old find suff function
+# ** old find suff function and checkOutput function to be deleted
 def findSuffOld(suffix, peptideList, zeroIndex):
     if len(peptideList) == 1:
         guessPeptide = peptideList[0]
@@ -335,6 +378,24 @@ def findSuffOld(suffix, peptideList, zeroIndex):
         else:
             smallerPeptideList = peptideList[index:]
             return findSuffOld(suffix, smallerPeptideList, index+zeroIndex)
+
+
+def checkOutput(inputFile, outputFile):
+    print("\nCHECKING OUTPUT")
+    peptideList = []
+    with open(outputFile, 'rU') as handle:
+        for record in SeqIO.parse(handle, 'fasta'):
+            peptideList.append(str(record.seq))
+
+    with open(inputFile, "rU") as handle:
+        for record in SeqIO.parse(handle, 'fasta'):
+            flag = True
+            for peptide in peptideList:
+                if str(record.seq) in peptide:
+                    flag = False
+                    break
+            if flag:
+                print(record.seq)
 
 #concatPepsFromFile()
 #checkOutput(OUTPUT_PATH, "concatOutput.fasta")

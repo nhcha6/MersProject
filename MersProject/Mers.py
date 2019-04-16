@@ -76,6 +76,11 @@ class Fasta:
     """
 
     def __init__(self, inputFile):
+        """
+        A Fasta object simply requires the input path to a fasta file for it to be created.
+
+        :param inputFile: the input path to a fasta file.
+        """
 
         self.inputFile = [inputFile]
         self.procGenCounter = 0

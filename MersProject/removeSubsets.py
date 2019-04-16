@@ -2,7 +2,7 @@ from concatPeps import *
 
 # input file name and sortedFile name. This is used if running this script independantly of the rest of the splicing
 # program.
-outputPath = 'example6-14_Linear_1_040419_0925'
+PEPTIDE_FASTA = 'example6-14_Linear_1_040419_0925'
 
 def removeSubsetSeq(outputPath):
     """
@@ -143,4 +143,4 @@ def pepRemoveNoOrigin(handle, seenPeptides):
 
 # call removeSubsetSeq to run the script in isolation on the file set by outputPath. If this script is being run
 # in conjunction with the splicing program, it should be commented out.
-# removeSubsetSeq(outputPath)
+# removeSubsetSeq(PEPTIDE_FASTA)

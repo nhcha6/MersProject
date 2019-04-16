@@ -107,10 +107,12 @@ class ConcatList:
         # store peptide and check that a number hasn't been added to the front of it.
         peptide = self.peptideList[i]
 
+        # ** check peptides. Can be deleted once script is confirmed working.
         for missing in CHECK_PEPS:
             if missing in peptide:
                 self.createOverlap2(i)
 
+        # if the peptide has a 1 on the end, it has already been concatenated this iteration and should be skipped.
         if peptide[-1]=='1':
             #print('woooo')
             return
@@ -121,54 +123,83 @@ class ConcatList:
         if startIter < 1:
             startIter = 1
 
-        # loop through the different suffixes
-        for j in range(startIter,len(peptide)):
-            # extract suffix
+        # loop through the different suffixes in order from longest to shortest
+        for j in range(startIter, len(peptide)):
+            # extract suffix from peptide
             suffix = peptide[j:]
-            # extract location of matching prefixIndexfrom the list, if there is one.
+            # extract index of peptide with matching prefix from the list. Return None if the suffix cannot be found.
             prefixIndex = self.findSuff(suffix, (0,self.pepListLen-1))
 
+            # if a prefix was found, reconfigure self.peptideList and return from the function.
             if prefixIndex != None:
-                # store the prefixPeptide, and replace its location in the list with None
+                # store the prefixPeptide
                 prefixPeptide = self.peptideList[prefixIndex]
+                # add a 1 to the end of the prefix peptide so that it is skipped this iteration, and deleted from
+                # self.peptideList before the next concat iteration.
                 self.peptideList[prefixIndex] = prefixPeptide + '1'
+                # create the concatenated peptide.
                 overlapPeptide = concatOverlapPep(peptide, j, prefixPeptide)
                 # replace the current peptide with the new, overlapping peptide.
                 self.peptideList[i] = overlapPeptide
                 return
 
-    # need to rewrite this function so that we do not create a subset of the peptideList each time. This is the only
-    # place i can find that is causing inefficiencies.
-    # find suff is essentially a binary search algorithm.
     def findSuff(self, suffix, range):
+        """
+        This recursive function is initially called by self.createOvelap(). It is essentially based on the binary
+        search algorith, taking a suffix and searching through a sorted list for a matching prefix. It does so by
+        guessing the middle element of the input range, and then halving the range and calling the function again.
+        When a match is found the index is returned, and if the final prefix does not match it returns None.
+
+        :param suffix: the sequence that is being searched for as a prefix in one of the peptides.
+        :param range: the range of self.peptideList that is to be assessed. This is halved each time the function is
+        recursively called as per binary search.
+
+        :return: None if the suffix cannot be found, the index of the matched prefix within self.peptideList if it
+        is found.
+        """
+        # check if the range only encompasses one peptide.
         if range[0] == range[1]:
+            # store the index being guessed and the guessed peptide.
             index = range[0]
             guessPeptide = self.peptideList[index]
-            # check that the peptide we are up to is not None. If it is None, we want to return False as there are no
-            # peptides left to iterate through
+            # if the guessPeptide has a prefix matching suffix, and guessPeptide hasn't already been combined (detailed
+            # by the addition of a 1 to the end) we return the index.
             if guessPeptide[0:len(suffix)] == suffix and guessPeptide[-1]!='1':
                 return index
+            # if either of the above conditions fail, return None.
             else:
                 return None
+        # if there are at least two peptides in the range, continue as normal.
         else:
+            # calculate the guess index and guessPeptide
             index = math.ceil((range[1] - range[0]) / 2) + range[0]
             guessPeptide = self.peptideList[index]
+
+            # if the guessPeptide contains the suffix, continue to next check.
             if guessPeptide[0:len(suffix)] == suffix:
+                # if the guess peptide doesn't have the 1 flag, return the index as we have a match.
                 if guessPeptide[-1]!='1':
                     return index
+                # however if there is the 1 flag, check the peptides either side to see if a match that hasn't been
+                # flagged exists.
                 else:
                     # iterate forward through self.peptideList and try find a match without the 1 on the end.
                     j = 1
                     while True:
+                        # guess the peptide after the one that matched.
                         guessPeptide = self.peptideList[index+j]
+                        # if it matches return index+j
                         if guessPeptide[0:len(suffix)]==suffix:
                             if guessPeptide[-1]!='1':
                                 return index+j
+                            # if it fails based on another 1 being there, index j and try the next peptide.
                             else:
                                 j+=1
+                        # if the prefix doesn't match the suffix, break the while loop.
                         else:
                             break
-                    # iterate backwards if the forward iteration failed.
+
+                    # iterate backwards in the same manner if the forward iteration failed.
                     j = -1
                     while True:
                         guessPeptide = self.peptideList[index + j]
@@ -179,18 +210,29 @@ class ConcatList:
                                 j -= 1
                         else:
                             break
-                    # if neither loop yields a match, we will not find this split and return False.
+
+                    # if neither loop yields a match, we will not find this split so we return False.
                     return None
 
-            # if the suffix didn't match, simply continue.
+            # if the suffix didn't match, we reduce the size of the range and call self.findSuff again.
             guessPair = [suffix, guessPeptide]
+            # check if the suffix should sit to the left or the right of the guessPeptide.
             if sorted(guessPair)[0] == suffix:
+                # if it sits to the left, take the lower half of the current range.
                 newRange = (range[0], index - 1)
             else:
+                # if it sits to the right, take the upper half.
                 newRange = (index, range[1])
+            # call self.findSuff on the new range and same suffix and return the ultimate return value.
             return self.findSuff(suffix, newRange)
 
     def updatePepList(self):
+        """
+        Called by self.createOutput() after self.overlapList() runs an iteration of concatenation. It iterates through
+        self.peptideList and deletes all peptides which have been flagged with a 1 on the end of them. It then updates
+        the self.pepListLen and self.pepListLenOld variables.
+        :return:
+        """
         newList = []
         for peptide in self.peptideList:
             if peptide[-1]!='1':
@@ -200,6 +242,13 @@ class ConcatList:
         self.pepListLen = len(self.peptideList)
 
     def concatRemaining(self):
+        """
+        Called by self.createOverlap() when self.pepListLen and self.pepListLenOld are equal after an iteration of
+        concatenation, and thus combining based on suffix/prefix matching is no longer having any affect. This
+        function reduces the number of sequences in self.peptideList to under the NO_RECORDS by arbitrarily
+        concatenating them.
+        :return:
+        """
         noSeqPerConcat = math.ceil(self.pepListLen/NO_RECORDS)
         print(self.pepListLen)
         print(noSeqPerConcat)
@@ -216,6 +265,7 @@ class ConcatList:
 
     # **delete these functions once output is confirmed to be a ok.
     def createOverlap2(self,i):
+
         # store peptide and check that a number hasn't been added to the front of it.
         peptide = self.peptideList[i]
 
@@ -312,6 +362,13 @@ class ConcatList:
             return self.findSuff2(suffix, newRange)
 
 def createPepList(OUTPUT_PATH):
+    """
+    Called by concatPepsFromFile() when this script is being used independently of the splicing program. This function
+    simply stores the peptides in the input file path in a list, and sorts them alphabetically.
+
+    :param OUTPUT_PATH: the a input fasta file of peptides.
+    :return pepList: the peptides in the input file sorted alphabetically in a list.
+    """
     pepList = []
     with open(OUTPUT_PATH, "rU") as handle:
         for record in SeqIO.parse(handle, 'fasta'):
@@ -320,12 +377,27 @@ def createPepList(OUTPUT_PATH):
     return pepList
 
 def concatOverlapPep(peptide, j, prefixPeptide):
+    """
+    Called by self.createOverlap(), this function takes two peptides which have an identical prefix/suffix sequence
+    and combines them around this like sequence. Eg: ABCDE + DEFGH = ABCDEFGH
+
+    :param peptide: the peptide with matching suffix sequence
+    :param j: the length of the matching suffix
+    :param prefixPeptide: the peptide with matching prefix seqeunce.
+
+    :return concatPep: the peptide resulting from concatenation around the matching prefix/suffix.
+    """
     concatPep = peptide[0:j] + prefixPeptide
     return concatPep
 
 def createSeqObj(seenPeptides):
     """
-    Given the set of matchedPeptides, converts all of them into SeqRecord objects and passes back a generator
+    Called by concatPepsFromFile() and concatPepsFromSet, this function takes a list of peptides and configures them
+    for writing to fasta. Given the list of matchedPeptides, converts all of them into SeqRecord objects and passes
+    back a generator.
+
+    :param seenPeptides: the peptides to be written to file.
+    :return:
     """
     count = 1
     seqRecords = []
@@ -336,9 +408,14 @@ def createSeqObj(seenPeptides):
         finalId = "ipd|pep" + str(count) + ';'
         yield SeqRecord(Seq(sequence), id=finalId, description="")
         count += 1
-    return seqRecords
 
 def concatPepsFromFile():
+    """
+    Called when this script is to be run independently of the splicing program. It initiates the concatenation of all
+    the peptides in the file path declared globally as OUTPUT_PATH to reduce the number of sequences to under the number
+    set by NO_RECORDS.
+    :return:
+    """
     pepList = createPepList(OUTPUT_PATH)
     concatListObject = ConcatList(pepList)
     concatListObject.createOutput()
@@ -348,6 +425,15 @@ def concatPepsFromFile():
     #checkOutput(OUTPUT_PATH, 'concatOutput.fasta')
 
 def concatPepsFromSet(pepSet, outputPath):
+    """
+    Called from removeSubsets.py when the concatenated output has been selected in the splicing program. It takes a set
+    of peptides and an outputPath and initiates the concatenation of all the peptides to reduce the number of sequences
+    to under the number set by NO_RECORDS.
+
+    :param pepSet: a set of peptides to be concatenated.
+    :param outputPath: the output path that the concatenated peptides are to be written to.
+    :return:
+    """
     pepList = list(pepSet)
     pepList.sort()
     concatListObject = ConcatList(pepList)

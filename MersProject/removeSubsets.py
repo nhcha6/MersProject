@@ -143,4 +143,4 @@ def pepRemoveNoOrigin(handle, seenPeptides):
 
 # call removeSubsetSeq to run the script in isolation on the file set by outputPath. If this script is being run
 # in conjunction with the splicing program, it should be commented out.
-# removeSubsetSeq(PEPTIDE_FASTA)
+#removeSubsetSeq(PEPTIDE_FASTA)

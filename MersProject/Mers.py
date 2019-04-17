@@ -31,7 +31,7 @@ CIS = "Cis"
 
 # MEMORY_THRESHOLD is the percentage of RAM being used at which all computation is paused, the current output data is
 # written to file, after which the output recommences.
-MEMORY_THRESHOLD = 85
+MEMORY_THRESHOLD = 10
 # ** obsolete now that temp files are not being used.
 MEMORY_THRESHOLD_COMBINE = 90
 # NUM_PROC_TOTAL is the total number of processes generated per trans/cis/linear splicing computation.
@@ -1466,7 +1466,7 @@ def writeOutputFiles(finalSeenPeptides, protToPepFlag, pepToProtFlag, transFlag,
     :param fileCount: the number of output files that will have been written once this one has been completed.
     :return:
     """
-    finalPath = str(outputPath)[0:-17] + '_' + str(fileCount) + '_' + str(outputPath)[-17:]
+    finalPath = Path(str(outputPath)[0:-17] + '_' + str(fileCount) + '_' + str(outputPath)[-17:])
     with open(finalPath, 'w') as output_handle:
         # generate backwardSeenPeptides if protToPep is selected
         backwardsSeenPeptides = {}
@@ -1486,10 +1486,10 @@ def writeOutputFiles(finalSeenPeptides, protToPepFlag, pepToProtFlag, transFlag,
                         backwardsSeenPeptides[entry] = [key]
                     else:
                         backwardsSeenPeptides[entry].append(key)
-            writeProtToPep(backwardsSeenPeptides, 'ProtToPep', outputPath)
+            writeProtToPep(backwardsSeenPeptides, 'ProtToPep', finalPath)
 
         if pepToProtFlag:
-            writeProtToPep(finalSeenPeptides, 'PepToProt', outputPath)
+            writeProtToPep(finalSeenPeptides, 'PepToProt', finalPath)
 
         logging.info("Writing to fasta")
         SeqIO.write(createSeqObj(finalSeenPeptides), output_handle, "fasta")

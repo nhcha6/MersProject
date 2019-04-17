@@ -555,6 +555,7 @@ class MyTableWidget(QWidget):
             # self.tab1.ppmLabel.setEnabled(False)
         if not self.mgfFlag.isChecked():
             # set values true/false before calling enableControl to avoid bug of it being called again later
+            self.tab1.byIonFlag.setChecked(True)
             self.tab2.trans.setChecked(False)
             self.enableControl()
             self.mgfButton.setEnabled(True)

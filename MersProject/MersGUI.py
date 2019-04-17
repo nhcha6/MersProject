@@ -217,6 +217,9 @@ class MyTableWidget(QWidget):
 
         self.tab1.setLayout(self.tab1.layout)
 
+        # counter for ensuring additional mods can be added
+        self.addModsFlag = False
+
         # Create second tab layout and widgets within each tab
         self.tab2.layout = QGridLayout(self)
         self.tab2.layout.setSpacing(10)
@@ -924,8 +927,12 @@ class MyTableWidget(QWidget):
         """
         Ensures only one mod can be selected.
         """
+        if self.addModsFlag:
+            modCombos = [self.tab2.mod1Combo, self.tab2.mod2Combo, self.tab2.mod3Combo, self.tab2.mod4Combo,
+                         self.tab2.mod5Combo, self.tab2.mod6Combo]
+        else:
+            modCombos = [self.tab2.mod1Combo, self.tab2.mod2Combo, self.tab2.mod3Combo]
 
-        modCombos = [self.tab2.mod1Combo, self.tab2.mod2Combo, self.tab2.mod3Combo]
         modSender = []
         modChange = []
 
@@ -1155,6 +1162,10 @@ class MyTableWidget(QWidget):
         self.tab2.mod3Combo = QComboBox(self)
         self.tab2.mod3Combo.activated[str].connect(self.modSelected)
         self.tab2.maxModCombo = QComboBox(self)
+        self.tab2.addMods = QPushButton("Add Additional Mods")
+        self.tab2.addMods.clicked.connect(self.addMods)
+        self.tab2.removeMods = QPushButton("Remove Additional Mods")
+        self.tab2.removeMods.clicked.connect(self.removeMods)
 
         # Adding values to modification combo boxes
         self.tab2.mod1Combo.addItem("None")
@@ -1172,6 +1183,48 @@ class MyTableWidget(QWidget):
         self.tab2.maxModCombo.addItem('None')
         for i in range(1,6):
             self.tab2.maxModCombo.addItem(str(i))
+
+    def addMods(self):
+        self.addModsFlag = True
+        self.addTab2ParameterWidgets()
+        # create three new modifications and add them to the GUI
+        self.createNewMods()
+
+    def createNewMods(self):
+        # Modifications combo boxes and labels
+        self.tab2.mod4 = QLabel('Modification 4 : ')
+        self.tab2.mod5 = QLabel('Modification 5 : ')
+        self.tab2.mod6 = QLabel('Modification 6 : ')
+        self.tab2.mod4Combo = QComboBox(self)
+        self.tab2.mod4Combo.activated[str].connect(self.modSelected)
+        self.tab2.mod5Combo = QComboBox(self)
+        self.tab2.mod5Combo.activated[str].connect(self.modSelected)
+        self.tab2.mod6Combo = QComboBox(self)
+        self.tab2.mod6Combo.activated[str].connect(self.modSelected)
+
+        # Adding values to modification combo boxes
+        self.tab2.mod4Combo.addItem("None")
+        self.tab2.mod5Combo.addItem("None")
+        self.tab2.mod6Combo.addItem("None")
+        for modification in modTable.keys():
+            self.tab2.mod4Combo.addItem(modification)
+            self.tab2.mod5Combo.addItem(modification)
+            self.tab2.mod6Combo.addItem(modification)
+        self.tab2.mod4Combo.addItem('Custom Modification')
+        self.tab2.mod5Combo.addItem('Custom Modification')
+        self.tab2.mod6Combo.addItem('Custom Modification')
+
+        # Add the new mods to the layout
+        self.tab2.layout.addWidget(self.tab2.mod4, 7, 3)
+        self.tab2.layout.addWidget(self.tab2.mod4Combo, 7, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.mod5, 8, 3)
+        self.tab2.layout.addWidget(self.tab2.mod5Combo, 8, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.mod6, 9, 3)
+        self.tab2.layout.addWidget(self.tab2.mod6Combo, 9, 4, 1, 3)
+
+
+    def removeMods(self):
+        print('dsa')
 
     def textBoxSender(self, sender):
         if sender == self.tab1.byIonAccText:
@@ -1333,18 +1386,22 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.mod1, 4, 3)
         self.tab2.layout.addWidget(self.tab2.mod2, 5, 3)
         self.tab2.layout.addWidget(self.tab2.mod3, 6, 3)
-        self.tab2.layout.addWidget(self.tab2.maxMod, 7, 3)
-        self.tab2.layout.addWidget(self.tab2.linear, 8, 3)
-        self.tab2.layout.addWidget(self.tab2.cis, 9, 3)
-        self.tab2.layout.addWidget(self.tab2.trans, 10, 3)
-        self.tab2.layout.addWidget(self.tab2.overlap, 11, 3)
-        self.tab2.layout.addWidget(self.tab2.concat, 11, 4)
+        if self.addModsFlag:
+            self.tab2.layout.addWidget(self.tab2.removeMods, 10, 3)
+        else:
+            self.tab2.layout.addWidget(self.tab2.addMods, 10, 3)
+        self.tab2.layout.addWidget(self.tab2.maxMod, 11, 3)
+        self.tab2.layout.addWidget(self.tab2.linear, 12, 3)
+        self.tab2.layout.addWidget(self.tab2.cis, 13, 3)
+        self.tab2.layout.addWidget(self.tab2.trans, 14, 3)
+        self.tab2.layout.addWidget(self.tab2.overlap, 15, 3)
+        self.tab2.layout.addWidget(self.tab2.concat, 15, 4)
 
-        self.tab2.layout.addWidget(self.tab2.csv, 8, 4, 1, 3)
-        self.tab2.layout.addWidget(self.tab2.pepToProt, 9, 4, 1, 3)
-        self.tab2.layout.addWidget(self.tab2.protToPep, 10, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.csv, 12, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.pepToProt, 13, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.protToPep, 14, 4, 1, 3)
 
-        self.tab2.layout.addWidget(self.tab2.chargeLabel, 13, 3)
+        self.tab2.layout.addWidget(self.tab2.chargeLabel, 16, 3)
 
         # all dynamic elements added to the grid layout of tab 2
         self.tab2.layout.addWidget(self.tab2.minimumCombo, 1, 4, 1, 3)
@@ -1353,13 +1410,13 @@ class MyTableWidget(QWidget):
         self.tab2.layout.addWidget(self.tab2.mod1Combo, 4, 4, 1, 3)
         self.tab2.layout.addWidget(self.tab2.mod2Combo, 5, 4, 1, 3)
         self.tab2.layout.addWidget(self.tab2.mod3Combo, 6, 4, 1, 3)
-        self.tab2.layout.addWidget(self.tab2.maxModCombo, 7, 4, 1, 3)
-        self.tab2.layout.addWidget(self.tab2.plusOne, 13, 4)
-        self.tab2.layout.addWidget(self.tab2.plusTwo, 13, 5)
-        self.tab2.layout.addWidget(self.tab2.plusThree, 13, 6)
-        self.tab2.layout.addWidget(self.tab2.plusFour, 14, 4)
-        self.tab2.layout.addWidget(self.tab2.plusFive, 14, 5)
-        self.tab2.layout.addWidget(self.tab2.output, 15, 5, 1, 2)
+        self.tab2.layout.addWidget(self.tab2.maxModCombo, 11, 4, 1, 3)
+        self.tab2.layout.addWidget(self.tab2.plusOne, 17, 4)
+        self.tab2.layout.addWidget(self.tab2.plusTwo, 17, 5)
+        self.tab2.layout.addWidget(self.tab2.plusThree, 17, 6)
+        self.tab2.layout.addWidget(self.tab2.plusFour, 18, 4)
+        self.tab2.layout.addWidget(self.tab2.plusFive, 18, 5)
+        self.tab2.layout.addWidget(self.tab2.output, 19, 5, 1, 2)
         #self.tab2.layout.addWidget(self.tab2.stop, 15, 3)
 
     def setDefaultParameters(self):

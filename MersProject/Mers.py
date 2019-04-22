@@ -31,7 +31,7 @@ CIS = "Cis"
 
 # MEMORY_THRESHOLD is the percentage of RAM being used at which all computation is paused, the current output data is
 # written to file, after which the output recommences.
-MEMORY_THRESHOLD = 10
+MEMORY_THRESHOLD = 85
 # ** obsolete now that temp files are not being used.
 MEMORY_THRESHOLD_COMBINE = 90
 # NUM_PROC_TOTAL is the total number of processes generated per trans/cis/linear splicing computation.

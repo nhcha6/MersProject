@@ -1166,8 +1166,6 @@ class MyTableWidget(QWidget):
         self.tab2.maxModCombo = QComboBox(self)
         self.tab2.addMods = QPushButton("Add Additional Mods")
         self.tab2.addMods.clicked.connect(self.addMods)
-        self.tab2.removeMods = QPushButton("Remove Additional Mods")
-        self.tab2.removeMods.clicked.connect(self.removeMods)
 
         # Adding values to modification combo boxes
         self.tab2.mod1Combo.addItem("None")
@@ -1188,7 +1186,14 @@ class MyTableWidget(QWidget):
 
     def addMods(self):
         self.addModsFlag = True
+        self.tab2.removeMods = QPushButton("Remove Additional Mods")
+        self.tab2.removeMods.clicked.connect(self.removeMods)
+
+        self.tab2.layout.removeWidget(self.tab2.addMods)
+        self.tab2.addMods.deleteLater()
+
         self.addTab2ParameterWidgets()
+
         # create three new modifications and add them to the GUI
         self.createNewMods()
 
@@ -1231,7 +1236,27 @@ class MyTableWidget(QWidget):
 
 
     def removeMods(self):
-        print('dsa')
+        # change addModsFlag to False and reset the window
+        self.addModsFlag = False
+        self.tab2.layout.removeWidget(self.tab2.removeMods)
+        self.tab2.removeMods.deleteLater()
+
+        self.tab2.addMods = QPushButton("Add Additional Mods")
+        self.tab2.addMods.clicked.connect(self.addMods)
+
+        self.addTab2ParameterWidgets()
+
+        widgetList = [self.tab2.mod4, self.tab2.mod4Combo, self.tab2.mod5, self.tab2.mod5Combo, self.tab2.mod6, \
+                      self.tab2.mod6Combo]
+
+        # delete all widgets
+        for widget in widgetList:
+            self.tab2.layout.removeWidget(widget)
+            widget.deleteLater()
+            widget = None
+
+
+        # self.tab2.layout.addWidget(self.tab2.removeMods, 10, 3)
 
     def textBoxSender(self, sender):
         if sender == self.tab1.byIonAccText:

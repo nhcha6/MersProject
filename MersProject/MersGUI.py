@@ -798,9 +798,9 @@ class MyTableWidget(QWidget):
         """
 
         self.progressLabel = QLabel('Collating Combinations. Please Wait: ')
-        self.tab2.layout.addWidget(self.progressLabel, 16, 3, 1, 2)
+        self.tab2.layout.addWidget(self.progressLabel, 19, 3, 1, 2)
         self.progressBar = QProgressBar(self)
-        self.tab2.layout.addWidget(self.progressBar, 17, 3, 1, 4)
+        self.tab2.layout.addWidget(self.progressBar, 20, 3, 1, 4)
 
         self.outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag,
                                          csvFlag, pepToProtFlag, protToPepFlag,
@@ -1085,7 +1085,10 @@ class MyTableWidget(QWidget):
 
         modList = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(),
                    self.tab2.mod3Combo.currentText()]
-
+        if self.addModsFlag:
+            modList += [self.tab2.mod4Combo.currentText(), self.tab2.mod5Combo.currentText(),
+                        self.tab2.mod6Combo.currentText()]
+        print(modList)
         maxMod = self.tab2.maxModCombo.currentText()
 
 
@@ -1201,11 +1204,16 @@ class MyTableWidget(QWidget):
         self.tab2.mod6Combo = QComboBox(self)
         self.tab2.mod6Combo.activated[str].connect(self.modSelected)
 
+        # Store the values of the other modification boxes so that they are not added to the list.
+        currentMods = [self.tab2.mod1Combo.currentText(), self.tab2.mod2Combo.currentText(), self.tab2.mod3Combo.currentText()]
+
         # Adding values to modification combo boxes
         self.tab2.mod4Combo.addItem("None")
         self.tab2.mod5Combo.addItem("None")
         self.tab2.mod6Combo.addItem("None")
         for modification in modTable.keys():
+            if modification in currentMods:
+                continue
             self.tab2.mod4Combo.addItem(modification)
             self.tab2.mod5Combo.addItem(modification)
             self.tab2.mod6Combo.addItem(modification)

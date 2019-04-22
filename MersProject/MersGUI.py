@@ -927,6 +927,8 @@ class MyTableWidget(QWidget):
         """
         Ensures only one mod can be selected.
         """
+
+        # if addmodsFlag as is checked, we have 6 mods not three. Update modCombos accordingly.
         if self.addModsFlag:
             modCombos = [self.tab2.mod1Combo, self.tab2.mod2Combo, self.tab2.mod3Combo, self.tab2.mod4Combo,
                          self.tab2.mod5Combo, self.tab2.mod6Combo]
@@ -936,9 +938,11 @@ class MyTableWidget(QWidget):
         modSender = []
         modChange = []
 
+        # append True in element of modSender if corresponding element in modCombos is the sender.
         for combo in modCombos:
             modSender.append(combo == self.tab2.sender())
 
+        # modChange contains all the combos which were not changed (not the sender).
         for i in range(0, len(modSender)):
             if not modSender[i]:
                 modChange.append(modCombos[i])
@@ -947,31 +951,26 @@ class MyTableWidget(QWidget):
         if sender.currentText() == 'Custom Modification':
             self.showCustomMod(sender)
 
-        modValue1 = modChange[0].currentText()
-        modValue2 = modChange[1].currentText()
-
-        modChange[0].clear()
-        modChange[1].clear()
-        modChange[0].addItem('None')
-        modChange[1].addItem('None')
+        modValues = []
+        for i in range(0, len(modChange)):
+            modValues.append(modChange[i].currentText())
+            modChange[i].clear()
+            modChange[i].addItem('None')
 
         for modification in modTable.keys():
             # and modification != modValue1 and modification != modValue2:
-            if modification not in (text, modValue1, modValue2):
-                modChange[0].addItem(modification)
-                modChange[1].addItem(modification)
-        modChange[0].addItem("Custom Modification")
-        modChange[1].addItem("Custom Modification")
+            if modification != text and modification not in modValues:
+                for i in range(0, len(modChange)):
+                    modChange[i].addItem(modification)
 
-        if modValue1 not in (text, 'None'):
-            modChange[0].addItem(modValue1)
-            indexMod1 = modChange[0].findText(modValue1)
-            modChange[0].setCurrentIndex(indexMod1)
+        for i in range(0, len(modChange)):
+            modChange[i].addItem("Custom Modification")
 
-        if modValue2 not in (text, 'None'):
-            modChange[1].addItem(modValue2)
-            indexMod2 = modChange[1].findText(modValue2)
-            modChange[1].setCurrentIndex(indexMod2)
+        for i in range(0, len(modChange)):
+            if modValues[i] not in (text, 'None'):
+                modChange[i].addItem(modValues[i])
+                indexMod = modChange[i].findText(modValues[i])
+                modChange[i].setCurrentIndex(indexMod)
 
     def showCustomMod(self, sender):
 

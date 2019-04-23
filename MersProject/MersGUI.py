@@ -292,7 +292,7 @@ class MyTableWidget(QWidget):
         :return chargeMaxDict: a dictionary containing charge states as keys and the corresponding max m/z ratio in
         the MGF file as values.
         """
-        
+
         maxMass = 0
         chargeMaxDict = {}
         for mgfDf in mgfDfList:
@@ -307,13 +307,12 @@ class MyTableWidget(QWidget):
 
         return maxMass, chargeMaxDict
 
-    def onlyImportMGF(self, ms2Thresh, intensityPoints):
-
-        plot(ms2Thresh, intensityPoints)
-
     def uploadMgfPreStep(self):
         """
-        Called from the select MGF file button. Opens a window to select a file, and check if the file ends in MGF
+        Called from the select MGF file button. Opens a window to select a file, and check if the file ends in MGF.
+        It also creates a plot of the max intensities of each spectrum so that the user can make an informed decision
+        regarding the intensity threshold input.
+        :return:
         """
 
         fname = QFileDialog.getOpenFileName(self, 'Open File', '/home')
@@ -322,6 +321,7 @@ class MyTableWidget(QWidget):
         if mgfTest == 'mgf':
             self.mgfPath = fname[0]
             if self.mgfPlotFlag.isChecked():
+                #** check this still works / do we still need it.
                 self.progressLabel = QLabel('Creating Intensity Plot. Please Wait: ')
                 self.tab1.layout.addWidget(self.progressLabel, 8, 2, 1, 2)
                 self.progressBar = QProgressBar(self)
@@ -348,10 +348,39 @@ class MyTableWidget(QWidget):
         else:
             QMessageBox.about(self, "Message", 'Please select a MGF file!')
 
-    def uploadFasta(self):
-
+    def onlyImportMGF(self, ms2Thresh, intensityPoints):
         """
-        Called from the Upload Fasta File button. Opens a window to select a file, and check if the file ends in fasta
+        Called by uploadMgfPreStep() when the user has selected to produce the intensity plot. In this case, the MGF
+        file is opened and a plot of the max intensities of each spectrum is produced and shown to the user.
+
+        ** not 100% sure what these variables are. Also cannot find the function which creates them via the MGFPlotter.
+        :param ms2Thresh:
+        :param intensityPoints:
+        :return:
+        """
+
+        plot(ms2Thresh, intensityPoints)
+
+    def intensityPlotFin(self):
+        """
+        Called when self.onlyImportMGF() finishes being run by the MGFPlotter thread. This function simply
+        closes the progress bar by calling the changeFlag() function, and then enables all widgets as per
+        self.enableControl().
+        :return:
+        """
+        self.progressBarUpdate.changeFlag()
+        self.enableTab2Widgets()
+        self.pushButton1.setEnabled(True)
+        self.mgfButton.setEnabled(True)
+        self.mgfPlotFlag.setEnabled(True)
+        self.enableControl()
+
+    def uploadFasta(self):
+        """
+        Called on click of the Upload Fasta File button. Opens a window to select a file, and check if the file ends in
+        '.fasta'.
+
+        :return:
         """
         sender = self.sender()
 
@@ -398,7 +427,8 @@ class MyTableWidget(QWidget):
 
     def filePathDialog(self):
         """
-        This function initialises and shows the filing naming popup.
+        This function initialises and shows the file naming pop-up box. It is called by self.getOutputPath() if the
+        user selects a valid output path.
         """
         self.outputNameBox = QGroupBox('Output Name')
         self.outputNameLayout = QFormLayout()
@@ -418,7 +448,8 @@ class MyTableWidget(QWidget):
         """
         This function is called every time the file name lineEdit is updated. It takes the param input, which is the
         text in the lineEdit, and checks if it is a valid file name.
-        :param input:
+
+        :param input: the text in the line-edit which has to be confirmed as valid/invalid.
         """
         # assign bannedCharacters to variables.
         bannedCharacters = set('\/:*"<>|')
@@ -435,7 +466,8 @@ class MyTableWidget(QWidget):
         """
         Called when create output button in the file name dialog is clicked. It takes self.outputPath and adds the
         name input by the user. It then creates the specific names for lin/cis/trans, adds the time and adds these
-        output paths to a dictionary. It lastly calls the code to create the output.
+        output paths to a dictionary. It lastly calls the code in Mers.py to initiate the creation of spliced
+        peptides.
         :return:
         """
         # create the base output file name which will be used to create the specific names for lin/cis/tras
@@ -494,140 +526,29 @@ class MyTableWidget(QWidget):
         # close the output name box.
         self.outputNameBox.close()
 
-    # def stopFunction(self):
-    #     print('in stop function')
-    #     # close processes
-    #     for process in self.fasta.allProcessList:
-    #         process.terminate()
-    #
-    #     # empty queues
-    #     self.emptyProgQueues()
-    #
-    #     # reset progress bar counters
-    #     self.totalSize = 0
-    #     self.finishedPeptides = 0
-
     def emptyProgQueues(self):
+        """
+        Called after self.fasta.generateOutput() has finished, and thus the program has finished compliling the
+        spliced peptides for the current user input. It empties any elements in the queue self.fasta.pepCompleted,
+        and then clears the variables self.fasta.completedProcs, self.fasta.procGenCounter and self.fasta.totalProcs.
+        If these variables aren't cleared, the progress bar and process generation will not run correctly if the user
+        wished to run another splicing.
+        :return:
+        """
         while not self.fasta.pepCompleted.empty():
             clearQ = self.fasta.pepCompleted.get()
         self.fasta.completedProcs = 0
         self.fasta.procGenCounter = 0
         self.fasta.totalProcs = 0
 
-    def nextTabFunc(self):
-        self.tabs.setCurrentIndex(1)
-
-    def firstTabValid(self):
-        if self.mgfFlag.isChecked() == True:
-            return True
-        if self.tab1.byIonFlag.isChecked():
-            statusList = [self.tab1.byIonAccStatus.text(), self.tab1.ppmStatus.text(), \
-                          self.tab1.toleranceStatus.text(), self.tab1.minByIonStatus.text()]
-        else:
-            statusList = [self.tab1.ppmStatus.text(), self.tab1.toleranceStatus.text()]
-        for status in statusList:
-            if status in ["Invalid", ""]:
-                return False
-        return True
-
-    def secondTabValid(self):
-        transFlag = self.tab2.trans.isChecked()
-        cisFlag = self.tab2.cis.isChecked()
-        linearFlag = self.tab2.linear.isChecked()
-        outputFlag = cisFlag or linearFlag or transFlag
-
-        plusOneFlag = self.tab2.plusOne.isChecked()
-        plusTwoFlag = self.tab2.plusTwo.isChecked()
-        plusThreeFlag = self.tab2.plusThree.isChecked()
-        plusFourFlag = self.tab2.plusFour.isChecked()
-        plusFiveFlag = self.tab2.plusFive.isChecked()
-        chargeFlag = plusOneFlag or plusTwoFlag or plusThreeFlag or plusFourFlag or plusFiveFlag
-
-        if chargeFlag and outputFlag:
-            return True
-        return False
-
-    def enableControl(self):
-        if self.fasta is not None:
-            self.addMultipleFasta.setEnabled(True)
-            if self.mgfPath is not None or self.mgfFlag.isChecked() == True:
-                self.tab1.toleranceText.setEnabled(True)
-                self.tab1.toleranceLabel.setEnabled(True)
-                self.tab1.ppmText.setEnabled(True)
-                self.tab1.ppmLabel.setEnabled(True)
-                self.tab1.byIonFlag.setEnabled(True)
-                if self.tab1.byIonFlag.isChecked():
-                    self.tab1.byIonAccText.setEnabled(True)
-                    self.tab1.byIonAccLabel.setEnabled(True)
-                    self.tab1.minByIonText.setEnabled(True)
-                    self.tab1.minByIonLabel.setEnabled(True)
-                else:
-                    self.tab1.byIonAccText.setEnabled(False)
-                    self.tab1.byIonAccLabel.setEnabled(False)
-                    self.tab1.minByIonText.setEnabled(False)
-                    self.tab1.minByIonLabel.setEnabled(False)
-                if self.firstTabValid():
-                    self.tabs.setTabEnabled(1, True)
-                    self.nextTab.setEnabled(True)
-                    if self.secondTabValid():
-                        self.tab2.output.setEnabled(True)
-                    else:
-                        self.tab2.output.setEnabled(False)
-                else:
-                    self.tabs.setTabEnabled(1, False)
-                    self.nextTab.setEnabled(False)
-            else:
-                self.tabs.setTabEnabled(1, False)
-                self.nextTab.setEnabled(False)
-        else:
-            self.addMultipleFasta.setEnabled(False)
-
-    def controlMGFInput(self):
-        if self.mgfFlag.isChecked():
-            # set values true/false before calling enableControl to avoid bug of it being called again later
-            self.tab1.byIonFlag.setChecked(False)
-            self.enableControl()
-            self.mgfButton.setEnabled(False)
-            self.mgfPlotFlag.setEnabled(False)
-            self.tab1.ppmText.setEnabled(False)
-            self.tab1.ppmLabel.setEnabled(False)
-            self.tab1.toleranceText.setEnabled(False)
-            self.tab1.toleranceLabel.setEnabled(False)
-            self.tab1.minByIonText.setEnabled(False)
-            self.tab1.minByIonLabel.setEnabled(False)
-            self.tab1.byIonAccText.setEnabled(False)
-            self.tab1.byIonAccLabel.setEnabled(False)
-            self.tab1.byIonFlag.setEnabled(False)
-            self.tab2.plusOne.setEnabled(False)
-            self.tab2.plusTwo.setEnabled(False)
-            self.tab2.plusThree.setEnabled(False)
-            self.tab2.plusFour.setEnabled(False)
-            self.tab2.plusFive.setEnabled(False)
-            self.tab2.chargeLabel.setEnabled(False)
-            #self.tab2.trans.setEnabled(True)
-            # self.tab1.ppmLabel.setEnabled(False)
-        if not self.mgfFlag.isChecked():
-            # set values true/false before calling enableControl to avoid bug of it being called again later
-            self.tab1.byIonFlag.setChecked(True)
-            self.tab2.trans.setChecked(False)
-            self.enableControl()
-            self.mgfButton.setEnabled(True)
-            self.mgfPlotFlag.setEnabled(True)
-            #self.tab2.trans.setEnabled(False)
-            self.tab2.plusOne.setEnabled(True)
-            self.tab2.plusTwo.setEnabled(True)
-            self.tab2.plusThree.setEnabled(True)
-            self.tab2.plusFour.setEnabled(True)
-            self.tab2.plusFive.setEnabled(True)
-            self.tab2.chargeLabel.setEnabled(True)
-
 
     def confirmationFunction(self):
 
         """
         Called on click of generate output button on tab2. Checks to ensure all input values are relevant and outputs
-        message box summarising the inputs of the user. When yes is clicked on the message box, the output function is
-        called which begins generating results
+        message box summarising the inputs of the user. When yes is clicked on the message box, self.getOutputPath()
+        is called, prompting the user to select a file location and name before the generation of spliced peptides
+        begins.
         """
 
         # save the input variables as in the MyTableWidget class so that they can be accessed by all methods in the GUI.
@@ -695,6 +616,41 @@ class MyTableWidget(QWidget):
 
     def importedMGF(self, mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
                     protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag=False):
+        """
+        Called by self.returnPath() once the output path has been created and all MGF data (if any) has been
+        imported. This function then calls self.outputPreStep() which is the first step in initiating the code in
+        Mer.py which creates the spliced peptides.
+
+        :param mined: the minimum length of an output peptide.
+        :param maxed: the maximum length of an ouptut peptide.
+        :param overlapFlag: if True, this flag denotes that combination of splits containing shared amino acids is not
+        permitted. Shared amino acids originate from the same amino-acid in the same peptide. This is only relevant to
+        cis spliced peptides.
+        :param concatFlag: if True, an additional file will be output containing the output peptides concatenated to
+        into approximately 6000 sequences.
+        :param transFlag: if True, trans splicing should be completed as part of the output.
+        :param cisFlag: if True, cis splicing should be completed as part of the output.
+        :param linearFlag: if True, linear splicing should be completed as part of the output.
+        :param csvFlag: if True, the data contained in massDict should be printed to a csv file before any b-y Ion
+        or precursor mass comparison is conducted. ** We may look to consider removing this functionality.
+        :param pepToProtFlag: if True, a csv file is written with the output peptides as a heading, and the proteins
+        they originated in listed underneath.
+        :param protToPepFlag: if True, a csv file is written with the input proteins as a heading, and the peptides
+        which they produced listed underneath.
+        :param modList: a list of the modifications input by the user. The modifications match the keys in modTable,
+        which can be found in the file MonoAminoAndMods.py.
+        :param maxMod: the max number of modifications allowable per peptide.
+        :param maxDistance: in cis splicing, the maximum distance between any two amino acids in two cleaved peptides
+        that are to be recombined to form a cis spliced peptide. If None, the max distance is infinite.
+        :param outputPath: a dictionary holding the output file name of a trans, cis and linear splice output. The
+        keys are the TRANS, LINEAR and CIS flags defined at the top of this script.
+        :param chargeFlags: a list of bools which defines which charge flags are to be assessed when comparing to the
+        mgf file. The first bool corresponds to +1, the second to +2 and so on up to +5.
+        :param mgfFlag: if True, no the user has selected that no mgf comparison be conducted and the raw splice data
+        is to be ouptut to Fasta.
+
+        :return:
+        """
 
         print("MGF FILE UPLOADED")
 
@@ -707,29 +663,141 @@ class MyTableWidget(QWidget):
 
         self.outputPreStep(mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
                            protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag)
+
+    def outputPreStep(self, mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
+                      protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag):
+
+        """
+        Called by self.importedMGF(), this function begins the spliced peptide generation by creating a new thread
+        to keep the GUI responsive. It creates two threads, on via OutputGenerator and one via ProgressGenerator.
+        The OutputGenerator thread runs the function self.output() while the ProgressGenerator thread controls the
+        creating and updating of a progress bar.
+
+        :param mined: the minimum length of an output peptide.
+        :param maxed: the maximum length of an ouptut peptide.
+        :param overlapFlag: if True, this flag denotes that combination of splits containing shared amino acids is not
+        permitted. Shared amino acids originate from the same amino-acid in the same peptide. This is only relevant to
+        cis spliced peptides.
+        :param concatFlag: if True, an additional file will be output containing the output peptides concatenated to
+        into approximately 6000 sequences.
+        :param transFlag: if True, trans splicing should be completed as part of the output.
+        :param cisFlag: if True, cis splicing should be completed as part of the output.
+        :param linearFlag: if True, linear splicing should be completed as part of the output.
+        :param csvFlag: if True, the data contained in massDict should be printed to a csv file before any b-y Ion
+        or precursor mass comparison is conducted. ** We may look to consider removing this functionality.
+        :param pepToProtFlag: if True, a csv file is written with the output peptides as a heading, and the proteins
+        they originated in listed underneath.
+        :param protToPepFlag: if True, a csv file is written with the input proteins as a heading, and the peptides
+        which they produced listed underneath.
+        :param modList: a list of the modifications input by the user. The modifications match the keys in modTable,
+        which can be found in the file MonoAminoAndMods.py.
+        :param maxMod: the max number of modifications allowable per peptide.
+        :param maxDistance: in cis splicing, the maximum distance between any two amino acids in two cleaved peptides
+        that are to be recombined to form a cis spliced peptide. If None, the max distance is infinite.
+        :param outputPath: a dictionary holding the output file name of a trans, cis and linear splice output. The
+        keys are the TRANS, LINEAR and CIS flags defined at the top of this script.
+        :param chargeFlags: a list of bools which defines which charge flags are to be assessed when comparing to the
+        mgf file. The first bool corresponds to +1, the second to +2 and so on up to +5.
+        :param mgfFlag: if True, no the user has selected that no mgf comparison be conducted and the raw splice data
+        is to be ouptut to Fasta.
+        :return:
+        """
+
+        self.progressLabel = QLabel('Collating Combinations. Please Wait: ')
+        self.tab2.layout.addWidget(self.progressLabel, 19, 3, 1, 2)
+        self.progressBar = QProgressBar(self)
+        self.tab2.layout.addWidget(self.progressBar, 20, 3, 1, 4)
+
+        self.outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag,
+                                         csvFlag, pepToProtFlag, protToPepFlag,
+                                         modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag)
+
+        self.outputGen.signals.finished.connect(self.outputFinished)
+        self.threadpool.start(self.outputGen)
+
+        self.progressBarUpdate = ProgressGenerator()
+        self.progressBarUpdate.signals.updateProgBar.connect(self.updateProgressBar)
+        self.progressBarUpdate.signals.finished.connect(self.deleteTab2ProgressBar)
+        #self.progressBarUpdate.signals.disableButtons.connect(self.disableWidgets)
+        self.threadpool.start(self.progressBarUpdate)
+
+    def output(self, mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag, protToPepFlag,
+               modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag):
+
+        """
+        Sent as the worker function to an OutputGenerator thread, it runs the self.fasta.generateOutput() function
+        contained within Mers.py. This ultimately begins the generation of spliced peptides.
+
+        :param mined: the minimum length of an output peptide.
+        :param maxed: the maximum length of an ouptut peptide.
+        :param overlapFlag: if True, this flag denotes that combination of splits containing shared amino acids is not
+        permitted. Shared amino acids originate from the same amino-acid in the same peptide. This is only relevant to
+        cis spliced peptides.
+        :param concatFlag: if True, an additional file will be output containing the output peptides concatenated to
+        into approximately 6000 sequences.
+        :param transFlag: if True, trans splicing should be completed as part of the output.
+        :param cisFlag: if True, cis splicing should be completed as part of the output.
+        :param linearFlag: if True, linear splicing should be completed as part of the output.
+        :param csvFlag: if True, the data contained in massDict should be printed to a csv file before any b-y Ion
+        or precursor mass comparison is conducted. ** We may look to consider removing this functionality.
+        :param pepToProtFlag: if True, a csv file is written with the output peptides as a heading, and the proteins
+        they originated in listed underneath.
+        :param protToPepFlag: if True, a csv file is written with the input proteins as a heading, and the peptides
+        which they produced listed underneath.
+        :param modList: a list of the modifications input by the user. The modifications match the keys in modTable,
+        which can be found in the file MonoAminoAndMods.py.
+        :param maxMod: the max number of modifications allowable per peptide.
+        :param maxDistance: in cis splicing, the maximum distance between any two amino acids in two cleaved peptides
+        that are to be recombined to form a cis spliced peptide. If None, the max distance is infinite.
+        :param outputPath: a dictionary holding the output file name of a trans, cis and linear splice output. The
+        keys are the TRANS, LINEAR and CIS flags defined at the top of this script.
+        :param chargeFlags: a list of bools which defines which charge flags are to be assessed when comparing to the
+        mgf file. The first bool corresponds to +1, the second to +2 and so on up to +5.
+        :param mgfFlag: if True, no the user has selected that no mgf comparison be conducted and the raw splice data
+        is to be ouptut to Fasta.
+
+        :return:
+        """
+
+        start = time.time()
+
+        #self.tab2.stop.setEnabled(True)
+
+        if maxDistance != 'None':
+            maxDistance = int(maxDistance)
+
+        self.fasta.generateOutput(mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
+                                  protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, self.mgf, mgfFlag)
+        end = time.time()
+
+        #self.tab2.stop.setEnabled(False)
+
+        self.emptyProgQueues()
+
+        print(end - start)
+
     def outputFinished(self):
 
         """
-        Alerts when done!
+        Called once the OutputGenerator created in self.outputPreStep() has finished running self.output(). This
+        function instructs the progress bar QRunnable to finish, enables all widgets on the window and creates a
+        message box instructing the user that the output has finished.
         """
         print("IT'S DONE")
-        # clear prog bar variables and send flag to close prog bar
-        self.totalSize = 0
-        self.finishedPeptides = 0
+        # send flag to prog bar instructing it to break the update loop and finish running.
         self.progressBarUpdate.changeFlag()
         # enable all widgets and produce popup
         self.enableAllWidgets()
         QMessageBox.about(self, "Message", 'Output Complete')
 
-    def intensityPlotFin(self):
-        self.progressBarUpdate.changeFlag()
-        self.enableTab2Widgets()
-        self.pushButton1.setEnabled(True)
-        self.mgfButton.setEnabled(True)
-        self.mgfPlotFlag.setEnabled(True)
-        self.enableControl()
-
     def updateProgressBar(self):
+        """
+        This function checks how many peptides have been completed. It does so by communicating with functions in
+        Mers.py via the multiprocessing.Queue self.fasta.pepCompleted(). This function is called every 10ms to check
+        if a 1 has been added to the queue, signifying that the output of an input protein has been completed. If
+        a 1 has been added, the progress bar value is updated.
+        :return:
+        """
         if not self.fasta.pepCompleted.empty():
             self.fasta.completedProcs += self.fasta.pepCompleted.get()
 
@@ -838,32 +906,144 @@ class MyTableWidget(QWidget):
             self.tab2.plusFive.setEnabled(True)
             self.tab2.chargeLabel.setEnabled(True)
 
-
-    def outputPreStep(self, mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
-                      protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag):
-
+    def nextTabFunc(self):
         """
-        Begins the output by creating a threadpool to keep gui responsive. Called by the confirmation function; also
-        calls the actual output function to generate output
+        Called on click of the button self.nextTab, this function simply navigates to tab 2 of the window.
+        :return:
         """
+        self.tabs.setCurrentIndex(1)
 
-        self.progressLabel = QLabel('Collating Combinations. Please Wait: ')
-        self.tab2.layout.addWidget(self.progressLabel, 19, 3, 1, 2)
-        self.progressBar = QProgressBar(self)
-        self.tab2.layout.addWidget(self.progressBar, 20, 3, 1, 4)
+    def firstTabValid(self):
+        """
+        Called by self.enableControl(), thus function checks that the user has input sufficient information to the
+        first tab for them to be allowed to move to the second.
+        :return:
+        """
+        if self.mgfFlag.isChecked() == True:
+            return True
+        if self.tab1.byIonFlag.isChecked():
+            statusList = [self.tab1.byIonAccStatus.text(), self.tab1.ppmStatus.text(), \
+                          self.tab1.toleranceStatus.text(), self.tab1.minByIonStatus.text()]
+        else:
+            statusList = [self.tab1.ppmStatus.text(), self.tab1.toleranceStatus.text()]
+        for status in statusList:
+            if status in ["Invalid", ""]:
+                return False
+        return True
 
-        self.outputGen = OutputGenerator(self.output, mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag,
-                                         csvFlag, pepToProtFlag, protToPepFlag,
-                                         modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag)
+    def secondTabValid(self):
+        """
+        Called by self.enableControl(), this function checks that all information in the second tab has a been
+        correctly input by the user.
+        :return:
+        """
+        transFlag = self.tab2.trans.isChecked()
+        cisFlag = self.tab2.cis.isChecked()
+        linearFlag = self.tab2.linear.isChecked()
+        outputFlag = cisFlag or linearFlag or transFlag
 
-        self.outputGen.signals.finished.connect(self.outputFinished)
-        self.threadpool.start(self.outputGen)
+        plusOneFlag = self.tab2.plusOne.isChecked()
+        plusTwoFlag = self.tab2.plusTwo.isChecked()
+        plusThreeFlag = self.tab2.plusThree.isChecked()
+        plusFourFlag = self.tab2.plusFour.isChecked()
+        plusFiveFlag = self.tab2.plusFive.isChecked()
+        chargeFlag = plusOneFlag or plusTwoFlag or plusThreeFlag or plusFourFlag or plusFiveFlag
 
-        self.progressBarUpdate = ProgressGenerator()
-        self.progressBarUpdate.signals.updateProgBar.connect(self.updateProgressBar)
-        self.progressBarUpdate.signals.finished.connect(self.deleteTab2ProgressBar)
-        #self.progressBarUpdate.signals.disableButtons.connect(self.disableWidgets)
-        self.threadpool.start(self.progressBarUpdate)
+        if chargeFlag and outputFlag:
+            return True
+        return False
+
+    def enableControl(self):
+        """
+        This function is called when an input widgets in the GUI is altered by the user. It checks what has been
+        input and systematically allows the user access to the proceeding input. This ensures the user fills out all
+        inputs and doesn't run the program without inputting all required data.
+
+        :return:
+        """
+        # if a fasta file has been uploaded, enable tha self.addMultibleFasta button
+        if self.fasta is not None:
+            self.addMultipleFasta.setEnabled(True)
+            # if an MGF file has been uploaded, or the user has selected not to select an MGF file, we enable access
+            # to the inputs relevant to the MGF data.
+            if self.mgfPath is not None or self.mgfFlag.isChecked() == True:
+                self.tab1.toleranceText.setEnabled(True)
+                self.tab1.toleranceLabel.setEnabled(True)
+                self.tab1.ppmText.setEnabled(True)
+                self.tab1.ppmLabel.setEnabled(True)
+                self.tab1.byIonFlag.setEnabled(True)
+                # if the b/y ion flag is checked, enable the b/y ion data. Otherwise, we disable them.
+                if self.tab1.byIonFlag.isChecked():
+                    self.tab1.byIonAccText.setEnabled(True)
+                    self.tab1.byIonAccLabel.setEnabled(True)
+                    self.tab1.minByIonText.setEnabled(True)
+                    self.tab1.minByIonLabel.setEnabled(True)
+                else:
+                    self.tab1.byIonAccText.setEnabled(False)
+                    self.tab1.byIonAccLabel.setEnabled(False)
+                    self.tab1.minByIonText.setEnabled(False)
+                    self.tab1.minByIonLabel.setEnabled(False)
+                # if the first tab is valid, we enable the next tab. Otherwise, we ensure it is disabled.
+                if self.firstTabValid():
+                    self.tabs.setTabEnabled(1, True)
+                    self.nextTab.setEnabled(True)
+                    # if the second tab is valid, we enable the output button, otherwise we turn it off.
+                    if self.secondTabValid():
+                        self.tab2.output.setEnabled(True)
+                    else:
+                        self.tab2.output.setEnabled(False)
+                else:
+                    self.tabs.setTabEnabled(1, False)
+                    self.nextTab.setEnabled(False)
+            else:
+                self.tabs.setTabEnabled(1, False)
+                self.nextTab.setEnabled(False)
+        else:
+            self.addMultipleFasta.setEnabled(False)
+
+    def controlMGFInput(self):
+        """
+        When self.mgfFlag is changed, this function is called before self.enableControl() to ensure all the MGF related inputs
+        are either enabled or disabled prior to self.enableControl() being run.
+        :return:
+        """
+        if self.mgfFlag.isChecked():
+            # set values true/false before calling enableControl to avoid bug of it being called again later
+            self.tab1.byIonFlag.setChecked(False)
+            self.enableControl()
+            self.mgfButton.setEnabled(False)
+            self.mgfPlotFlag.setEnabled(False)
+            self.tab1.ppmText.setEnabled(False)
+            self.tab1.ppmLabel.setEnabled(False)
+            self.tab1.toleranceText.setEnabled(False)
+            self.tab1.toleranceLabel.setEnabled(False)
+            self.tab1.minByIonText.setEnabled(False)
+            self.tab1.minByIonLabel.setEnabled(False)
+            self.tab1.byIonAccText.setEnabled(False)
+            self.tab1.byIonAccLabel.setEnabled(False)
+            self.tab1.byIonFlag.setEnabled(False)
+            self.tab2.plusOne.setEnabled(False)
+            self.tab2.plusTwo.setEnabled(False)
+            self.tab2.plusThree.setEnabled(False)
+            self.tab2.plusFour.setEnabled(False)
+            self.tab2.plusFive.setEnabled(False)
+            self.tab2.chargeLabel.setEnabled(False)
+            #self.tab2.trans.setEnabled(True)
+            # self.tab1.ppmLabel.setEnabled(False)
+        if not self.mgfFlag.isChecked():
+            # set values true/false before calling enableControl to avoid bug of it being called again later
+            self.tab1.byIonFlag.setChecked(True)
+            self.tab2.trans.setChecked(False)
+            self.enableControl()
+            self.mgfButton.setEnabled(True)
+            self.mgfPlotFlag.setEnabled(True)
+            #self.tab2.trans.setEnabled(False)
+            self.tab2.plusOne.setEnabled(True)
+            self.tab2.plusTwo.setEnabled(True)
+            self.tab2.plusThree.setEnabled(True)
+            self.tab2.plusFour.setEnabled(True)
+            self.tab2.plusFive.setEnabled(True)
+            self.tab2.chargeLabel.setEnabled(True)
 
     def disableMaxDist(self):
         """
@@ -881,39 +1061,6 @@ class MyTableWidget(QWidget):
             self.tab2.maxDistCombo.setEnabled(False)
             self.tab2.overlap.setChecked(True)
             self.tab2.overlap.setEnabled(False)
-
-    def output(self, mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag, protToPepFlag,
-               modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag):
-
-        """
-        called by output pre-step function, it runs the generateOutput function from Mers.py; This is shown to be
-        running via the progress bar
-        """
-
-        start = time.time()
-
-        #self.tab2.stop.setEnabled(True)
-
-        if maxDistance != 'None':
-            maxDistance = int(maxDistance)
-
-        self.fasta.generateOutput(mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
-                                  protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, self.mgf, mgfFlag)
-        end = time.time()
-
-        #self.tab2.stop.setEnabled(False)
-
-        self.emptyProgQueues()
-
-        print(end - start)
-
-        # The following statements are used to open the output directory after output is created into file format
-        # print(tryString)
-        # replacedOutpath = outputPath.replace("/", '\\')
-        # print(replacedOutpath)
-        # openString = r'explorer "' + replacedOutpath + '"'
-        # print(openString)
-        # subprocess.Popen(openString)
 
     def minMaxChanged(self, text):
 

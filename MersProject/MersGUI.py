@@ -925,6 +925,36 @@ class MyTableWidget(QWidget):
         self.mgf = MGF(mgfDfList, pepmassIonArrayList, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag,
                        maxMass, chargeMaxDict, mgfLen)
 
+    def maxMgfMass(self, mgfDfList, chargeFlags):
+        """
+        Called from self.uploadMGF(), this returns the max mono-isotopic mass present in the MGF file and also the
+        max m/z ratio present for each individual charge state.
+
+        :param mgfDfList: a list of dictionaries, when each dictionary contains charges as keys and precursor masses
+        from the MGF file with the given charge state. The list will only contain more than one of these dictionaries
+        if the data was too large to pass into a multiprocessing.Process() as one dictionary.
+        :param chargeFlags: the charge states that the user wishes to asses in the MGF file.
+
+        :return maxMass: the max mono-isotopic mass (precursor mass must be converted from m/z to mono-isotopic)
+        present in the MGF file given the selected charge states.
+        :return chargeMaxDict: a dictionary containing charge states as keys and the corresponding max m/z ratio in
+        the MGF file as values.
+        """
+
+        maxMass = 0
+        chargeMaxDict = {}
+        for mgfDf in mgfDfList:
+            for z, masses in mgfDf.items():
+                if chargeFlags[int(z) - 1]:
+                    maxChargeMass = max(masses)
+
+                    chargeMaxDict[z] = maxChargeMass
+                    maxMassTemp = maxChargeMass * int(z) - int(z) * 1.00794
+                    if maxMassTemp > maxMass:
+                        maxMass = maxMassTemp
+
+        return maxMass, chargeMaxDict
+
     def importedMGF(self, mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag, csvFlag, pepToProtFlag,
                     protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgfFlag=False):
         """
@@ -1101,6 +1131,21 @@ class MyTableWidget(QWidget):
         self.enableAllWidgets()
         QMessageBox.about(self, "Message", 'Output Complete')
 
+    def emptyProgQueues(self):
+        """
+        Called after self.fasta.generateOutput() has finished, and thus the program has finished compliling the
+        spliced peptides for the current user input. It empties any elements in the queue self.fasta.pepCompleted,
+        and then clears the variables self.fasta.completedProcs, self.fasta.procGenCounter and self.fasta.totalProcs.
+        If these variables aren't cleared, the progress bar and process generation will not run correctly if the user
+        wished to run another splicing.
+        :return:
+        """
+        while not self.fasta.pepCompleted.empty():
+            clearQ = self.fasta.pepCompleted.get()
+        self.fasta.completedProcs = 0
+        self.fasta.procGenCounter = 0
+        self.fasta.totalProcs = 0
+
     def updateProgressBar(self):
         """
         This function checks how many peptides have been completed. It does so by communicating with functions in
@@ -1132,37 +1177,7 @@ class MyTableWidget(QWidget):
         self.progressBar.deleteLater()
         self.progressBar = None
 
-    # need to sort functions from here logically.
-
-    def maxMgfMass(self, mgfDfList, chargeFlags):
-        """
-        Called from self.uploadMGF(), this returns the max mono-isotopic mass present in the MGF file and also the
-        max m/z ratio present for each individual charge state.
-
-        :param mgfDfList: a list of dictionaries, when each dictionary contains charges as keys and precursor masses
-        from the MGF file with the given charge state. The list will only contain more than one of these dictionaries
-        if the data was too large to pass into a multiprocessing.Process() as one dictionary.
-        :param chargeFlags: the charge states that the user wishes to asses in the MGF file.
-
-        :return maxMass: the max mono-isotopic mass (precursor mass must be converted from m/z to mono-isotopic)
-        present in the MGF file given the selected charge states.
-        :return chargeMaxDict: a dictionary containing charge states as keys and the corresponding max m/z ratio in
-        the MGF file as values.
-        """
-
-        maxMass = 0
-        chargeMaxDict = {}
-        for mgfDf in mgfDfList:
-            for z, masses in mgfDf.items():
-                if chargeFlags[int(z)-1]:
-                    maxChargeMass = max(masses)
-
-                    chargeMaxDict[z] = maxChargeMass
-                    maxMassTemp = maxChargeMass*int(z) - int(z)*1.00794
-                    if maxMassTemp > maxMass:
-                        maxMass = maxMassTemp
-
-        return maxMass, chargeMaxDict
+    # Functions called on click of upload fasta, upload mgf and next tab buttons
 
     def uploadMgfPreStep(self):
         """
@@ -1232,6 +1247,21 @@ class MyTableWidget(QWidget):
         self.mgfPlotFlag.setEnabled(True)
         self.enableControl()
 
+    def deleteTab1ProgressBar(self):
+        """
+        This function is called when thread self.progressBarOutput (a ProgressGenerator instance) has
+        finished after being created in self.uploadMgfPreStep(). The function removes the progress bar that runs while
+        the intensity plot is being made.
+        :return:
+        """
+        # Delete progress label and progress bar
+        self.tab1.layout.removeWidget(self.progressLabel)
+        self.progressLabel.deleteLater()
+        self.progressLabel = None
+        self.tab1.layout.removeWidget(self.progressBar)
+        self.progressBar.deleteLater()
+        self.progressBar = None
+
     def uploadFasta(self):
         """
         Called on click of the Upload Fasta File button. Opens a window to select a file, and check if the file ends in
@@ -1265,36 +1295,15 @@ class MyTableWidget(QWidget):
         else:
             QMessageBox.about(self, "Message", 'Please select a Fasta file!')
 
-    def emptyProgQueues(self):
+    def nextTabFunc(self):
         """
-        Called after self.fasta.generateOutput() has finished, and thus the program has finished compliling the
-        spliced peptides for the current user input. It empties any elements in the queue self.fasta.pepCompleted,
-        and then clears the variables self.fasta.completedProcs, self.fasta.procGenCounter and self.fasta.totalProcs.
-        If these variables aren't cleared, the progress bar and process generation will not run correctly if the user
-        wished to run another splicing.
+        Called on click of the button self.nextTab, this function simply navigates to tab 2 of the window.
         :return:
         """
-        while not self.fasta.pepCompleted.empty():
-            clearQ = self.fasta.pepCompleted.get()
-        self.fasta.completedProcs = 0
-        self.fasta.procGenCounter = 0
-        self.fasta.totalProcs = 0
+        self.tabs.setCurrentIndex(1)
 
-
-    def deleteTab1ProgressBar(self):
-        """
-        This function is called when thread self.progressBarOutput (a ProgressGenerator instance) has
-        finished after being created in self.uploadMgfPreStep(). The function removes the progress bar that runs while
-        the intensity plot is being made.
-        :return:
-        """
-        # Delete progress label and progress bar
-        self.tab1.layout.removeWidget(self.progressLabel)
-        self.progressLabel.deleteLater()
-        self.progressLabel = None
-        self.tab1.layout.removeWidget(self.progressBar)
-        self.progressBar.deleteLater()
-        self.progressBar = None
+    # ENABLE/DISABLE FUNCTIONS: control flow of program and which inputs are available to the user given the
+    # inputs they have inserted.
 
     def disableWidgets(self):
         """
@@ -1344,7 +1353,6 @@ class MyTableWidget(QWidget):
         if self.mgfFlag.isChecked():
             self.controlMGFInput()
 
-
     def enableTab1Widgets(self):
         """
         Called from self.enableAllWidgets(), this function simply enables all the widgets on tab 1.
@@ -1390,13 +1398,6 @@ class MyTableWidget(QWidget):
             self.tab2.plusFour.setEnabled(True)
             self.tab2.plusFive.setEnabled(True)
             self.tab2.chargeLabel.setEnabled(True)
-
-    def nextTabFunc(self):
-        """
-        Called on click of the button self.nextTab, this function simply navigates to tab 2 of the window.
-        :return:
-        """
-        self.tabs.setCurrentIndex(1)
 
     def firstTabValid(self):
         """

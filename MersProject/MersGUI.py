@@ -1521,7 +1521,6 @@ class MyTableWidget(QWidget):
             # set values true/false before calling enableControl to avoid bug of it being called again later
             self.tab1.byIonFlag.setChecked(True)
             self.tab2.trans.setChecked(False)
-            self.enableControl()
             self.mgfButton.setEnabled(True)
             self.mgfPlotFlag.setEnabled(True)
             #self.tab2.trans.setEnabled(False)
@@ -1531,6 +1530,11 @@ class MyTableWidget(QWidget):
             self.tab2.plusFour.setEnabled(True)
             self.tab2.plusFive.setEnabled(True)
             self.tab2.chargeLabel.setEnabled(True)
+            self.tab1.ppmText.setEnabled(False)
+            self.tab1.ppmLabel.setEnabled(False)
+            self.tab1.toleranceText.setEnabled(False)
+            self.tab1.toleranceLabel.setEnabled(False)
+            self.enableControl()
 
     def disableMaxDist(self):
         """

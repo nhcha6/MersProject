@@ -408,8 +408,9 @@ class Fasta:
                     seq = str(record.seq)
                     seqId = record.name
 
-                    # add the filename to the seqId if more than one file has been included
                     seqId = seqId.split('|')[1]
+                    seqId = seqId.split(';')[0]
+                    # add the filename to the seqId if more than one file has been included
                     if len(inputFile) > 1:
                         fileName = file.split('/')[-1]
                         seqId = fileName.split('.')[0] + '_' + seqId
@@ -1900,10 +1901,10 @@ def addSequenceList(input_file, multiFileFlag):
         name, sequence = fasta.id, str(fasta.seq)
 
         name = name.split('|')[1]
+        name = name.split(';')[0]
         if multiFileFlag:
             fileName = input_file.split('/')[-1]
             name = fileName.split('.')[0] + '_' + name
-            print(name)
 
         sequenceDictionary[name] = sequence
     return sequenceDictionary

@@ -888,7 +888,7 @@ class MyTableWidget(QWidget):
                                                               self.maxDistance, outputFiles, self.chargeFlags))
             # add label informing the user that the mgf is uploading
             self.mgfLabel = QLabel("Uploading MGF. Please Wait!")
-            self.tab2.layout.addWidget(self.mgfLabel, 16, 3, 1, 2)
+            self.tab2.layout.addWidget(self.mgfLabel, 19, 3, 1, 2)
 
             self.threadpool.start(mgfGen)
         # if mgfFlag is checked, no need to import the mgf, can skip straight to running importedMGF()
@@ -918,7 +918,8 @@ class MyTableWidget(QWidget):
         :param chargeFlags: the charge states from the MGF file that the user has selected to consider.
         :return:
         """
-        mgfDfList, pepmassIonArrayList, mgfLen = readMGF(input_path, intensityThreshold, byIonFlag)
+        mgfDfList, pepmassIonArrayList, mgfLen = readMGF(input_path, intensityThreshold, byIonFlag, chargeFlags)
+        print(mgfDfList)
 
         maxMass, chargeMaxDict = self.maxMgfMass(mgfDfList, chargeFlags)
 

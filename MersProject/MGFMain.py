@@ -255,7 +255,7 @@ def calcPpm(predictedMass, pepmass):
 
 
 
-def readMGF(input_path, intensityThreshold, byIonFlag):
+def readMGF(input_path, intensityThreshold, byIonFlag, chargeFlags):
 
     """
     Creates a pandas dataframe based on mgf data
@@ -282,6 +282,11 @@ def readMGF(input_path, intensityThreshold, byIonFlag):
 
             if 'charge' in spectrum['params'].keys():
                 charge = spectrum['params']['charge'][0]
+
+                # if the charge has not been selected for consideration by the user, ignore it.
+                if not chargeFlags[int(str(charge)[0])-1]:
+                    continue
+
                 pepmass = spectrum['params']['pepmass'][0]
 
                 maxIntensity = max(spectrum['intensity array'])

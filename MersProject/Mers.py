@@ -2061,7 +2061,7 @@ def nth_replace(string, old, new, n=1, option='only nth'):
 def processLockInit(lockVar, toWriteQueue, mgfObj, childTable, linSetQueue):
 
     """
-    Called by cisAndLinearOutput before the multiprocessing pool is created to set up a global lock for a child
+    Called by self.cisAndLinearOutput() before the multiprocessing pool is created to set up a global lock for a child
     processes and to give all processes access to important queues and shared variables.
 
     :param lockVar: the multiprocessing.Lock() variable used for to control the access of process to certain tasks.
@@ -2088,6 +2088,9 @@ def processLockInit(lockVar, toWriteQueue, mgfObj, childTable, linSetQueue):
 def processLockTrans(lockVar, toWriteQueue, allSplits, allSplitRef, mgfObj, childTable, linCisQueue):
 
     """
+    Called by self.transOutput() before the multiprocessing pool is created to set up a global lock for a child
+    processes and to give all processes access to important queues and shared variables.
+
     :param lockVar: the multiprocessing.Lock() variable used for to control the access of process to certain tasks.
     :param toWriteQueue: the queue which all processes need to be able to access to enable them to push their output
     to the writer() function.

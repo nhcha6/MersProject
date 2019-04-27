@@ -1226,15 +1226,16 @@ class MyTableWidget(QWidget):
         if mgfTest == 'mgf':
             self.mgfPath = fname[0]
             if self.mgfPlotFlag.isChecked():
-                self.progressLabel = QLabel('Creating Intensity Plot. Please Wait: ')
+                self.progressLabel = QLabel('Creating Intensity Plot! Please Wait.')
                 self.tab1.layout.addWidget(self.progressLabel, 10, 2, 1, 2)
                 self.disableWidgets()
                 self.mgfPlot = MGFPlotter(plotData, fname[0])
                 self.mgfPlot.signals.plot.connect(self.onlyImportMGF)
                 self.mgfPlot.signals.finished.connect(self.intensityPlotFin)
                 self.threadpool.start(self.mgfPlot)
-            self.enableControl()
-            QMessageBox.about(self, "Message", 'MGF file successfully selected!')
+                self.enableControl()
+            else:
+                QMessageBox.about(self, "Message", 'MGF file successfully selected!')
 
         # Ensuring program does not crash if no file is selected
         elif fname[0] == '':
@@ -1272,6 +1273,7 @@ class MyTableWidget(QWidget):
         self.pushButton1.setEnabled(True)
         self.mgfButton.setEnabled(True)
         self.mgfPlotFlag.setEnabled(True)
+        QMessageBox.about(self, "Message", 'MGF file successfully selected!')
         self.enableControl()
 
     def uploadFasta(self):
@@ -1342,6 +1344,7 @@ class MyTableWidget(QWidget):
         self.pushButton1.setEnabled(False)
         self.mgfButton.setEnabled(False)
         self.mgfPlotFlag.setEnabled(False)
+        self.mgfFlag.setEnabled(False)
         self.nextTab.setEnabled(False)
         self.tab1.ppmText.setEnabled(False)
         self.tab1.toleranceText.setEnabled(False)
@@ -1373,6 +1376,7 @@ class MyTableWidget(QWidget):
         self.pushButton1.setEnabled(True)
         self.mgfButton.setEnabled(True)
         self.mgfPlotFlag.setEnabled(True)
+        self.mgfFlag.setEnabled(True)
         self.nextTab.setEnabled(True)
         self.tab1.ppmText.setEnabled(True)
         self.tab1.toleranceText.setEnabled(True)

@@ -25,7 +25,8 @@ import platform
 
 class WorkerSignals(QObject):
     """
-    Signals class that is used for the GUI when emitting custom signals
+    This class declares a series of custom signals that QRunnable objects can emit to call multiple functions
+    from within a thread.
     """
 
     finished = pyqtSignal()
@@ -36,7 +37,9 @@ class WorkerSignals(QObject):
 
 class ProgressGenerator(QRunnable):
     """
-    Progress Bar that shows up under the charge states once the peptide slicing begins
+    A QRunnable class that enables a progress bar to be created and updated while the output is being run. This must
+    be done in a separate thread to the main GUI functionality to ensure the rest of the interface doesn't freeze.
+    Used to create an object in self.outputPreStep().
     """
 
     def __init__(self, *args, **kwargs):
@@ -48,10 +51,19 @@ class ProgressGenerator(QRunnable):
         self.flag = True
 
     def changeFlag(self):
+        """
+        Called from within the MyTableWidget.outputFinished to change self.flag to False and quit the thread.
+        :return:
+        """
         self.flag = False
 
     @pyqtSlot()
     def run(self):
+        """
+        This function is run when a ProgressGenerator QRunnable is added to the threadpool. It simply updates the
+        progress bar every 10ms via the updateProgBar signal until self.flag is changed to False.
+        :return:
+        """
         self.signals.disableButtons.emit()
         while self.flag:
             self.signals.updateProgBar.emit()
@@ -61,7 +73,9 @@ class ProgressGenerator(QRunnable):
 
 class OutputGenerator(QRunnable):
     """
-
+    A QRunnable class which enables self.output() to run in a different thread to the main GUI and the progress bar.
+    This ensures that the GUI doesn't freeze while the spliced peptides are being created. This class is used to create
+    an object in self.outputPreStep().
     """
 
     def __init__(self, fn, *args, **kwargs):
@@ -74,13 +88,19 @@ class OutputGenerator(QRunnable):
 
     @pyqtSlot()
     def run(self):
+        """
+        This function runs when an OutputGenerator class is added to the threadpool. It simply runs the worker function
+        self.output() and then emits the finished signal which runs self.outputFinished().
+        :return:
+        """
         self.fn(*self.args)
         self.signals.finished.emit()
 
 
 class MGFImporter(QRunnable):
     """
-
+    A QRunnable class which enables the MGF file data to be extracted in an alternative thread to the main interface.
+    This class is used to create an object in self.returnPath().
     """
 
     def __init__(self, fn, *args, **kwargs):
@@ -93,6 +113,10 @@ class MGFImporter(QRunnable):
 
     @pyqtSlot()
     def run(self):
+        """
+        Runs the worker function self.importMGF() before emitting the the finished signal, which run self.importedMGf().
+        :return:
+        """
         start = time.time()
         self.fn(*self.args)
         self.signals.finished.emit()
@@ -102,7 +126,8 @@ class MGFImporter(QRunnable):
 
 class MGFPlotter(QRunnable):
     """
-
+    A QRunnable class which is used to create an alternative thread to plot the maximum intensities of each spectra
+    in the input MGF file. This class is used to create an object in self.uploadMgfPreStep().
     """
 
     def __init__(self, fn, *args, **kwargs):
@@ -115,6 +140,13 @@ class MGFPlotter(QRunnable):
 
     @pyqtSlot()
     def run(self):
+        """
+        This function runs when an MGFPlotter object is added to the threadpool. It runs the worker function plotData()
+        from MGFMain.py which returns the x and y data to be plotted. It then emits the plot signal which is connected
+        to self.onlyImportMGF() and ultimately creats the plot. It then emits the finished signal which is connected to
+        self.intensityPlotFin() cleanly break the thread and enable all widgets.
+        :return:
+        """
         start = time.time()
         ms2Thresh, intensityPoints = self.fn(*self.args)
 
@@ -1194,18 +1226,9 @@ class MyTableWidget(QWidget):
         if mgfTest == 'mgf':
             self.mgfPath = fname[0]
             if self.mgfPlotFlag.isChecked():
-                #** check this still works / do we still need it.
                 self.progressLabel = QLabel('Creating Intensity Plot. Please Wait: ')
-                self.tab1.layout.addWidget(self.progressLabel, 8, 2, 1, 2)
-                self.progressBar = QProgressBar(self)
-                self.tab1.layout.addWidget(self.progressBar, 9, 2, 1, 4)
-
-                self.progressBarUpdate = ProgressGenerator()
-                self.progressBarUpdate.signals.updateProgBar.connect(self.updateProgressBar)
-                self.progressBarUpdate.signals.finished.connect(self.deleteTab1ProgressBar)
-                self.progressBarUpdate.signals.disableButtons.connect(self.disableWidgets)
-                self.threadpool.start(self.progressBarUpdate)
-
+                self.tab1.layout.addWidget(self.progressLabel, 10, 2, 1, 2)
+                self.disableWidgets()
                 self.mgfPlot = MGFPlotter(plotData, fname[0])
                 self.mgfPlot.signals.plot.connect(self.onlyImportMGF)
                 self.mgfPlot.signals.finished.connect(self.intensityPlotFin)
@@ -1241,27 +1264,15 @@ class MyTableWidget(QWidget):
         self.enableControl().
         :return:
         """
-        self.progressBarUpdate.changeFlag()
+        self.tab1.layout.removeWidget(self.progressLabel)
+        self.progressLabel.deleteLater()
+        self.progressLabel = None
+
         self.enableTab2Widgets()
         self.pushButton1.setEnabled(True)
         self.mgfButton.setEnabled(True)
         self.mgfPlotFlag.setEnabled(True)
         self.enableControl()
-
-    def deleteTab1ProgressBar(self):
-        """
-        This function is called when thread self.progressBarOutput (a ProgressGenerator instance) has
-        finished after being created in self.uploadMgfPreStep(). The function removes the progress bar that runs while
-        the intensity plot is being made.
-        :return:
-        """
-        # Delete progress label and progress bar
-        self.tab1.layout.removeWidget(self.progressLabel)
-        self.progressLabel.deleteLater()
-        self.progressLabel = None
-        self.tab1.layout.removeWidget(self.progressBar)
-        self.progressBar.deleteLater()
-        self.progressBar = None
 
     def uploadFasta(self):
         """

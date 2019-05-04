@@ -551,19 +551,12 @@ def splitTransPeptide(spliceType, peptide, mined, maxed, protIndexList):
         ref = list([i+1])
         temp = list(ref)  # use list because otherwise shared memory overwrites
 
-        # linear flag to ensure min is correct for cis and trans
-        if linearFlag and minSize(toAdd, mined):
-
-            # Don't need to continue this run as first amino acid is unknown X
-            if 'X' in toAdd or 'U' in toAdd:
-                continue
-            else:
-                splits.append(toAdd)
-                splitRef.append(temp)
-
-        elif not linearFlag and 'X' not in toAdd and 'U' not in toAdd:
+        # check first character is a valid amino acid.
+        if toAdd in monoAminoMass.keys():
             splits.append(toAdd)
             splitRef.append(temp)
+        else:
+            continue
 
         # iterates through every character after current and adds it to the most recent string if max size
         # requirement is satisfied
@@ -576,8 +569,8 @@ def splitTransPeptide(spliceType, peptide, mined, maxed, protIndexList):
                 if maxSize(toAdd, maxed):
                     if minSize(toAdd, mined):
 
-                        # All future splits will contain X if an X is found in the current run, hence break
-                        if 'X' in toAdd or 'U' in toAdd:
+                        # ensure all characters in toAdd are valid amino acids.
+                        if not aminoCheck(toAdd):
                             break
                         splits.append(toAdd)
                         temp = list(ref)
@@ -587,8 +580,8 @@ def splitTransPeptide(spliceType, peptide, mined, maxed, protIndexList):
 
             else:
                 if maxSize(toAdd, maxed-1):
-                    # All future splits will contain X if an X is found in the current run, hence break
-                    if 'X' in toAdd or 'U' in toAdd:
+                    # ensure all characters in toAdd are valid amino acids.
+                    if not aminoCheck(toAdd):
                         break
                     splits.append(toAdd)
                     ref.append(j+1)
@@ -598,7 +591,6 @@ def splitTransPeptide(spliceType, peptide, mined, maxed, protIndexList):
                     break
 
     return splits, splitRef
-
 
 def transProcess(splitsIndex, mined, maxed, modList, maxMod, finalPath,
                  chargeFlags, mgfFlag, csvFlag, protIndexList, protList):
@@ -1077,17 +1069,17 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
 
         # linear flag to ensure min is correct for cis and trans
         if linearFlag and minSize(toAdd, mined):
-
             # Don't need to continue this run as first amino acid is unknown X
-            if 'X' in toAdd or 'U' in toAdd:
+            if not toAdd in monoAminoMass.keys():
                 continue
             else:
                 splits.append(toAdd)
                 splitRef.append(temp)
 
-        elif not linearFlag and 'X' not in toAdd and 'U' not in toAdd:
-            splits.append(toAdd)
-            splitRef.append(temp)
+        elif not linearFlag:
+            if toAdd in monoAminoMass.keys():
+                splits.append(toAdd)
+                splitRef.append(temp)
 
         # iterates through every character after current and adds it to the most recent string if max size
         # requirement is satisfied
@@ -1097,9 +1089,8 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
                 ref.append(j+1)
                 if maxSize(toAdd, maxed):
                     if minSize(toAdd, mined):
-
-                        # All future splits will contain X if an X is found in the current run, hence break
-                        if 'X' in toAdd or 'U' in toAdd:
+                        # Check that the split to be added contains only valid amino acids. Break inner loop if so.
+                        if not aminoCheck(toAdd):
                             break
                         splits.append(toAdd)
                         temp = list(ref)
@@ -1109,8 +1100,9 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
 
             else:
                 if maxSize(toAdd, maxed-1):
-                    # All future splits will contain X if an X is found in the current run, hence break
-                    if 'X' in toAdd or 'U' in toAdd:
+                    # Check that the split to be added contains only valid amino acids. Break inner loop if so.
+                    if not aminoCheck(toAdd):
+                        print(toAdd)
                         break
                     splits.append(toAdd)
                     ref.append(j+1)
@@ -1121,6 +1113,20 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
 
     return splits, splitRef
 
+def aminoCheck(split):
+    """
+    Called by splitDictPeptide() and splitTransPeptide(), this function takes a cleavage from a peptide sequence
+    and checks all characters in it are valid amino acids.
+
+    :param split: the cleavage which is to be checked for validity.
+    :return: True if the split contains only amino acid characters, False if not.
+    """
+    for char in split:
+        if char in monoAminoMass.keys():
+            continue
+        else:
+            return False
+    return True
 
 def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance):
 

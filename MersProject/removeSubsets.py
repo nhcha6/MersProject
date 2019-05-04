@@ -55,9 +55,10 @@ def removeSubsetSeq(outputPath):
 
     # send list of peptides without subsets to be concatenated by the script concatPeps.py. If we want to also print
     # this list of peps, simply uncomment the SeqIO.write line.
-    with open(noSubseqPath, "w") as output_handle:
+    #with open(noSubseqPath, "w") as output_handle:
         #SeqIO.write(createSeqObj(seenPeptides), output_handle, "fasta")
-        concatPepsFromSet(seenPeptides, concatPath)
+
+    concatPepsFromSet(seenPeptides, concatPath)
 
 def createSeqObj(seenPeptides):
     """

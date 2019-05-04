@@ -223,7 +223,8 @@ class Fasta:
         # computer.
         num_workers = multiprocessing.cpu_count()
 
-        # Used to lock write access to file when writing from separate processes ** do we still need this.
+        # Used to lock write access to file when writing from separate processes ** do we still need this. We do while
+        # we are doing writeToCsv
         lockVar = multiprocessing.Lock()
 
         # initialise the queue which will feed the outputs generated in each process to the writer process.
@@ -317,7 +318,7 @@ class Fasta:
         the creation of all processes required to conduct trans splicing.
 
         :param inputFile: the fasta files containing proteins input by the user.
-        :param spliceType: simply holds the TRANS flag. **not needed, as this function is only called by trans splicing.
+        :param spliceType: holds either cis or linear depending on what splice type is being run.
         :param mined: the minimum length of an output peptide.
         :param maxed: the maximum length of an ouptut peptide.
         :param overlapFlag: if True, this flag denotes that combination of splits containing shared amino acids is not

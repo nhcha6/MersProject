@@ -1798,8 +1798,12 @@ class MyTableWidget(QWidget):
 if __name__ == '__main__':
     multiprocessing.freeze_support()
     app = QApplication(sys.argv)
-    ex = App()
-    sys.exit(app.exec_())
+    if len(sys.argv) == 1:
+        ex = App()
+        sys.exit(app.exec_())
+    else:
+        print('command line interface')
+
 
 
 

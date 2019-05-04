@@ -106,7 +106,7 @@ class Fasta:
         :param cisFlag: if True, cis splicing should be completed as part of the output.
         :param linearFlag: if True, linear splicing should be completed as part of the output.
         :param csvFlag: if True, the data contained in massDict should be printed to a csv file before any b-y Ion
-        or precursor mass comparison is conducted. ** We may look to consider removing this functionality.
+        or precursor mass comparison is conducted.
         :param pepToProtFlag: if True, a csv file is written with the output peptides as a heading, and the proteins
         they originated in listed underneath.
         :param protToPepFlag: if True, a csv file is written with the input proteins as a heading, and the peptides
@@ -174,7 +174,7 @@ class Fasta:
         :param mgfFlag: if True, no the user has selected that no mgf comparison be conducted and the raw splice data
         is to be ouptut to Fasta.
         :param csvFlag: if True, the data contained in massDict should be printed to a csv file before any b-y Ion
-        or precursor mass comparison is conducted. ** We may look to consider removing this functionality.
+        or precursor mass comparison is conducted.
         :param pepToProtFlag: if True, a csv file is written with the output peptides as a heading, and the proteins
         they originated in listed underneath.
         :param protToPepFlag: if True, a csv file is written with the input proteins as a heading, and the peptides
@@ -187,9 +187,9 @@ class Fasta:
         # initialise the final path
         finalPath = None
 
-        # Open the csv file if the csv file is selected **do we still need csv
+        # Open the csv file if the csv file is selected
         if csvFlag:
-            finalPath = getFinalPath(outputPath, spliceType)
+            finalPath = getFinalPath(outputPath)
             open(finalPath, 'w')
 
         # initialise the dictionary to store the protein sequences as values and the protein names as keys
@@ -223,8 +223,7 @@ class Fasta:
         # computer.
         num_workers = multiprocessing.cpu_count()
 
-        # Used to lock write access to file when writing from separate processes ** do we still need this. We do while
-        # we are doing writeToCsv
+        # Used to lock write access to file when writing from separate processes
         lockVar = multiprocessing.Lock()
 
         # initialise the queue which will feed the outputs generated in each process to the writer process.
@@ -325,7 +324,7 @@ class Fasta:
         permitted. Shared amino acids originate from the same amino-acid in the same peptide. This is only relevant to
         cis spliced peptides.
         :param csvFlag: if True, the data contained in massDict should be printed to a csv file before any b-y Ion
-        or precursor mass comparison is conducted. ** We may look to consider removing this functionality.
+        or precursor mass comparison is conducted.
         :param pepToProtFlag: if True, a csv file is written with the output peptides as a heading, and the proteins
         they originated in listed underneath.
         :param protToPepFlag: if True, a csv file is written with the input proteins as a heading, and the peptides
@@ -355,7 +354,7 @@ class Fasta:
 
         # Open the csv file if the csv file is selected
         if csvFlag:
-            finalPath = getFinalPath(outputPath, spliceType)
+            finalPath = getFinalPath(outputPath)
             open(finalPath, 'w')
 
         # declare the num_workers, which is to be used when declaring the pool, based on the number of cores available
@@ -611,7 +610,7 @@ def transProcess(splitsIndex, mined, maxed, modList, maxMod, finalPath,
     mgf file. The first bool corresponds to +1, the second to +2 and so on up to +5.
     :param mgfFlag: if True, the user has selected not to compare to any MGF data.
     :param csvFlag: if True, the data contained in massDict should be printed to a csv file before any b-y Ion
-    or precursor mass comparison is conducted. ** We may look to consider removing this functionality.
+    or precursor mass comparison is conducted.
     :param protIndexList: a list of index pairs denoting the start and end position of each individual protein.
     List is structures as follows: [[0,150], [151,205] ... ]
     :param protList: a list of the protein names of the individual proteins, where the index of each name corresponds
@@ -678,7 +677,6 @@ def transProcess(splitsIndex, mined, maxed, modList, maxMod, finalPath,
         if csvFlag:
             logging.info("Writing locked :(")
             lock.acquire()
-
             writeToCsv(massDict, TRANS, finalPath, chargeFlags)
             lock.release()
             logging.info("Writing released!")
@@ -889,7 +887,7 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
     permitted. Shared amino acids originate from the same amino-acid in the same peptide. This is only relevant to
     cis spliced peptides.
     :param csvFlag: if True, the data contained in massDict should be printed to a csv file before any b-y Ion
-    or precursor mass comparison is conducted. ** We may look to consider removing this functionality.
+    or precursor mass comparison is conducted.
     :param modList: a list of the modifications input by the user. The modifications match the keys in modTable,
     which can be found in the file MonoAminoAndMods.py.
     :param maxMod: the max number of modifications allowable per peptide.
@@ -954,7 +952,6 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
                 genMassDict.toWriteQueue.put((matchedPeptides, modCountDict))
 
             # If csv is selected, write to csv file
-            # ** decide on relevance of this.
             if csvFlag:
                 logging.info("Writing locked :(")
                 lock.acquire()
@@ -2065,6 +2062,63 @@ def nth_replace(string, old, new, n=1, option='only nth'):
     return new.join(nth_split)
 
 
+def writeToCsv(massDict, header, finalPath, chargeFlags):
+    """
+    Called from transProcess() and genMassDict(), this function writes the data stored in massDict to a csv file
+    after all spliced peptides have been generated. It writes the data from each protein sequence separately, with the
+    column headers being sequence, mass, position, m/z +1, m/z +2 ... m/z +5.
+
+    :param massDict: the mass dictionary that is to have its data written to file.
+    :param header: the name of the protein which this massDict corresponds to.
+    :param finalPath: the path the csv file is to be written to.
+    :param chargeFlags: which charge states have been selected by the user for consideration.
+    :return:
+    """
+    chargeHeaders = getChargeIndex(chargeFlags)
+
+    with open(finalPath, 'a', newline='') as csv_file:
+
+        writer = csv.writer(csv_file, delimiter=',')
+        writer.writerow([header, ' ', ' '])
+        headerRow = ['Peptide', 'Mass', 'Positions']
+
+        for chargeIndex in chargeHeaders:
+
+            headerRow.append('+' + str(chargeIndex+1))
+
+        writer.writerow(headerRow)
+        for key, value in massDict.items():
+            infoRow = [key, value[0], value[1]]
+            for chargeIndex in chargeHeaders:
+                chargeMass = value[2][chargeIndex+1]
+                infoRow.append(str(chargeMass))
+            writer.writerow(infoRow)
+
+def getChargeIndex(chargeFlags):
+    """
+    Called from writeToCsv(), this function returns a list of the charges that have been selected by the user in the
+    form [1,3,5] etc.
+
+    :param chargeFlags: a list of bools, where bool at index i denotes if the user has selected to consider charge
+    state i+1. That is, [True, False, False, False, True] means the user has chosen to consider +1 and +5 charge.
+    :return chargeHeaers: a list of which charges are being considered. Eg: [1, 5]
+    """
+    chargeHeaders = [i for i, e in enumerate(chargeFlags) if e]
+    return chargeHeaders
+
+
+def getFinalPath(outputPath):
+    """
+    Called from transProcess() and genMassDict() if the user has selected to create the writeToCsv output. This function
+    simply replaces the .fasta extention of outputPath with .csv.
+
+    :param outputPath: the original output path with the .fasta extention.
+    :return: the new path with .csv extention as a Path() object.
+    """
+    outputPathSmall = str(outputPath)[0:-6]
+    newPath = str(outputPathSmall) + '.csv'
+    return Path(newPath)
+
 def processLockInit(lockVar, toWriteQueue, mgfObj, childTable, linSetQueue):
 
     """
@@ -2259,49 +2313,3 @@ def fulfillPpmReq(mgfObj, massDict):
 
     lock.release()
     logging.info("Writing complete")
-
-def writeToCsv(massDict, header, finalPath, chargeFlags):
-    """
-    ** delete this function???
-    """
-
-    chargeHeaders = getChargeIndex(chargeFlags)
-
-    with open(finalPath, 'a', newline='') as csv_file:
-
-        writer = csv.writer(csv_file, delimiter=',')
-        writer.writerow([header, ' ', ' '])
-        headerRow = ['Peptide', 'Mass', 'Positions']
-
-        for chargeIndex in chargeHeaders:
-
-            headerRow.append('+' + str(chargeIndex+1))
-
-        writer.writerow(headerRow)
-        for key, value in massDict.items():
-            infoRow = [key, value[0], value[1]]
-            for chargeIndex in chargeHeaders:
-                chargeMass = value[2][chargeIndex+1]
-                infoRow.append(str(chargeMass))
-            writer.writerow(infoRow)
-
-def getChargeIndex(chargeFlags):
-    """
-    ** called from writeToCsv, so will probably delete
-    :param chargeFlags:
-    :return:
-    """
-    chargeHeaders = [i for i, e in enumerate(chargeFlags) if e]
-    return chargeHeaders
-
-
-def getFinalPath(outputPath, spliceType):
-    """
-    called only if writeToCsv is called, probably delete.
-    :param outputPath:
-    :param spliceType:
-    :return:
-    """
-    outputPathSmall = str(outputPath)[0:-6]
-    newPath = str(outputPathSmall) + '-' + spliceType + '.csv'
-    return Path(newPath)

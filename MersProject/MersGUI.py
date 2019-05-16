@@ -335,7 +335,7 @@ class MyTableWidget(QWidget):
         self.tab1.byIonAccText.textChanged[str].connect(self.enableControl)
         self.tab1.byIonAccStatus = QLabel("")
 
-        self.tab1.byIonFlag = QCheckBox('Apply b/y Ion Comparison: ')
+        self.tab1.byIonFlag = QCheckBox('Apply b/y Ion Comparison')
         self.tab1.byIonFlag.setEnabled(False)
         # self.tab1.byIonFlag.stateChanged.connect(self.disableByInputs)
         self.tab1.byIonFlag.stateChanged.connect(self.enableControl)

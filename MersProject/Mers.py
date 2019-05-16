@@ -32,8 +32,6 @@ CIS = "Cis"
 # MEMORY_THRESHOLD is the percentage of RAM being used at which all computation is paused, the current output data is
 # written to file, after which the output recommences.
 MEMORY_THRESHOLD = 85
-# ** obsolete now that temp files are not being used.
-MEMORY_THRESHOLD_COMBINE = 90
 # NUM_PROC_TOTAL is the total number of processes generated per trans/cis/linear splicing computation.
 NUM_PROC_TOTAL = 1000
 # The generation of processes is slowed to avoid an overload of memory due to spawned but uncompleted processes.
@@ -137,28 +135,27 @@ class Fasta:
         # sequentially check if each splice type has been selected by the user, and run the relevant function which
         # will generate processes for this splice type.
         if transFlag:
-            self.transOutput(self.inputFile, TRANS, mined, maxed, modList, maxMod,outputPath[TRANS], chargeFlags, mgfObj,
-                        modTable, mgfFlag, csvFlag, pepToProtFlag,protToPepFlag, concatFlag)
+            self.transOutput(self.inputFile, mined, maxed, modList, maxMod,outputPath[TRANS], chargeFlags, mgfObj,
+                        mgfFlag, csvFlag, pepToProtFlag,protToPepFlag, concatFlag)
 
         if cisFlag:
             self.cisAndLinearOutput(self.inputFile, CIS, mined, maxed,overlapFlag, csvFlag, pepToProtFlag,
                                     protToPepFlag, modList, maxMod, maxDistance, outputPath[CIS], chargeFlags, mgfObj,
-                                    modTable, mgfFlag, concatFlag)
+                                    mgfFlag, concatFlag)
 
         if linearFlag:
             self.cisAndLinearOutput(self.inputFile, LINEAR, mined, maxed, overlapFlag, csvFlag, pepToProtFlag,
                                     protToPepFlag, modList, maxMod, maxDistance, outputPath[LINEAR], chargeFlags,
-                                    mgfObj, modTable, mgfFlag, concatFlag)
+                                    mgfObj, mgfFlag, concatFlag)
 
 
-    def transOutput(self, inputFile, spliceType, mined, maxed, modList, maxMod, outputPath, chargeFlags, mgfObj, modTable, mgfFlag, csvFlag,
+    def transOutput(self, inputFile, mined, maxed, modList, maxMod, outputPath, chargeFlags, mgfObj, mgfFlag, csvFlag,
                     pepToProtFlag, protToPepFlag, concatFlag):
         """
         This function is called Fasta.generateOutput() if transFlag == True. It controls the creation of all processes
         required to conduct trans splicing.
 
         :param inputFile: the fasta files containing proteins input by the user.
-        :param spliceType: simply holds the TRANS flag. **not needed, as this function is only called by trans splicing.
         :param mined: the minimum length of an output peptide.
         :param maxed: the maximum length of an ouptut peptide.
         :param modList: a list of the modifications input by the user. The modifications match the keys in modTable,
@@ -169,8 +166,6 @@ class Fasta:
         mgf file. The first bool corresponds to +1, the second to +2 and so on up to +5.
         :param mgfObj: the object that contains the mgf data uploaded in the format required. This is processed before
         generate ouptut is reached.
-        :param modTable: the modTable dictionary contianing all the modification data. ** does this need to be an input
-        variable, it is globally defined??
         :param mgfFlag: if True, no the user has selected that no mgf comparison be conducted and the raw splice data
         is to be ouptut to Fasta.
         :param csvFlag: if True, the data contained in massDict should be printed to a csv file before any b-y Ion
@@ -211,10 +206,10 @@ class Fasta:
         # list of start and end references: [[0,150],[151,200]....]
         # protList stores the initial proteins in the same order as the references in protIndexList. That is, the
         # references at index i of of protIndexList corresponds to the location of protein at reference i in protList.
-        finalPeptide, protIndexList, protList = combinePeptides(seqDict)
+        finalProtein, protIndexList, protList = combinePeptides(seqDict)
 
         # create all the splits and their reference with respect to finalPeptide
-        splits, splitRef = splitTransPeptide(spliceType, finalPeptide, mined, maxed, protIndexList)
+        splits, splitRef = splitTransPeptide(finalProtein, mined, maxed, protIndexList)
 
         # define the length of splits for later calculations
         splitLen = len(splits)
@@ -307,10 +302,10 @@ class Fasta:
         # wait for the writer process to finish computing.
         writerProcess.join()
         # print that the trans computation is completed.
-        logging.info("All " + spliceType + " !joined")
+        logging.info("All Trans joined")
 
     def cisAndLinearOutput(self, inputFile, spliceType, mined, maxed, overlapFlag, csvFlag, pepToProtFlag, protToPepFlag,
-                           modList, maxMod, maxDistance, outputPath, chargeFlags, mgfObj, childTable, mgfFlag, concatFlag):
+                           modList, maxMod, maxDistance, outputPath, chargeFlags, mgfObj, mgfFlag, concatFlag):
 
         """
         This function is called Fasta.generateOutput() if cisFlag == True and if linFlag == True. It controls
@@ -339,8 +334,6 @@ class Fasta:
         mgf file. The first bool corresponds to +1, the second to +2 and so on up to +5.
         :param mgfObj: the object that contains the mgf data uploaded in the format required. This is processed before
         generate ouptut is reached.
-        :param childTable: the modTable dictionary contianing all the modification data. ** does this need to be an input
-        variable, it is globally defined??
         :param mgfFlag: if True, no the user has selected that no mgf comparison be conducted and the raw splice data
         is to be ouptut to Fasta.
         :param concatFlag: if True, an additional file will be output containing the output peptides concatenated to
@@ -373,7 +366,7 @@ class Fasta:
 
         # start the pool and the writerProcess.
         pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit,
-                                    initargs=(lockVar, toWriteQueue, mgfObj, childTable, linSetQueue))
+                                    initargs=(lockVar, toWriteQueue, mgfObj, modTable, linSetQueue))
         writerProcess = multiprocessing.Process(target=writer,
                                                 args=(toWriteQueue, outputPath, linSetQueue, pepToProtFlag,
                                                       protToPepFlag, self.pepCompleted, concatFlag))
@@ -505,7 +498,7 @@ def combinePeptides(seqDict):
     finalPeptide = ''.join(dictlist)
     return finalPeptide, protIndexList, protList
 
-def splitTransPeptide(spliceType, peptide, mined, maxed, protIndexList):
+def splitTransPeptide(proteinSeq, mined, maxed, protIndexList):
 
     """
     Called from Fasta.transOutput(), this function creates all the possible splits (peptide cleavages) from the input protein sequence. This differs from
@@ -514,9 +507,7 @@ def splitTransPeptide(spliceType, peptide, mined, maxed, protIndexList):
     two proteins which cannot be formed given the input data. The protIndexList data is thus included to ensure that
     such cleavages are ignored from the fonal splits output.
 
-    :param spliceType: will always be the TRANS flag ** need to remove.
-    :param peptide: the input proteins sequence, which will be all individual proteins concatenated together.
-    ** rename to proteinSeq.
+    :param proteinSeq: the input proteins sequence, which will be all individual proteins concatenated together.
     :param mined: the min length of a potential output peptide.
     :param maxed: the max length of a potential output peptide.
     :param protIndexList: a list of location pairs denoting the start and end point of original, individual proteins.
@@ -526,8 +517,8 @@ def splitTransPeptide(spliceType, peptide, mined, maxed, protIndexList):
 
     # Makes it easier to integrate with earlier iteration where linearFlag was being passed as an external flag
     # instead of spliceType
-    linearFlag = spliceType == LINEAR
-    length = len(peptide)
+    linearFlag = False
+    length = len(proteinSeq)
 
     # splits will hold all possible splits that can occur
     splits = []
@@ -538,7 +529,7 @@ def splitTransPeptide(spliceType, peptide, mined, maxed, protIndexList):
     # embedded for loops build all possible splits
     for i in range(0, length):
 
-        character = peptide[i]
+        character = proteinSeq[i]
         toAdd = ""
 
         # figure out which protein the splits starts in, and the max index the splits can reach before it becomes
@@ -562,7 +553,7 @@ def splitTransPeptide(spliceType, peptide, mined, maxed, protIndexList):
         for j in range(i + 1, length):
             if j > initProt[1]:
                 break
-            toAdd += peptide[j]
+            toAdd += proteinSeq[j]
             if linearFlag:
                 ref.append(j+1)
                 if maxSize(toAdd, maxed):
@@ -645,7 +636,7 @@ def transProcess(splitsIndex, mined, maxed, modList, maxMod, finalPath,
         massDict = editRefMassDict(massDict)
 
         if mgfFlag:
-            allPeptides = getAllPep(massDict)
+            allPeptides = massDict.keys()
             allPeptidesDict = {}
             for peptide in allPeptides:
                 # create the string, with peptides sorted so all permutations are matched as similar. There may be multiple
@@ -980,13 +971,13 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
         raise e
 
 # set default maxDistance to be absurdly high incase of trans
-def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance=10000000):
+def outputCreate(spliceType, protein, mined, maxed, overlapFlag, maxDistance=10000000):
     """
     Called from genMassDict(). Recieves a protein and creates the peptides using the relevant input spliceType and in accrodance with the
     min length, max length, overlapFlag and maxDistance input by the user.
 
     :param spliceType: either the CIS or LINEAR flag, which denotes which type of splicing to conduct.
-    :param peptide: the input protein sequence ** should be called protein.
+    :param protein: the input protein sequence.
     :param mined: the minimum number of amino acids in a spliced peptide.
     :param maxed: the maximum number of amino acids in a spliced peptide.
     :param overlapFlag: if True, this flag denotes that combination of splits containing shared amino acids is not
@@ -1006,7 +997,7 @@ def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance=100
     # Splits eg: ['A', 'AB', 'AD', 'B', 'BD']
     # SplitRef eg: [[0], [0,1], [0,2], [1], [1,2]]
     # Produces splits and splitRef arrays which are passed through combined
-    splits, splitRef = splitDictPeptide(spliceType, peptide, mined, maxed)
+    splits, splitRef = splitDictPeptide(spliceType, protein, mined, maxed)
     combined, combinedRef = None, None
 
     if spliceType == CIS:
@@ -1023,7 +1014,7 @@ def outputCreate(spliceType, peptide, mined, maxed, overlapFlag, maxDistance=100
 
     return combined, combinedRef, linSet
 
-def splitDictPeptide(spliceType, peptide, mined, maxed):
+def splitDictPeptide(spliceType, protein, mined, maxed):
 
     """
     Called from outputCreate(). This function creates all the potential cleavages of the input protein which meet
@@ -1032,7 +1023,7 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
     inclusive.
 
     :param spliceType: either CIS or LINEAR, denotes which type of splicing is being run.
-    :param peptide: the input protein sequence from which the cleavages are generated. ** change to protein.
+    :param protein: the input protein sequence from which the cleavages are generated.
     :param mined: the minimum number of amino acids in a spliced peptide.
     :param maxed: the maximum number of amino acids in a spliced peptide.
 
@@ -1045,7 +1036,7 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
     # Makes it easier to integrate with earlier iteration where linearFlag was being passed as an external flag
     # instead of spliceType
     linearFlag = spliceType == LINEAR
-    length = len(peptide)
+    length = len(protein)
 
     # splits will hold all possible splits that can occur
     splits = []
@@ -1056,7 +1047,7 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
     # embedded for loops build all possible splits
     for i in range(0, length):
 
-        character = peptide[i]
+        character = protein[i]
         toAdd = ""
         # add and append first character and add and append reference number which indexes this character
 
@@ -1081,7 +1072,7 @@ def splitDictPeptide(spliceType, peptide, mined, maxed):
         # iterates through every character after current and adds it to the most recent string if max size
         # requirement is satisfied
         for j in range(i + 1, length):
-            toAdd += peptide[j]
+            toAdd += protein[j]
             if linearFlag:
                 ref.append(j+1)
                 if maxSize(toAdd, maxed):
@@ -1505,7 +1496,6 @@ def writeProtToPep(seenPeptides, groupedBy, outputPath):
     the peptides each protein produces underneath, or with the peptides as headings and the proteins each peptide
     could have come from listed underneath. Which format is used depends on the groupedBy flag, and the format of
     seenPeptides.
-    ** Does this functionality work with trans.
 
     :param seenPeptides: a dictionary containing peptide sequences and details of where each peptide was generated
     from. Which of these two variables is the key and which is the value depends on what the value of groupedBy is.
@@ -1649,17 +1639,16 @@ def genericMod(combineModlessDict, character, massChange, modNo, maxMod):
 
     # Go through each peptide and mod it if necessary
     for string in combineModlessDict.keys():
-        # extract the currentMass so that massChange can be added to it
-        currentMass = combineModlessDict[string][0]
-        # count how many of the current mod have already been applied to this peptide. This will occur if
-        # more than one amino acid is subject to the mod, and is important to know when calculating the mass.
-        modsInOrig = string.count(modNo)
-        # extract the location data of the peptide which will identical for the modified peptide.
-        currentRef = combineModlessDict[string][1]
-
         # Only need to mod it if it exists (ie : A in ABC)
-        # ** should this be at the start so that we don't waste time declaring the above variables.
         if character in string:
+            # extract the currentMass so that massChange can be added to it
+            currentMass = combineModlessDict[string][0]
+            # count how many of the current mod have already been applied to this peptide. This will occur if
+            # more than one amino acid is subject to the mod, and is important to know when calculating the mass.
+            modsInOrig = string.count(modNo)
+            # extract the location data of the peptide which will identical for the modified peptide.
+            currentRef = combineModlessDict[string][1]
+
             # count the number of times the amino acid to be modified occurs in the peptide.
             numOccur = string.count(character)
             # declare the seqToIter variable, which will be added to after separate iterations to ensure all
@@ -2180,136 +2169,3 @@ def processLockTrans(lockVar, toWriteQueue, allSplits, allSplitRef, mgfObj, chil
     transProcess.toWriteQueue = toWriteQueue
     transProcess.linCisQueue = linCisQueue
 
-# OBSOLETE FUNCTIONS **do we want to remove this.
-
-def memoryCheck(maxMem):
-    process = psutil.Process(os.getpid())
-    #print(process.memory_info().rss)
-    if process.memory_info().rss > maxMem:
-        return True
-    else:
-        return False
-
-def memoryCheck2():
-    memUsed = psutil.virtual_memory()[2]
-    #print(memUsed)
-    if memUsed > 60:
-        return True
-    else:
-        return False
-
-#** Temp file code moved to bottom, and could possibly be deleted.
-def combineAllTempFasta(linCisSet, outputTempFiles, outputPath):
-    counter = 0
-    while not outputTempFiles.empty():
-
-        # Get the two files at the top of the tempFiles queue for combination.
-        # Note that there will never be one temp file in the queue when the
-        # while loop is being checked, so you will always be able to get two
-        # temp files from the queue if it passes the not empty check.
-        fileOne = outputTempFiles.get()
-        fileTwo = outputTempFiles.get()
-
-        # if this reduces the queue to empty, break the loop. We do this to avoid merging
-        # the last two temp files, adding the result to the queue and then passing a queue with
-        # only one temp file in it into the while loop.
-        if outputTempFiles.empty():
-            break
-
-        # when there are still more temp files in the queue, extract seenPeptides from the
-        # current two temp files, write them to a new tempFile and add it to the temp file Queue.
-        seenPeptides, counter = combineTempFile(fileOne, fileTwo, linCisSet, counter, outputPath)
-        tempName = writeTempFasta(seenPeptides)
-        outputTempFiles.put(tempName)
-
-    # once the while loop breaks, return the finalSeenPetides from the remaining two tempFiles.
-    finalSeenPeptides, counter = combineTempFile(fileOne, fileTwo, linCisSet, counter, outputPath)
-
-    # Return the last combination of two files remaining
-    return finalSeenPeptides
-
-
-def combineTempFile(fileOne, fileTwo, linCisSet, counter, outputPath):
-    seenPeptides = {}
-    with open(fileOne, 'rU') as handle:
-        for record in SeqIO.parse(handle, 'fasta'):
-
-            peptide = str(record.seq)
-            protein = str(record.name)
-
-            origins = protein.split(';')
-            if peptide not in seenPeptides.keys():
-                seenPeptides[peptide] = origins
-            else:
-                for origin in origins:
-                    if origin not in seenPeptides[peptide]:
-                        seenPeptides[peptide].append(origin)
-
-    with open(fileTwo, 'rU') as handle:
-        for record in SeqIO.parse(handle, 'fasta'):
-
-            peptide = str(record.seq)
-            protein = str(record.name)
-
-            origins = protein.split(';')
-            if peptide not in seenPeptides.keys():
-                seenPeptides[peptide] = origins
-            else:
-                for origin in origins:
-                    if origin not in seenPeptides[peptide]:
-                        seenPeptides[peptide].append(origin)
-
-            if memory_usage_psutil() > MEMORY_THRESHOLD_COMBINE:
-                if seenPeptides:
-                    commonPeptides = linCisSet.intersection(seenPeptides.keys())
-                    for peptide in commonPeptides:
-                        del seenPeptides[peptide]
-
-                outputPath = outputPath.split('.fasta')[0]
-                finalPath = outputPath + "-file" + str(counter) + '.fasta'
-                with open(finalPath, 'w') as output_handle:
-                    SeqIO.write(createSeqObj(seenPeptides), output_handle, "fasta")
-                seenPeptides = {}
-                counter += 1
-
-    # Delete temp files as they are used up
-    os.remove(fileOne)
-    os.remove(fileTwo)
-    # In case final record
-    if seenPeptides:
-        commonPeptides = linCisSet.intersection(seenPeptides.keys())
-        for peptide in commonPeptides:
-            del seenPeptides[peptide]
-
-    return seenPeptides, counter
-
-
-def writeTempFasta(seenPeptides):
-    temp = tempfile.NamedTemporaryFile(mode='w+t', suffix=".fasta", delete=False)
-    for key, value in seenPeptides.items():
-        temp.writelines(">")
-        counter = 0
-        for protein in value:
-            if counter != 0:
-                temp.writelines(';')
-            temp.writelines(str(protein))
-            counter += 1
-        temp.writelines("\n")
-        temp.writelines(str(key))
-        temp.writelines("\n")
-    return temp.name
-
-def fulfillPpmReq(mgfObj, massDict):
-    """
-    Assumption there are charges. Get the peptides that match, and writes them to the output fasta file
-    """
-
-    matchedPeptides = generateMGFList(mgfObj, massDict)
-
-    lock.acquire()
-    logging.info("Writing to fasta")
-    with open("OutputMaster.fasta", "a") as output_handle:
-        SeqIO.write(createSeqObj(matchedPeptides), output_handle, "fasta")
-
-    lock.release()
-    logging.info("Writing complete")

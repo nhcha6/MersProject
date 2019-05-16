@@ -15,7 +15,6 @@ def removeSubsetSeq(outputPath):
     # edit the outputPath to create the desired inputPath, sortedPath, noSubseqPath and concatPath
     inputPath = outputPath + ".fasta"
     sortedPath = outputPath + "_Sorted.fasta"
-    noSubseqPath = outputPath + "_NoSubsets.fasta"
     concatPath = outputPath + "_concat.fasta"
 
     # multiple timing variables used to time separate parts of the code

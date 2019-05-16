@@ -218,8 +218,6 @@ class App(QMainWindow):
 class MyTableWidget(QWidget):
     """
     MyTableWidget class is the child of the App class. It holds the tabs where most of the GUI functionality occurs.
-    ** Do we need to detail every variable and function relevant to this class? Seems excessive. What if we simply
-    detail the variables when they pop up in a method.
     """
 
     def __init__(self, parent):
@@ -742,7 +740,7 @@ class MyTableWidget(QWidget):
         :return cisFlag: if True, cis splicing should be completed as part of the output.
         :return linearFlag: if True, linear splicing should be completed as part of the output.
         :return csvFlag: if True, the data contained in massDict should be printed to a csv file before any b-y Ion
-        or precursor mass comparison is conducted. ** We may look to consider removing this functionality.
+        or precursor mass comparison is conducted.
         :return pepToProtFlag: if True, a csv file is written with the output peptides as a heading, and the proteins
         they originated in listed underneath.
         :return protToPepFlag: if True, a csv file is written with the input proteins as a heading, and the peptides
@@ -1006,7 +1004,7 @@ class MyTableWidget(QWidget):
         :param cisFlag: if True, cis splicing should be completed as part of the output.
         :param linearFlag: if True, linear splicing should be completed as part of the output.
         :param csvFlag: if True, the data contained in massDict should be printed to a csv file before any b-y Ion
-        or precursor mass comparison is conducted. ** We may look to consider removing this functionality.
+        or precursor mass comparison is conducted.
         :param pepToProtFlag: if True, a csv file is written with the output peptides as a heading, and the proteins
         they originated in listed underneath.
         :param protToPepFlag: if True, a csv file is written with the input proteins as a heading, and the peptides
@@ -1058,7 +1056,7 @@ class MyTableWidget(QWidget):
         :param cisFlag: if True, cis splicing should be completed as part of the output.
         :param linearFlag: if True, linear splicing should be completed as part of the output.
         :param csvFlag: if True, the data contained in massDict should be printed to a csv file before any b-y Ion
-        or precursor mass comparison is conducted. ** We may look to consider removing this functionality.
+        or precursor mass comparison is conducted.
         :param pepToProtFlag: if True, a csv file is written with the output peptides as a heading, and the proteins
         they originated in listed underneath.
         :param protToPepFlag: if True, a csv file is written with the input proteins as a heading, and the peptides
@@ -1113,7 +1111,7 @@ class MyTableWidget(QWidget):
         :param cisFlag: if True, cis splicing should be completed as part of the output.
         :param linearFlag: if True, linear splicing should be completed as part of the output.
         :param csvFlag: if True, the data contained in massDict should be printed to a csv file before any b-y Ion
-        or precursor mass comparison is conducted. ** We may look to consider removing this functionality.
+        or precursor mass comparison is conducted.
         :param pepToProtFlag: if True, a csv file is written with the output peptides as a heading, and the proteins
         they originated in listed underneath.
         :param protToPepFlag: if True, a csv file is written with the input proteins as a heading, and the peptides
@@ -1250,9 +1248,9 @@ class MyTableWidget(QWidget):
         Called by uploadMgfPreStep() when the user has selected to produce the intensity plot. In this case, the MGF
         file is opened and a plot of the max intensities of each spectrum is produced and shown to the user.
 
-        ** not 100% sure what these variables are. Also cannot find the function which creates them via the MGFPlotter.
-        :param ms2Thresh:
-        :param intensityPoints:
+        :param ms2Thresh: the intensity threshold values that are to be plotted on the x-axis
+        :param intensityPoints: the percentage of spectra with an intensity above the intensity threshold of the same
+        index. This is to be plotted on the y-axis.
         :return:
         """
 

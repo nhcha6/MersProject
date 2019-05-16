@@ -1231,9 +1231,9 @@ class MyTableWidget(QWidget):
                 self.mgfPlot.signals.plot.connect(self.onlyImportMGF)
                 self.mgfPlot.signals.finished.connect(self.intensityPlotFin)
                 self.threadpool.start(self.mgfPlot)
-                self.enableControl()
             else:
                 QMessageBox.about(self, "Message", 'MGF file successfully selected!')
+            self.enableControl()
 
         # Ensuring program does not crash if no file is selected
         elif fname[0] == '':

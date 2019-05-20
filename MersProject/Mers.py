@@ -934,6 +934,7 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
             # ** move this to after linsetQueue and break genMassDict after completed, as we do not need to create
             # massDict at all if mgf comparison isn't occuring.
             if mgfFlag:
+                print("MGF FLAG WAS TRUE")
                 #allPeptides = getAllPep(massDict)
                 allPeptides = massDict.keys()
                 allPeptidesDict = {}
@@ -944,6 +945,7 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
             # If there is an mgf file AND there is a charge selected, call functions to compare the potential spliced
             # proteins in massDict to the spectra in the MGF file.
             elif mgfData is not None and True in chargeFlags:
+                print("NEeD TO mATCH")
                 # matched peptides is all the peptides which passed the MGF comparison. modCountDict contains data
                 # on the number of times certain mods were included in the output which passed. This information
                 # is otherwise lost as all modded peptides which pass MGF comparison are returned to their unmodded
@@ -1325,7 +1327,6 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, procCom
                     if origin not in seenPeptides[key]:
                         seenPeptides[key].append(origin)
 
-    print(seenPeptides)
     # once the while loop as been broken, check if seenPeptides contains any elements. This is only to ensure the
     # memory threshold wasn't hit on the last process, and thus all seenPeptides would already have been written
     # to file.
@@ -1472,7 +1473,8 @@ def writeOutputFiles(finalSeenPeptides, protToPepFlag, pepToProtFlag, transFlag,
     :param fileCount: the number of output files that will have been written once this one has been completed.
     :return:
     """
-    finalPath = Path(str(outputPath)[0:-17] + '_' + str(fileCount) + '_' + str(outputPath)[-17:])
+    # finalPath = Path(str(outputPath)[0:-17] + '_' + str(fileCount) + '_' + str(outputPath)[-17:])
+    finalPath = outputPath
     with open(finalPath, 'w') as output_handle:
         # generate backwardSeenPeptides if protToPep is selected
         backwardsSeenPeptides = {}

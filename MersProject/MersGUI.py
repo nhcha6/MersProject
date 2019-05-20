@@ -1825,6 +1825,14 @@ def maxMgfMassOut(mgfDfList, chargeFlags):
     return maxMass, chargeMaxDict
 
 
+def str_to_bool(s):
+    if s == 'True':
+         return True
+    elif s == 'False':
+         return False
+    else:
+         raise ValueError
+
 if __name__ == '__main__':
     multiprocessing.freeze_support()
     app = QApplication(sys.argv)
@@ -1834,8 +1842,10 @@ if __name__ == '__main__':
     elif len(sys.argv) > 2:
         inputFastaFile = sys.argv[1]
         print("Input Fasta ", inputFastaFile)
+
         inputMgfFile = sys.argv[2]
         print("Input MGF Fil ", inputMgfFile)
+
         ppmVal = float(sys.argv[3])
         print("ppmVam ", ppmVal)
 
@@ -1848,7 +1858,7 @@ if __name__ == '__main__':
         byIonAccuracy = float(sys.argv[6])
         print("byIonAccuracy ", byIonAccuracy)
 
-        byIonFlag = sys.argv[7]
+        byIonFlag = str_to_bool(sys.argv[7])
         print("byIonFlag ", byIonFlag)
 
         mined = int(sys.argv[8])
@@ -1857,61 +1867,85 @@ if __name__ == '__main__':
         maxed = int(sys.argv[9])
         print("maxed ", maxed)
 
-        overlapFlag = sys.argv[10]
+        overlapFlag = str_to_bool(sys.argv[10])
         print("overlapFlag ", overlapFlag)
 
-        concatFlag = sys.argv[11]
+        concatFlag = str_to_bool(sys.argv[11])
         print("concat Flag ", concatFlag)
 
-        transFlag = sys.argv[12]
+        transFlag = str_to_bool(sys.argv[12])
         print("transFlag ", transFlag)
 
-        cisFlag = sys.argv[13]
+        cisFlag = str_to_bool(sys.argv[13])
         print("cisFlag ", cisFlag)
 
-        linearFlag = sys.argv[14]
+        linearFlag = str_to_bool(sys.argv[14])
         print("linearFlag ", linearFlag)
 
-        csvFlag = sys.argv[15]
+        csvFlag = str_to_bool(sys.argv[15])
         print("csvFlag ", csvFlag)
 
-        pepToProtFlag = sys.argv[16]
+        pepToProtFlag = str_to_bool(sys.argv[16])
         print("pepToProtFlag ", pepToProtFlag)
 
-        protToPepFlag = sys.argv[17]
+        protToPepFlag = str_to_bool(sys.argv[17])
         print("protToPepFlag ", protToPepFlag)
 
-        modList = sys.argv[18]
+        mod1 = sys.argv[18]
+        print("Mod 1 ", mod1)
+        mod2 = sys.argv[19]
+        print("Mod 1 ", mod2)
+        mod3 = sys.argv[20]
+        print("Mod 3 ", mod3)
+
+        modList = [mod1, mod2, mod3]
         print("Modlist ", modList)
 
-        maxMod = sys.argv[19]
+        maxMod = sys.argv[21]
         print("maxMod ", maxMod)
 
-        maxDistance = sys.argv[20]
+        maxDistance = sys.argv[22]
         print("Max Distance ", maxDistance)
 
-        outputPath = sys.argv[21]
+        lin_outputPath = sys.argv[23]
+        outputPath = {
+            "Linear": Path(lin_outputPath)
+        }
         print("Output path ", outputPath)
 
-        chargeFlags = sys.argv[22]
+        charge1 = str_to_bool(sys.argv[24])
+        print("Charge 1 ", charge1)
+        charge2 = str_to_bool(sys.argv[25])
+        print("Charge 2 ", charge2)
+        charge3 = str_to_bool(sys.argv[26])
+        print("Charge 3 ", charge3)
+        charge4 = str_to_bool(sys.argv[27])
+        print("Charge 4 ", charge4)
+        charge5 = str_to_bool(sys.argv[28])
+        print("Charge 5 ", charge5)
+
+        chargeFlags = [charge1, charge2, charge3, charge4, charge5]
+
         print("charge Flags ", chargeFlags)
 
-        mgfFlag = sys.argv[23]
+        mgfFlag = str_to_bool(sys.argv[29])
         print("mgfFlag ", mgfFlag)
 
 
-        # fasta = Fasta(inputFastaFile)
-        # mgfDfList, pepmassIonArrayList, mgfLen = readMGF(inputMgfFile, intensityThreshold, byIonFlag, chargeFlags)
-        #
-        #
-        # maxMass, chargeMaxDict = maxMgfMassOut(mgfDfList, chargeFlags)
-        #
-        # mgf = MGF(mgfDfList, pepmassIonArrayList, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag,
-        #                maxMass, chargeMaxDict, mgfLen)
+        fasta = Fasta(inputFastaFile)
+        mgfDfList, pepmassIonArrayList, mgfLen = readMGF(inputMgfFile, intensityThreshold, byIonFlag, chargeFlags)
+
+
+        maxMass, chargeMaxDict = maxMgfMassOut(mgfDfList, chargeFlags)
+
+        mgf = MGF(mgfDfList, pepmassIonArrayList, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag,
+                       maxMass, chargeMaxDict, mgfLen)
         print(mgf.ppmVal)
-        # fasta.generateOutput(mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag, csvFlag,
-        #                      pepToProtFlag,
-        #                      protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgf, mgfFlag)
+        print(mgf.minSimBy)
+        print(mgf.byIonAccuracy)
+        fasta.generateOutput(mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag, csvFlag,
+                             pepToProtFlag,
+                             protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgf, mgfFlag)
 
         print('command line interface')
 

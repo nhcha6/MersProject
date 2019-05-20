@@ -1794,6 +1794,36 @@ class MyTableWidget(QWidget):
         for currentQTableWidgetItem in self.tableWidget.selectedItems():
             print(currentQTableWidgetItem.row(), currentQTableWidgetItem.column(), currentQTableWidgetItem.text())
 
+def maxMgfMassOut(mgfDfList, chargeFlags):
+    """
+    Called from self.uploadMGF(), this returns the max mono-isotopic mass present in the MGF file and also the
+    max m/z ratio present for each individual charge state.
+
+    :param mgfDfList: a list of dictionaries, when each dictionary contains charges as keys and precursor masses
+    from the MGF file with the given charge state. The list will only contain more than one of these dictionaries
+    if the data was too large to pass into a multiprocessing.Process() as one dictionary.
+    :param chargeFlags: the charge states that the user wishes to asses in the MGF file.
+
+    :return maxMass: the max mono-isotopic mass (precursor mass must be converted from m/z to mono-isotopic)
+    present in the MGF file given the selected charge states.
+    :return chargeMaxDict: a dictionary containing charge states as keys and the corresponding max m/z ratio in
+    the MGF file as values.
+    """
+
+    maxMass = 0
+    chargeMaxDict = {}
+    for mgfDf in mgfDfList:
+        for z, masses in mgfDf.items():
+            if chargeFlags[int(z) - 1]:
+                maxChargeMass = max(masses)
+
+                chargeMaxDict[z] = maxChargeMass
+                maxMassTemp = maxChargeMass * int(z) - int(z) * 1.00794
+                if maxMassTemp > maxMass:
+                    maxMass = maxMassTemp
+
+    return maxMass, chargeMaxDict
+
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
@@ -1801,10 +1831,89 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         ex = App()
         sys.exit(app.exec_())
-    else:
+    elif len(sys.argv) > 2:
+        inputFastaFile = sys.argv[1]
+        print("Input Fasta ", inputFastaFile)
+        inputMgfFile = sys.argv[2]
+        print("Input MGF Fil ", inputMgfFile)
+        ppmVal = float(sys.argv[3])
+        print("ppmVam ", ppmVal)
+
+        intensityThreshold = float(sys.argv[4])
+        print("Intensity Threshold ", intensityThreshold)
+
+        minSimBy = float(sys.argv[5])
+        print("minSimBy ", minSimBy)
+
+        byIonAccuracy = float(sys.argv[6])
+        print("byIonAccuracy ", byIonAccuracy)
+
+        byIonFlag = sys.argv[7]
+        print("byIonFlag ", byIonFlag)
+
+        mined = int(sys.argv[8])
+        print("mined ", mined)
+
+        maxed = int(sys.argv[9])
+        print("maxed ", maxed)
+
+        overlapFlag = sys.argv[10]
+        print("overlapFlag ", overlapFlag)
+
+        concatFlag = sys.argv[11]
+        print("concat Flag ", concatFlag)
+
+        transFlag = sys.argv[12]
+        print("transFlag ", transFlag)
+
+        cisFlag = sys.argv[13]
+        print("cisFlag ", cisFlag)
+
+        linearFlag = sys.argv[14]
+        print("linearFlag ", linearFlag)
+
+        csvFlag = sys.argv[15]
+        print("csvFlag ", csvFlag)
+
+        pepToProtFlag = sys.argv[16]
+        print("pepToProtFlag ", pepToProtFlag)
+
+        protToPepFlag = sys.argv[17]
+        print("protToPepFlag ", protToPepFlag)
+
+        modList = sys.argv[18]
+        print("Modlist ", modList)
+
+        maxMod = sys.argv[19]
+        print("maxMod ", maxMod)
+
+        maxDistance = sys.argv[20]
+        print("Max Distance ", maxDistance)
+
+        outputPath = sys.argv[21]
+        print("Output path ", outputPath)
+
+        chargeFlags = sys.argv[22]
+        print("charge Flags ", chargeFlags)
+
+        mgfFlag = sys.argv[23]
+        print("mgfFlag ", mgfFlag)
+
+
+        # fasta = Fasta(inputFastaFile)
+        # mgfDfList, pepmassIonArrayList, mgfLen = readMGF(inputMgfFile, intensityThreshold, byIonFlag, chargeFlags)
+        #
+        #
+        # maxMass, chargeMaxDict = maxMgfMassOut(mgfDfList, chargeFlags)
+        #
+        # mgf = MGF(mgfDfList, pepmassIonArrayList, ppmVal, intensityThreshold, minSimBy, byIonAccuracy, byIonFlag,
+        #                maxMass, chargeMaxDict, mgfLen)
+        print(mgf.ppmVal)
+        # fasta.generateOutput(mined, maxed, overlapFlag, concatFlag, transFlag, cisFlag, linearFlag, csvFlag,
+        #                      pepToProtFlag,
+        #                      protToPepFlag, modList, maxMod, maxDistance, outputPath, chargeFlags, mgf, mgfFlag)
+
         print('command line interface')
-
-
 
 
 

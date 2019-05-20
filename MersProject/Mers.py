@@ -1325,6 +1325,7 @@ def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, procCom
                     if origin not in seenPeptides[key]:
                         seenPeptides[key].append(origin)
 
+    print(seenPeptides)
     # once the while loop as been broken, check if seenPeptides contains any elements. This is only to ensure the
     # memory threshold wasn't hit on the last process, and thus all seenPeptides would already have been written
     # to file.

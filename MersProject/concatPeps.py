@@ -336,10 +336,7 @@ def concatPepsFromSet(pepSet, outputPath):
     with open(outputPath, "w") as output_handle:
         SeqIO.write(createSeqObj(concatListObject.peptideList), output_handle, "fasta")
 
-<<<<<<< HEAD
-#checkOutput(OUTPUT_PATH, 'concatOutput.fasta')
-=======
 #concatPepsFromFile()
 #checkOutput(OUTPUT_PATH, "concatOutput.fasta")
->>>>>>> 68ebb3a4dfba3328001f3a25967805b1058eec8a
+
 

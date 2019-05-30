@@ -283,6 +283,10 @@ def readMGF(input_path, intensityThreshold, byIonFlag, chargeFlags):
             if 'charge' in spectrum['params'].keys():
                 charge = spectrum['params']['charge'][0]
 
+                # if the charge is greater than 5, we ignore it
+                if int(str(charge)[0])>5:
+                    continue
+            
                 # if the charge has not been selected for consideration by the user, ignore it.
                 if not chargeFlags[int(str(charge)[0])-1]:
                     continue

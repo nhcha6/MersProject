@@ -352,6 +352,20 @@ class Fasta:
             finalPath = getFinalPath(outputPath)
             open(finalPath, 'w')
 
+
+        splitsDict = {}
+        for file in inputFile:
+            with open(file, "rU") as handle:
+                for record in SeqIO.parse(handle, 'fasta'):
+                    protein = str(record.seq)
+                    seqId = str(record.name)
+                    seqId = seqId.split('|')[1]
+                    seqId = seqId.split(';')[0]
+                    # create all the splits and their reference with respect to finalPeptide
+                    splits, splitRef = splitDictPeptide(CIS, protein, maxed, mined)
+                    splitLen = len(splits)
+                    splitsDict[seqId] = (splits, splitRef, splitLen)
+
         # declare the num_workers, which is to be used when declaring the pool, based on the number of cores available
         # in the computer.
         num_workers = multiprocessing.cpu_count()
@@ -370,79 +384,64 @@ class Fasta:
                                                       protToPepFlag, self.pepCompleted, concatFlag, True))
         writerProcess.start()
 
-        # declare dummy protDict
-        protDict = {}
-        protDict['key'] = 'value'
+        # declare the pool.
+        pool = multiprocessing.Pool(processes=num_workers, initializer=processLockCis, initargs=(lockVar, toWriteQueue,
+                                                                                                   splitsDict, mgfObj,
+                                                                                                modTable, linQueue))
 
-        for file in inputFile:
-            with open(file, "rU") as handle:
-                for record in SeqIO.parse(handle, 'fasta'):
-                    protein = str(record.seq)
+        for proteinName, splitsInfo in splitsDict.items():
+            # declare dummy protDict to pass into genMassDict
+            protDict = {}
+            protDict[proteinName] = 'dummy'
+            # Create a process for groups of splits, pairing element 0 and 1 with -1 and -2 and so on. The indexes of the
+            # splits to be computed in this fashion is stored in splitsIndex.
+            # the size of each process (2 splits from the front and 2 from the end in the above example) is set by
+            # dividing the number of splits by NUM_PROC_TOTAL*2.
+            splitsIndex = []
+            splitLen = splitsInfo[2]
+            procSize = math.ceil(splitLen / CIS_PROC_SIZE)
 
-                    # create all the splits and their reference with respect to finalPeptide
-                    splits, splitRef = splitDictPeptide(CIS, protein, maxed, mined)
+            # these nested create a list of indexes which denote a single process. This list is stored in splitsIndex.
+            # splitsIndex is altered each iteration.
+            # continuing with the example where procSize = 2: splitsIndex = [0,1,-1,-2] and then [2,3,-3-4] and so on.
+            for i in range(0, math.ceil(splitLen / 2), procSize):
+                if i + procSize > math.floor(splitLen / 2):
+                    for j in range(i, splitLen - i):
+                        splitsIndex.append(j)
+                else:
+                    for j in range(i, i + procSize):
+                        splitsIndex.append(j)
+                        splitsIndex.append(splitLen - 1 - j)
 
-                    splitLen = len(splits)
+                # once the above while loop is broken, we can start a new process.
+                pool.apply_async(genMassDict, args=(CIS, protDict, mined, maxed, overlapFlag,
+                                                    csvFlag, modList, maxMod, maxDistance, finalPath,
+                                                    chargeFlags, mgfFlag,splitsIndex))
+                # reset splitsIndex to [] so that the next iteration can begin.
+                splitsIndex = []
 
-                    # declare the pool.
-                    pool = multiprocessing.Pool(processes=num_workers, initializer=processLockCis, initargs=(lockVar, toWriteQueue,
-                                                                                                               splits,splitRef, mgfObj,
-                                                                                                               modTable, linQueue))
-                    # Create a process for groups of splits, pairing element 0 and 1 with -1 and -2 and so on. The indexes of the
-                    # splits to be computed in this fashion is stored in splitsIndex.
-                    # the size of each process (2 splits from the front and 2 from the end in the above example) is set by
-                    # dividing the number of splits by NUM_PROC_TOTAL*2.
-                    splitsIndex = []
-                    procSize = math.ceil(splitLen / CIS_PROC_SIZE)
+                # after a process has been completed, check that the memory being used has not exceded MEMORY_THRESHOLD.
+                # if the memory limit has been reached, close the pool and put MEMFLAG to toWriteQueue to tell the
+                # writer() to output all the data that is stored in memory. We then wait for the writing to complete,
+                # restart the pool and continue creating the remaining processes.
+                # if memory_usage_psutil() > MEMORY_THRESHOLD:
+                #     print('Memory usage exceded. Waiting for processes to finish.')
+                #     pool.close()
+                #     pool.join()
+                #     toWriteQueue.put(MEMFLAG)
+                #     comp = self.completedProcs
+                #     # wait for writer to communicate back that it is done by adding one to self.completedProcs
+                #     while self.completedProcs == comp:
+                #         continue
+                #     self.completedProcs += -1
+                #     print('Restarting Pool')
+                #     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockTrans,
+                #                                 initargs=(lockVar, toWriteQueue, splits, splitRef, mgfObj, modTable,
+                #                                           linCisQueue))
 
-                    # these nested create a list of indexes which denote a single process. This list is stored in splitsIndex.
-                    # splitsIndex is altered each iteration.
-                    # continuing with the example where procSize = 2: splitsIndex = [0,1,-1,-2] and then [2,3,-3-4] and so on.
-                    for i in range(0, math.ceil(splitLen / 2), procSize):
-                        if i + procSize > math.floor(splitLen / 2):
-                            for j in range(i, splitLen - i):
-                                splitsIndex.append(j)
-                        else:
-                            for j in range(i, i + procSize):
-                                splitsIndex.append(j)
-                                splitsIndex.append(splitLen - 1 - j)
-
-                        # wait until the number processes started but not completed is less than MAX_PROC_ALIVE to begin a new
-                        # process.
-                        # self.procGenCounter += 1
-                        # while True:
-                        #     if self.procGenCounter - self.completedProcs < MAX_PROC_ALIVE:
-                        #         break
-
-                        # once the above while loop is broken, we can start a new process.
-                        pool.apply_async(genMassDict, args=(CIS, protDict, mined, maxed, overlapFlag,
-                                                            csvFlag, modList, maxMod, maxDistance, finalPath,
-                                                            chargeFlags, mgfFlag,splitsIndex))
-                        # reset splitsIndex to [] so that the next iteration can begin.
-                        splitsIndex = []
-
-                        # after a process has been completed, check that the memory being used has not exceded MEMORY_THRESHOLD.
-                        # if the memory limit has been reached, close the pool and put MEMFLAG to toWriteQueue to tell the
-                        # writer() to output all the data that is stored in memory. We then wait for the writing to complete,
-                        # restart the pool and continue creating the remaining processes.
-                        # if memory_usage_psutil() > MEMORY_THRESHOLD:
-                        #     print('Memory usage exceded. Waiting for processes to finish.')
-                        #     pool.close()
-                        #     pool.join()
-                        #     toWriteQueue.put(MEMFLAG)
-                        #     comp = self.completedProcs
-                        #     # wait for writer to communicate back that it is done by adding one to self.completedProcs
-                        #     while self.completedProcs == comp:
-                        #         continue
-                        #     self.completedProcs += -1
-                        #     print('Restarting Pool')
-                        #     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockTrans,
-                        #                                 initargs=(lockVar, toWriteQueue, splits, splitRef, mgfObj, modTable,
-                        #                                           linCisQueue))
-
-                    # wait for all the processes to finish before continuing.
-                    pool.close()
-                    pool.join()
+        # wait for all the processes to finish before continuing.
+        pool.close()
+        pool.join()
 
         # send the flag to the toWriteQueue to tell the writer() function that the process is complete.
         toWriteQueue.put(STOPFLAG)
@@ -762,7 +761,7 @@ def transProcess(splitsIndex, mined, maxed, modList, maxMod, finalPath,
         # Look to produce only trans spliced peptides - not linear or cis. Do so by not allowing combination of peptides
         # which originate from the same protein as opposed to solving for Cis and Linear and not including that
         # in the output
-        combined, combinedRef, linCisSet = combineTransPeptide(mined, maxed, splitsIndex, 'None', False, protIndexList)
+        combined, combinedRef, linCisSet = combineTransPeptide(splits, splitRef, mined, maxed, splitsIndex, 'None', False, protIndexList)
 
         # Put linCisSet to linCisQueue:
         transProcess.linCisQueue.put(linCisSet)
@@ -836,7 +835,7 @@ def transProcess(splitsIndex, mined, maxed, modList, maxMod, finalPath,
 
         raise e
 
-def combineTransPeptide(mined, maxed, splitsIndex, maxDistance, overlapFlag, protIndexList=False):
+def combineTransPeptide(splits, splitRef, mined, maxed, splitsIndex, maxDistance, overlapFlag, protIndexList=False):
 
     """
     Called from transProcess(). Takes splits index from the multiprocessing pool and computes all the possible peptides which can be created
@@ -1072,7 +1071,7 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
 
             # Get the initial peptides and their positions, and the set of linear peptides produced for this protein
             # if conducting cis splicing.
-            combined, combinedRef, linSet = outputCreate(spliceType, protSeq, mined, maxed, overlapFlag, maxDistance, splitsIndex)
+            combined, combinedRef, linSet = outputCreate(spliceType, protId, protSeq, mined, maxed, overlapFlag, maxDistance, splitsIndex)
 
             # add this set of linear proteins to the linSetQueue
             genMassDict.linSetQueue.put(linSet)
@@ -1142,13 +1141,13 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
         raise e
 
 # set default maxDistance to be absurdly high incase of trans
-def outputCreate(spliceType, protein, mined, maxed, overlapFlag, maxDistance, splitsIndex):
+def outputCreate(spliceType, protId, protSeq, mined, maxed, overlapFlag, maxDistance, splitsIndex):
     """
     Called from genMassDict(). Recieves a protein and creates the peptides using the relevant input spliceType and in accrodance with the
     min length, max length, overlapFlag and maxDistance input by the user.
 
     :param spliceType: either the CIS or LINEAR flag, which denotes which type of splicing to conduct.
-    :param protein: the input protein sequence.
+    :param protSeq: the input protein sequence if running linear.
     :param mined: the minimum number of amino acids in a spliced peptide.
     :param maxed: the maximum number of amino acids in a spliced peptide.
     :param overlapFlag: if True, this flag denotes that combination of splits containing shared amino acids is not
@@ -1169,14 +1168,16 @@ def outputCreate(spliceType, protein, mined, maxed, overlapFlag, maxDistance, sp
     # SplitRef eg: [[0], [0,1], [0,2], [1], [1,2]]
     # Produces splits and splitRef arrays which are passed through combined
     if spliceType == LINEAR:
-        splits, splitRef = splitDictPeptide(spliceType, protein, mined, maxed)
+        splits, splitRef = splitDictPeptide(spliceType, protSeq, mined, maxed)
     combined, combinedRef = None, None
 
     if spliceType == CIS:
         # combined eg: ['ABC', 'BCA', 'ACD', 'DCA']
         # combinedRef eg: [[0,1,2], [1,0,2], [0,2,3], [3,2,0]]
         # pass splits through combinedOverlapPeptide() if cis splicing has been selected
-        combined, combinedRef, linSet = combineTransPeptide(mined, maxed, splitsIndex, maxDistance, overlapFlag)
+        splits = splitsDict[protId][0]
+        splitRef = splitsDict[protId][1]
+        combined, combinedRef, linSet = combineTransPeptide(splits, splitRef, mined, maxed, splitsIndex, maxDistance, overlapFlag)
 
     elif spliceType == LINEAR:
         # if linear splicing, the splits are simply the linear spliced peptides. Set them to equal combined/combinedRef
@@ -2308,7 +2309,7 @@ def processLockInit(lockVar, toWriteQueue, mgfObj, childTable, linSetQueue):
     genMassDict.linSetQueue = linSetQueue
 
 
-def processLockCis(lockVar, toWriteQueue, allSplits, allSplitRef, mgfObj, childTable, linCisQueue):
+def processLockCis(lockVar, toWriteQueue, splitData, mgfObj, childTable, linCisQueue):
 
     """
     Called by self.transOutput() before the multiprocessing pool is created to set up a global lock for a child
@@ -2335,10 +2336,8 @@ def processLockCis(lockVar, toWriteQueue, allSplits, allSplitRef, mgfObj, childT
     mgfData = mgfObj
     global finalModTable
     finalModTable = childTable
-    global splits
-    splits = allSplits
-    global splitRef
-    splitRef = allSplitRef
+    global splitsDict
+    splitsDict = splitData
     genMassDict.toWriteQueue = toWriteQueue
     genMassDict.linSetQueue = linCisQueue
 

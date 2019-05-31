@@ -893,7 +893,11 @@ def combineTransPeptide(mined, maxed, splitsIndex, maxDistance, overlapFlag, pro
                         # If so, its a cis or lin protein and not trans, and we add it to linCisSet not trans
                         if linCisPepCheck(addForwardRef, protIndexList):
                             linCisSet.add(toAddForward)
-                            linCisSet.add(toAddReverse)
+                            if protIndexList != False:
+                                linCisSet.add(toAddReverse)
+                            else:
+                                combModless.append(toAddReverse)
+                                combModlessRef.append(addReverseRef)
                         # if the splits are from different proteins, it is a trans peptide and can be added.
                         else:
                             combModless.append(toAddForward)
@@ -906,7 +910,11 @@ def combineTransPeptide(mined, maxed, splitsIndex, maxDistance, overlapFlag, pro
                     # If so, its a cis or lin protein and not trans, and we add it to linCisSet not trans
                     if linCisPepCheck(addForwardRef, protIndexList):
                         linCisSet.add(toAddForward)
-                        linCisSet.add(toAddReverse)
+                        if protIndexList != False:
+                            linCisSet.add(toAddReverse)
+                        else:
+                            combModless.append(toAddReverse)
+                            combModlessRef.append(addReverseRef)
                     # if the splits are from different proteins, it is a trans peptide and can be added.
                     else:
                         combModless.append(toAddForward)

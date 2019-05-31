@@ -146,7 +146,7 @@ class Fasta:
                                     mgfFlag, concatFlag)
 
         if linearFlag:
-            self.cisAndLinearOutput(self.inputFile, LINEAR, mined, maxed, overlapFlag, csvFlag, pepToProtFlag,
+            self.linearOutput(self.inputFile, LINEAR, mined, maxed, overlapFlag, csvFlag, pepToProtFlag,
                                     protToPepFlag, modList, maxMod, maxDistance, outputPath[LINEAR], chargeFlags,
                                     mgfObj, mgfFlag, concatFlag)
 
@@ -309,11 +309,10 @@ class Fasta:
     def cisOutput(self, inputFile, mined, maxed, overlapFlag, csvFlag, pepToProtFlag, protToPepFlag,
                            modList, maxMod, maxDistance, outputPath, chargeFlags, mgfObj, mgfFlag, concatFlag):
         """
-        This function is called Fasta.generateOutput() if cisFlag == True and if linFlag == True. It controls
-        the creation of all processes required to conduct trans splicing.
+        This function is called Fasta.generateOutput() if cisFlag == True. It controls the creation of all processes
+        required to conduct cis splicing.
 
         :param inputFile: the fasta files containing proteins input by the user.
-        :param spliceType: holds either cis or linear depending on what splice type is being run.
         :param mined: the minimum length of an output peptide.
         :param maxed: the maximum length of an ouptut peptide.
         :param overlapFlag: if True, this flag denotes that combination of splits containing shared amino acids is not
@@ -452,12 +451,12 @@ class Fasta:
         # print that the trans computation is completed.
         logging.info("All Cis joined")
 
-    def cisAndLinearOutput(self, inputFile, spliceType, mined, maxed, overlapFlag, csvFlag, pepToProtFlag, protToPepFlag,
+    def linearOutput(self, inputFile, spliceType, mined, maxed, overlapFlag, csvFlag, pepToProtFlag, protToPepFlag,
                            modList, maxMod, maxDistance, outputPath, chargeFlags, mgfObj, mgfFlag, concatFlag):
 
         """
-        This function is called Fasta.generateOutput() if cisFlag == True and if linFlag == True. It controls
-        the creation of all processes required to conduct trans splicing.
+        This function is called Fasta.generateOutput() if linFlag == True. It controls the creation of all processes
+        required to conduct linear splicing.
 
         :param inputFile: the fasta files containing proteins input by the user.
         :param spliceType: holds either cis or linear depending on what splice type is being run.
@@ -840,25 +839,26 @@ def transProcess(splitsIndex, mined, maxed, modList, maxMod, finalPath,
 def combineTransPeptide(splits, splitRef, mined, maxed, splitsIndex, maxDistance, overlapFlag, protIndexList=False):
 
     """
-    Called from transProcess(). Takes splits index from the multiprocessing pool and computes all the possible peptides which can be created
-    from these splits. The entire splits and splitRef are global variables within the pool and can thus be accessed
-    by all processes. This function differs from the lin/cis version as it must check that a created peptide is not
-    a linear or cis peptide, and that it must only iterate through the splits denoted by splits index, as opposed to
-    all of them.
+    Called from transProcess() and outputCreate(). Takes splits index from the multiprocessing pool and computes
+    all the possible peptides which can be created from these splits. The entire splits and splitRef are global
+    variables within the pool and can thus be accessed by all processes. This function differs from the
+    lin version as it must check that a created peptide is not a linear/cis peptide, and that it must only iterate
+    through the splits denoted by splits index, as opposed to all of them.
 
-    ** do all the splits need to be passed into the function? Surely this is consuming a lot of unneccesary memory
-    when they are redeclared.
-
-    :param splits: all cleaved peptides which can be recombined to form a trans spliced peptide.
-    :param splitRef: the locations of these cleavages within the concatenated input protein.
+    :param splits: all cleaved peptides which can be recombined to form a trans or cis spliced peptide.
+    :param splitRef: the locations of these cleavages within the input data.
     :param mined: the minimum length of an output peptide.
     :param maxed: the maximum length of an ouptut peptide.
     :param splitsIndex: the indexes of the splits to be combined with all other splits in this given process.
-    :return combModless: all the trans peptides (combined cleavage/splits) created in this process.
-    :return combModlessRef: the location data of where this trans peptide originated in the concatenated protein
+    :param maxDistance: the maximum distance apart two splits can be if they are to be combined in cis splicing.
+    This parameter will be set to 'None' if trans splicing is being run.
+    :param overlapFlag: True if the user does not wish to include overlap splicing in the cis output. By default,
+    this value will be False if trans splicing is running.
+    :return combModless: all the trans or cis peptides (combined cleavage/splits) created in this process.
+    :return combModlessRef: the location data of where this trans/cis peptide originated in the concatenated protein
     sequence
-    :return linCisSet: a set of all the linear and cis spliced peptides that were dynamically produced during
-    the combination process. These will be deleted from the final output later.
+    :return linCisSet: a set of all the linear and cis (only cis if trans splicing is running) spliced peptides that
+    were dynamically produced during the combination process. These will be deleted from the final output later.
     """
     # initialise linCisVariable holder.
     linCisSet = set()
@@ -1061,6 +1061,8 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
     mgf file. The first bool corresponds to +1, the second to +2 and so on up to +5.
     :param mgfFlag: if True, no the user has selected that no mgf comparison be conducted and the raw splice data
     is to be ouptut to Fasta.
+    :param splitsIndex: this will store the indeces of splits which are to combined in this process if cis is running. If
+    linear this value will be the default of None.
 
     :return:
     """
@@ -1145,8 +1147,8 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
 # set default maxDistance to be absurdly high incase of trans
 def outputCreate(spliceType, protId, protSeq, mined, maxed, overlapFlag, maxDistance, splitsIndex):
     """
-    Called from genMassDict(). Recieves a protein and creates the peptides using the relevant input spliceType and in accrodance with the
-    min length, max length, overlapFlag and maxDistance input by the user.
+    Called from genMassDict(). Recieves a protein and creates the peptides using the relevant input spliceType and in
+    accordance with the nmin length, max length, overlapFlag and maxDistance input by the user.
 
     :param spliceType: either the CIS or LINEAR flag, which denotes which type of splicing to conduct.
     :param protSeq: the input protein sequence if running linear.
@@ -1157,6 +1159,8 @@ def outputCreate(spliceType, protId, protSeq, mined, maxed, overlapFlag, maxDist
     cis spliced peptides.
     :param maxDistance: in cis splicing, the maximum distance between any two amino acids in two cleaved peptides
     that are to be recombined to form a cis spliced peptide. If None, the max distance is infinite.
+    :param splitsIndex: this will store the indeces of splits which are to combined in this process if cis is running. If
+    linear this value will be the default of None.
 
     :return combined: all the spliced peptides created from the input protein which fit the other criteria.
     :return combinedRef: a list containing where the amino-acids which were used to create a given spliced peptide
@@ -1290,105 +1294,6 @@ def aminoCheck(split):
         else:
             return False
     return True
-
-def combineOverlapPeptide(splits, splitRef, mined, maxed, overlapFlag, maxDistance):
-
-    """
-    Called by outputCreate(). This function takes a list of splits and the corresponding location data within the
-    input protein to create all the cis spliced peptides which fit within the other input criteria.
-    :param splits: a list storing all possible cleavages created from the input sequence in accordance with the
-    input criteria.
-    :param splitRef: a list containing where each split was located within the the input protein.
-    Eg: [[0], [0,1], [0,2], [1], [1,2].....]
-    :param mined: the minimum number of amino acids in a spliced peptide.
-    :param maxed: the maximum number of amino acids in a spliced peptide.
-    :param overlapFlag: if True, this flag denotes that combination of splits containing shared amino acids is not
-    permitted. Shared amino acids originate from the same amino-acid in the same peptide. This is only relevant to
-    cis spliced peptides.
-    :param maxDistance: in cis splicing, the maximum distance between any two amino acids in two cleaved peptides
-    that are to be recombined to form a cis spliced peptide. If None, the max distance is infinite.
-
-    :return combined: all the cis spliced peptides created from the the splits which fit the input criteria.
-    :return combinedRef: a list containing where the amino-acids which were used to create a given spliced peptide
-    where located within the input protein. Eg: [[0], [0,1], [0,2], [1], [1,2].....]
-    :return linSet: all the linear spliced peptides that could be produced from the input splits in accordance
-    with the input criteria.
-    """
-    # initialise linSet to store the linear spliced peptides which can be created from this set of splits.
-    linSet = set()
-    # initialise massDict to hold the possible combinations from the input splits. Use a dictionary so that duplicates
-    # are automatically removed.
-    massDict = {}
-    # initialise the output arrays combModless and comModlessRef.
-    combModless = []
-    combModlessRef = []
-    # iterate through all of the splits and build up combinations which meet min/max/overlap criteria
-    for i in range(0, len(splits)):
-
-        # toAdd variables hold temporary combinations for insertion in final matrix if it meets criteria
-        toAddForward = ""
-        toAddReverse = ""
-
-        # iterate through all splits which appear after the current split so that all combinations of splits can
-        # be created.
-        for j in range(i, len(splits)):
-            # create forward combination of split i and j
-            toAddForward += splits[i]
-            toAddForward += splits[j]
-            addForwardRef = splitRef[i] + splitRef[j]
-            # create backwards combinations of split i and j
-            toAddReverse += splits[j]
-            toAddReverse += splits[i]
-            addReverseRef = splitRef[j] + splitRef[i]
-
-            # max, min and max distance checks combined into one function for clarity. If it doesn't pass, continue to
-            # the next combination of splits.
-            if combineCheck(toAddForward, mined, maxed, splitRef[i], splitRef[j], maxDistance):
-                # if overlap flag is True, we do need to check if the two splits overlap each other, and
-                # not allow combination if they do.
-                if overlapFlag:
-                    # returns False is the two splitRef lists overlap.
-                    if overlapComp(splitRef[i], splitRef[j]):
-                        # add toAddReverse to massDict
-                        massDict[toAddReverse] = addReverseRef
-                        # check if toAddForward is linear and add to linearSet if so
-                        if linCisPepCheck(addForwardRef, False):
-                            linSet.add(toAddForward)
-                        # if toAddForward is not linear, add it to massDict.
-                        else:
-                            massDict[toAddForward] = addForwardRef
-
-                # if overlap flag is False, we are happy to combine the splits even if they overlap.
-                else:
-                    # add toAddReverse to massDict
-                    massDict[toAddReverse] = addReverseRef
-                    # check if toAddForward is linear and add to linearSet if so
-                    if linCisPepCheck(addForwardRef, False):
-                        linSet.add(toAddForward)
-                    else:
-                        massDict[toAddForward] = addForwardRef
-            # if combineCheck() returns False, check that the massDistance value isn't what caused it to fail.
-            # if it was maxDistance, we can break from the inner for loop, as the following splits are only going
-            # to be further away.
-            elif not maxDistCheck(splitRef[i], splitRef[j], maxDistance):
-                break
-
-            # reset toAddForward/Reverse at the end of each iteration through the inner for loop, ready for the
-            # next combination of splits.
-            toAddForward = ""
-            toAddReverse = ""
-
-    # iterate through all items massDict and add the peptide to combModless and reference to combModlessRef if the
-    # peptide is not in linSet.
-    for peptide, ref in massDict.items():
-        if peptide in linSet:
-            continue
-        else:
-            combModless.append(peptide)
-            combModlessRef.append(ref)
-
-    return combModless, combModlessRef, linSet
-
 
 def writer(queue, outputPath, linCisQueue, pepToProtFlag, protToPepFlag, procCompleted, concatFlag, transFlag=False):
     """
@@ -1855,7 +1760,7 @@ def genericMod(combineModlessDict, character, massChange, modNo, maxMod):
 
 def linCisPepCheck(refs, transOrigins):
     """
-    Called by combineTransPeptide() and combineOverlapPeptide(). This function checks if a given peptide location
+    Called by combineTransPeptide(). This function checks if a given peptide location
     corresponds to a linear (when cis and trans splicing is running) or cis (only trans is running) peptide. This is
     done so that when trans is being run linear and cis peptides are recognised in the combination process and added
     to a set to be deleted from the final output. The same applies for linear peptides in the cis output.
@@ -1956,7 +1861,7 @@ def massCharge(predictedMass, z):
 
 def maxDistCheck(ref1, ref2, maxDistance):
     """
-    called by combineOverlapPeptide(). Given the locations of two cleavages within the input protein, this function
+    called by combineTransPeptide(). Given the locations of two cleavages within the input protein, this function
     calculates if the two references are within the maxDistance or not. If they are within the maxDistance, the
     function returns True and maxDistCheck will continue with combining the cleavages to produce a cis spliced peptide.
 
@@ -2012,7 +1917,7 @@ def minSize(split, mined):
 
 def combineCheck(split, mined, maxed, ref1, ref2, maxDistance='None'):
     """
-    Called by splitDictPeptide(), splitTransPeptide(), combineOverlapPeptide() and combineTransPeptide() to check that
+    Called by splitDictPeptide(), splitTransPeptide() and combineTransPeptide() to check that
     a peptide meets the min length, max length and max distance criteria input by the user. It returns True if all
     of these checks pass, and False if at least one is False.
 
@@ -2033,7 +1938,7 @@ def combineCheck(split, mined, maxed, ref1, ref2, maxDistance='None'):
 
 def overlapComp(ref1, ref2):
     """
-    Called by combineOverlapPeptide(), this function checks if two lists contain any identical elements. The input data
+    Called by combineTransPeptide(), this function checks if two lists contain any identical elements. The input data
     in this case will be lists containing cleavage location indexes. Thus, this function checks if the cleavages
     corresponding to input location references share any amino acids in the origin protein.
 
@@ -2314,16 +2219,14 @@ def processLockInit(lockVar, toWriteQueue, mgfObj, childTable, linSetQueue):
 def processLockCis(lockVar, toWriteQueue, splitData, mgfObj, childTable, linCisQueue):
 
     """
-    Called by self.transOutput() before the multiprocessing pool is created to set up a global lock for a child
+    Called by self.cisOutput() before the multiprocessing pool is created to set up a global lock for a child
     processes and to give all processes access to important queues and shared variables.
 
     :param lockVar: the multiprocessing.Lock() variable used for to control the access of process to certain tasks.
     :param toWriteQueue: the queue which all processes need to be able to access to enable them to push their output
     to the writer() function.
-    :param allSplits: a list of all the generate linear cleavages from all input peptides which will be used to
-    generate all trans spliced peptide.
-    :param allSplitRef: a list of references to the locations of allSplits peptides within the sequence resulting
-    from concetenating all input proteins.
+    :param splitData: a dictionary with protien names as keys and as a value, a tuple of the form:
+    (splits, splitRef, splitLen).
     :param mgfObj: the object which stores all the data needed from the mgf file, which all processes require access
     to. It was too large to initialise for each process, thus we can initialise it once by giving all processes
     global access.

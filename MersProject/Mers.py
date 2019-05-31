@@ -31,7 +31,7 @@ CIS = "Cis"
 
 # MEMORY_THRESHOLD is the percentage of RAM being used at which all computation is paused, the current output data is
 # written to file, after which the output recommences.
-MEMORY_THRESHOLD = 85
+MEMORY_THRESHOLD = 20
 # NUM_PROC_TOTAL is the total number of processes generated per trans/cis/linear splicing computation.
 NUM_PROC_TOTAL = 1000
 # The generation of processes is slowed to avoid an overload of memory due to spawned but uncompleted processes.
@@ -420,24 +420,25 @@ class Fasta:
                 # reset splitsIndex to [] so that the next iteration can begin.
                 splitsIndex = []
 
-                # after a process has been completed, check that the memory being used has not exceded MEMORY_THRESHOLD.
-                # if the memory limit has been reached, close the pool and put MEMFLAG to toWriteQueue to tell the
-                # writer() to output all the data that is stored in memory. We then wait for the writing to complete,
-                # restart the pool and continue creating the remaining processes.
-                # if memory_usage_psutil() > MEMORY_THRESHOLD:
-                #     print('Memory usage exceded. Waiting for processes to finish.')
-                #     pool.close()
-                #     pool.join()
-                #     toWriteQueue.put(MEMFLAG)
-                #     comp = self.completedProcs
-                #     # wait for writer to communicate back that it is done by adding one to self.completedProcs
-                #     while self.completedProcs == comp:
-                #         continue
-                #     self.completedProcs += -1
-                #     print('Restarting Pool')
-                #     pool = multiprocessing.Pool(processes=num_workers, initializer=processLockTrans,
-                #                                 initargs=(lockVar, toWriteQueue, splits, splitRef, mgfObj, modTable,
-                #                                           linCisQueue))
+            # after a protein has been completed, check that the memory being used has not exceded MEMORY_THRESHOLD.
+            # if the memory limit has been reached, put MEMFLAG to toWriteQueue to tell the writer() to output all the
+            # data that is stored in memory. We then wait for the writing to complete, restart the pool and continue
+            # creating the remaining processes.
+            if memory_usage_psutil() > MEMORY_THRESHOLD:
+                print('Memory usage exceded.')
+                pool.close()
+                pool.join()
+                toWriteQueue.put(MEMFLAG)
+                comp = self.completedProcs
+                # wait for writer to communicate back that it is done by adding one to self.completedProcs
+                while self.completedProcs == comp:
+                    continue
+                self.completedProcs += -1
+                print("Memory check completed.")
+                pool = multiprocessing.Pool(processes=num_workers, initializer=processLockCis,
+                                            initargs=(lockVar, toWriteQueue,
+                                                      splitsDict, mgfObj,
+                                                      modTable, linQueue))
 
         # wait for all the processes to finish before continuing.
         pool.close()

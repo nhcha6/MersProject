@@ -31,7 +31,7 @@ CIS = "Cis"
 
 # MEMORY_THRESHOLD is the percentage of RAM being used at which all computation is paused, the current output data is
 # written to file, after which the output recommences.
-MEMORY_THRESHOLD = 20
+MEMORY_THRESHOLD = 85
 # NUM_PROC_TOTAL is the total number of processes generated per trans/cis/linear splicing computation.
 NUM_PROC_TOTAL = 1000
 # The generation of processes is slowed to avoid an overload of memory due to spawned but uncompleted processes.
@@ -127,10 +127,9 @@ class Fasta:
         is to be ouptut to Fasta.
         :return:
         """
-        # estimatethe total number of processes that will be generated (NUM_PROC_TOTAL for every splice type running)
+        # estimatethe total number of processes that will be generated for trans and lin
+        # (NUM_PROC_TOTAL for every splice type running)
         if transFlag:
-            self.totalProcs += NUM_PROC_TOTAL
-        if cisFlag:
             self.totalProcs += NUM_PROC_TOTAL
         if linearFlag:
             self.totalProcs += NUM_PROC_TOTAL
@@ -357,6 +356,8 @@ class Fasta:
         for file in inputFile:
             with open(file, "rU") as handle:
                 for record in SeqIO.parse(handle, 'fasta'):
+                    # add to total procs each time
+                    self.totalProcs+=CIS_PROC_SIZE
                     protein = str(record.seq)
                     seqId = str(record.name)
                     seqId = seqId.split('|')[1]
@@ -399,7 +400,7 @@ class Fasta:
             # dividing the number of splits by NUM_PROC_TOTAL*2.
             splitsIndex = []
             splitLen = splitsInfo[2]
-            procSize = math.ceil(splitLen / CIS_PROC_SIZE)
+            procSize = math.ceil(splitLen /(2*CIS_PROC_SIZE))
 
             # these nested create a list of indexes which denote a single process. This list is stored in splitsIndex.
             # splitsIndex is altered each iteration.

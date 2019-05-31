@@ -362,7 +362,7 @@ class Fasta:
                     seqId = seqId.split('|')[1]
                     seqId = seqId.split(';')[0]
                     # create all the splits and their reference with respect to finalPeptide
-                    splits, splitRef = splitDictPeptide(CIS, protein, maxed, mined)
+                    splits, splitRef = splitDictPeptide(CIS, protein, mined, maxed)
                     splitLen = len(splits)
                     splitsDict[seqId] = (splits, splitRef, splitLen)
 

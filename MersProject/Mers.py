@@ -1269,7 +1269,6 @@ def splitDictPeptide(spliceType, protein, mined, maxed):
                 if maxSize(toAdd, maxed-1):
                     # Check that the split to be added contains only valid amino acids. Break inner loop if so.
                     if not aminoCheck(toAdd):
-                        print(toAdd)
                         break
                     splits.append(toAdd)
                     ref.append(j+1)
@@ -2025,7 +2024,6 @@ def combMass(combine, combineRef, origProtTups = None):
         # check if totalMass is greater than the max mass in the MGF file. If so continue as it will not match to
         # any spectra and thus won't appear in the output.
         if totalMass > maxMass:
-            print(combine[i])
             continue
         # if originProtTups == None, we are dealing with a cis/linear splice and do not need to consider originProtTups.
         if origProtTups == None:

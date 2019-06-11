@@ -447,7 +447,7 @@ class Fasta:
                             self.completedProcs += -1
                             print('Restarting Pool')
                             pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit,
-                                                        initargs=(lockVar, toWriteQueue, mgfObj, childTable,
+                                                        initargs=(lockVar, toWriteQueue, mgfObj, modTable,
                                                                   linSetQueue))
 
         # once all records are iterated through, a process is created for the remaining proteins in protDict.

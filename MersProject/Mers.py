@@ -31,7 +31,7 @@ CIS = "Cis"
 
 # MEMORY_THRESHOLD is the percentage of RAM being used at which all computation is paused, the current output data is
 # written to file, after which the output recommences.
-MEMORY_THRESHOLD = 85
+MEMORY_THRESHOLD = 20
 # NUM_PROC_TOTAL is the total number of processes generated per trans/cis/linear splicing computation.
 NUM_PROC_TOTAL = 1000
 # The generation of processes is slowed to avoid an overload of memory due to spawned but uncompleted processes.
@@ -594,7 +594,7 @@ class Fasta:
                             self.completedProcs += -1
                             print('Restarting Pool')
                             pool = multiprocessing.Pool(processes=num_workers, initializer=processLockInit,
-                                                        initargs=(lockVar, toWriteQueue, mgfObj, childTable,
+                                                        initargs=(lockVar, toWriteQueue, mgfObj, modTable,
                                                                   linSetQueue))
 
         # once all records are iterated through, a process is created for the remaining proteins in protDict.

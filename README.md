@@ -8,6 +8,4 @@ The program receives two input files:
 
 These files must be successfully uploaded before the remaining inputs on the first tab are enabled to the user.
 
-![Input Mgf File](https://raw.githubusercontent.com/arpitbajaj98/MersProject/master/docs/UserManualimgs/inputmgffile.png)
-
-![Input Mgf File](https://raw.githubusercontent.com/arpitbajaj98/MersProject/master/docs/UserManualimgs/inputfasta.png)
+![Input Mgf File](https://raw.githubusercontent.com/arpitbajaj98/MersProject/master/docs/UserManualimgs/inputmgffile.png)   ![Input Mgf File](https://raw.githubusercontent.com/arpitbajaj98/MersProject/master/docs/UserManualimgs/inputfasta.png)

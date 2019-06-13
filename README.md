@@ -100,4 +100,9 @@ The default layout of the second tab includes three modification dropdown boxes.
 
 The characters in brackets represent which amino acids are modified. Some modifications which only apply to one amino acid do not have the brackets included. Table 1 summarises each of the 32 default modifications.
 
+**Table 1: summary of the default PTMs available for selection by the user.**
 
+| Modification Name  | Modification Name | Mass Change |
+| ------------- | ------------- | ------------- |
+| 4-hydroxynonenal  | HNE  | 156.11504  |
+| Acetylation  | K  | 42.010567  |

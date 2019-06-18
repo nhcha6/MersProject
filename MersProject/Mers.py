@@ -31,7 +31,7 @@ CIS = "Cis"
 
 # MEMORY_THRESHOLD is the percentage of RAM being used at which all computation is paused, the current output data is
 # written to file, after which the output recommences.
-MEMORY_THRESHOLD = 20
+MEMORY_THRESHOLD = 85
 # NUM_PROC_TOTAL is the total number of processes generated per trans/cis/linear splicing computation.
 NUM_PROC_TOTAL = 1000
 # The generation of processes is slowed to avoid an overload of memory due to spawned but uncompleted processes.
@@ -563,11 +563,14 @@ class Fasta:
                     if counter % pepPerProc == 0:
                         # add 1 to self.procGenCounter which will be used to control the creation of processes.
                         self.procGenCounter += 1
+
                         # the code is stalled in the while loop until the number of processes that have been created
                         # but not had their output retrieved from the toWriteQueue is less tha MAX_PROC_ALIVE.
                         while True:
                             if self.procGenCounter - self.completedProcs < MAX_PROC_ALIVE:
                                 break
+
+                        print("starting process")
                         # Once the while loop is passed, start the processes for this set of processes with the
                         # target function being genMassDict
                         pool.apply_async(genMassDict, args=(spliceType, protDict, mined, maxed, overlapFlag,
@@ -1125,7 +1128,7 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
                 logging.info("Writing released!")
 
         # put PROC_FINISHED flag to toWriteQueue, so that it can update Fasta.completedProcs.
-        # genMassDict.toWriteQueue.put(PROC_FINISHED)
+        genMassDict.toWriteQueue.put(PROC_FINISHED)
 
     # if an error is raised, it is caught by this exception and its details are printed to console.
     except Exception as e:

@@ -2160,7 +2160,13 @@ def writeToCsv(massDict, header, finalPath, chargeFlags):
         for key, value in massDict.items():
             infoRow = [key, value[0], value[1]]
             for chargeIndex in chargeHeaders:
-                chargeMass = value[2][chargeIndex+1]
+                # try and except required to ensure that is max mass was not included for a particular charge state,
+                # the file still writes correctly.
+                try:
+                    chargeMass = value[2][chargeIndex+1]
+                except:
+                    infoRow.append("")
+                    continue
                 infoRow.append(str(chargeMass))
             writer.writerow(infoRow)
 

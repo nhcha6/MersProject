@@ -381,7 +381,7 @@ class MyTableWidget(QWidget):
         self.addChargeStates()
 
         # AN EXTRA ADD "WRITE TO CSV FUNCTION CHECKBOX"
-        self.tab2.csv = QCheckBox('Write To Csv')
+        self.tab2.csv = QCheckBox('Unfiltered Peptide Data')
         self.tab2.pepToProt = QCheckBox('Pep to Prot.csv')
         self.tab2.protToPep = QCheckBox('Prot to Pep.csv')
 

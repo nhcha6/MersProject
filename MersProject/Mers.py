@@ -570,7 +570,6 @@ class Fasta:
                             if self.procGenCounter - self.completedProcs < MAX_PROC_ALIVE:
                                 break
 
-                        print("starting process")
                         # Once the while loop is passed, start the processes for this set of processes with the
                         # target function being genMassDict
                         pool.apply_async(genMassDict, args=(spliceType, protDict, mined, maxed, overlapFlag,

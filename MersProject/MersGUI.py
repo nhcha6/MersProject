@@ -1353,6 +1353,16 @@ class MyTableWidget(QWidget):
         self.tab2.pepToProt.setEnabled(False)
         self.tab2.protToPep.setEnabled(False)
         self.tab2.output.setEnabled(False)
+        self.addMultipleFasta.setEnabled(False)
+        if self.addModsFlag:
+            self.tab2.removeMods.setEnabled(False)
+            self.tab2.mod4Combo.setEnabled(False)
+            self.tab2.mod5Combo.setEnabled(False)
+            self.tab2.mod6Combo.setEnabled(False)
+        else:
+            self.tab2.addMods.setEnabled(False)
+
+
 
     def enableAllWidgets(self):
         """
@@ -1379,6 +1389,7 @@ class MyTableWidget(QWidget):
         self.tab1.ppmText.setEnabled(True)
         self.tab1.toleranceText.setEnabled(True)
         self.tab1.byIonFlag.setEnabled(True)
+        self.addMultipleFasta.setEnabled(True)
         if self.tab1.byIonFlag.isChecked() == True:
             self.tab1.minByIonText.setEnabled(True)
             self.tab1.byIonAccText.setEnabled(True)
@@ -1404,6 +1415,13 @@ class MyTableWidget(QWidget):
         self.tab2.pepToProt.setEnabled(True)
         self.tab2.protToPep.setEnabled(True)
         self.tab2.output.setEnabled(True)
+        if self.addModsFlag:
+            self.tab2.removeMods.setEnabled(True)
+            self.tab2.mod4Combo.setEnabled(True)
+            self.tab2.mod5Combo.setEnabled(True)
+            self.tab2.mod6Combo.setEnabled(True)
+        else:
+            self.tab2.addMods.setEnabled(True)
         # only enable the charge checkboxes if mgfFlag is False
         if not self.mgfFlag.isChecked():
             self.tab2.plusOne.setEnabled(True)

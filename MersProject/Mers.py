@@ -133,23 +133,24 @@ class Fasta:
             self.totalProcs += NUM_PROC_TOTAL
         if linearFlag:
             self.totalProcs += NUM_PROC_TOTAL
+        if cisFlag:
+            self.totalProcs += NUM_PROC_TOTAL
 
         # sequentially check if each splice type has been selected by the user, and run the relevant function which
         # will generate processes for this splice type.
-        if transFlag:
-            self.transOutput(self.inputFile, mined, maxed, modList, maxMod,outputPath[TRANS], chargeFlags, mgfObj,
-                        mgfFlag, csvFlag, pepToProtFlag,protToPepFlag, concatFlag)
+        if linearFlag:
+            self.linearOutput(self.inputFile, LINEAR, mined, maxed, overlapFlag, csvFlag, pepToProtFlag,
+                              protToPepFlag, modList, maxMod, maxDistance, outputPath[LINEAR], chargeFlags,
+                              mgfObj, mgfFlag, concatFlag)
 
         if cisFlag:
             self.cisOutput(self.inputFile, mined, maxed,overlapFlag, csvFlag, pepToProtFlag,
                                     protToPepFlag, modList, maxMod, maxDistance, outputPath[CIS], chargeFlags, mgfObj,
                                     mgfFlag, concatFlag)
 
-        if linearFlag:
-            self.linearOutput(self.inputFile, LINEAR, mined, maxed, overlapFlag, csvFlag, pepToProtFlag,
-                                    protToPepFlag, modList, maxMod, maxDistance, outputPath[LINEAR], chargeFlags,
-                                    mgfObj, mgfFlag, concatFlag)
-
+        if transFlag:
+            self.transOutput(self.inputFile, mined, maxed, modList, maxMod,outputPath[TRANS], chargeFlags, mgfObj,
+                        mgfFlag, csvFlag, pepToProtFlag,protToPepFlag, concatFlag)
 
     def transOutput(self, inputFile, mined, maxed, modList, maxMod, outputPath, chargeFlags, mgfObj, mgfFlag, csvFlag,
                     pepToProtFlag, protToPepFlag, concatFlag):
@@ -341,6 +342,8 @@ class Fasta:
 
         :return:
         """
+
+        self.totalProcs -= NUM_PROC_TOTAL
 
         # initialise the final path
         finalPath = None

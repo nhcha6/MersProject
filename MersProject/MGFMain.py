@@ -127,7 +127,7 @@ def generateMGFList(protId, mgfObj, massDict, modList, finalModTable):
                             if mgfObj.byIonFlag == False:
                                 # count modifications
                                 if not key.isalpha():
-                                    modCountDict += getModNumbers(key, modList)
+                                    modCountDict += getModNumbers(key, modList, finalModTable)
                                 # if it is trans, massDict[3] will exist and will hold the desired protId
                                 try:
                                     # create the string, with peptides sorted so all permutations are matched as similar. There may be multiple
@@ -162,7 +162,7 @@ def generateMGFList(protId, mgfObj, massDict, modList, finalModTable):
                                 if simIons(mzArray, byIonArray, mgfObj.byIonAccuracy, mgfObj.minSimBy):
                                     # count the modifications
                                     if not key.isalpha():
-                                        modCountDict += getModNumbers(key, modList)
+                                        modCountDict += getModNumbers(key, modList, finalModTable)
                                     # if it is trans, massDict[3] will exist and will hold the desired protId
                                     try:
                                         # create the string, with peptides sorted so all permutations are matched as similar. There may be multiple
@@ -204,21 +204,21 @@ def generateMGFList(protId, mgfObj, massDict, modList, finalModTable):
                     break
         return matchedPeptides, modCountDict
 
-def getModNumbers(peptide, modList):
-    modNumberDict = {}
-    for character in peptide:
-        if character.islower():
-            for mod in modList:
-                if character.upper in modTable[mod]:
-                    modType = mod + character.upper()
-                    try:
-                        modNumberDict[modType] += 1
-                    except KeyError:
-                        modNumberDict[modType] = 1
-    return modNumberDict
+# def getModNumbers(peptide, modList, finalModTable):
+#     modNumberDict = {}
+#     for character in peptide:
+#         if character.islower():
+#             for mod in modList:
+#                 if character.upper in finalModTable[mod]:
+#                     modType = mod + character.upper()
+#                     try:
+#                         modNumberDict[modType] += 1
+#                     except KeyError:
+#                         modNumberDict[modType] = 1
+#     return modNumberDict
 
 
-def getModNumbers(peptide, modList):
+def getModNumbers(peptide, modList, finalModTable):
     modCountDict = Counter()
     for i in range(0, len(peptide)):
         if peptide[i].isdigit():
@@ -228,7 +228,7 @@ def getModNumbers(peptide, modList):
             mod = modList[modNumber]
             moddedAmino = peptide[i].upper()
 
-            if moddedAmino in modTable[mod]:
+            if moddedAmino in finalModTable[mod]:
 
                 modType = mod.split(' ')[0] + ' '+ moddedAmino + ' modified'
                 try:

@@ -38,12 +38,13 @@ class MGF:
 
 # check b/y ion creation isn't being run continuously.
 # reconfigure algorithm for iterating forward and back through pepmasses.
-def generateMGFList(protId, mgfObj, massDict, modList):
+def generateMGFList(protId, mgfObj, massDict, modList, finalModTable):
     """
 
     Generates the list of unique peptides that have masses that match within the specified.
 
     """
+    print(finalModTable)
     if mgfObj.mgfDfList:
 
         # convert the list of dictionaries into dictionaries.
@@ -155,7 +156,7 @@ def generateMGFList(protId, mgfObj, massDict, modList):
                             else:
                                 # Check the similarity of the byIons as was being done previously
                                 # if closestMatched == False: create byIonArray, ptherwise it has already been created
-                                byIonArray = initIonMass(key, modList)
+                                byIonArray = initIonMass(key, modList, finalModTable)
                                 mzArray = pepmassIonArray[(charge, pepMass)]
                                 # If they match in accordance with the input minimum requirement, add them to the list
                                 if simIons(mzArray, byIonArray, mgfObj.byIonAccuracy, mgfObj.minSimBy):
@@ -495,26 +496,26 @@ def createBYIonsMod(peptide):
             ylist.append(y)
     return blist, ylist
 
-def bMassCalc(peptide, modlist = None):
+def bMassCalc(peptide, modTableList = None):
     mass = 1
     for char in peptide:
         if char.isalpha():
             char = char.upper()
             mass += monoAminoMass[char]
         else:
-            mod = modlist[int(char)-1]
-            mass += modTable[mod][-1]
+            mod = modTableList[1][int(char)-1]
+            mass += modTableList[0][mod][-1]
     return mass
 
-def yMassCalc(peptide, modlist = None):
+def yMassCalc(peptide, modTableList = None):
     mass = H20_MASS + 1
     for char in peptide:
         if char.isalpha():
             char = char.upper()
             mass += monoAminoMass[char]
         else:
-            mod = modlist[int(char)-1]
-            mass += modTable[mod][-1]
+            mod = modTableList[1][int(char)-1]
+            mass += modTableList[0][mod][-1]
     return mass
 
 def ionMassDict(blist,ylist):
@@ -526,23 +527,23 @@ def ionMassDict(blist,ylist):
         dict[pepY] = yMassCalc(pepY)
     return dict
 
-def ionMassDictMod(blist,ylist,modlist):
+def ionMassDictMod(blist,ylist,modlist, finalModTable):
     dict = {}
     for i in range(0,len(blist)):
         pepB = blist[i]
         pepY = ylist[i]
-        dict[pepB] = bMassCalc(pepB, modlist)
-        dict[pepY] = yMassCalc(pepY, modlist)
+        dict[pepB] = bMassCalc(pepB, [finalModTable, modlist])
+        dict[pepY] = yMassCalc(pepY, [finalModTable, modlist])
     return dict
 
 """returns a dictionary holding the b and y ions and their correspondigg mass"""
-def initIonMass(peptide, modList):
+def initIonMass(peptide, modList, finalModTable):
     if peptide.isalpha():
         blist, ylist = createBYIons(peptide)
         dict = ionMassDict(blist, ylist)
     else:
         blist, ylist = createBYIonsMod(peptide)
-        dict = ionMassDictMod(blist, ylist, modList)
+        dict = ionMassDictMod(blist, ylist, modList, finalModTable)
     return dict.values()
 
 def sortBYDict(byIonDict):

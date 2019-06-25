@@ -813,7 +813,7 @@ def transProcess(splitsIndex, mined, maxed, modList, maxMod, finalPath,
 
         # If there is an mgf file AND there is a charge selected
         elif mgfData is not None and True in chargeFlags:
-            matchedPeptides, modCountDict = generateMGFList(TRANS, mgfData, massDict, modList)
+            matchedPeptides, modCountDict = generateMGFList(TRANS, mgfData, massDict, modList, finalModTable)
             transProcess.toWriteQueue.put((matchedPeptides, modCountDict))
 
         # If csv is selected, write to csv file
@@ -1118,7 +1118,7 @@ def genMassDict(spliceType, protDict, mined, maxed, overlapFlag, csvFlag, modLis
                 # on the number of times certain mods were included in the output which passed. This information
                 # is otherwise lost as all modded peptides which pass MGF comparison are returned to their unmodded
                 # form before being added to matchedPeptides.
-                matchedPeptides, modCountDict = generateMGFList(protId, mgfData, massDict, modList)
+                matchedPeptides, modCountDict = generateMGFList(protId, mgfData, massDict, modList, finalModTable)
                 genMassDict.toWriteQueue.put((matchedPeptides, modCountDict))
 
             # If csv is selected, write to csv file
@@ -1668,7 +1668,6 @@ def applyMods(combineModlessDict, modList, maxMod):
     :param maxMod: the maximum number of modifications that can be made per peptide.
     :return combineModlessDict: the input dictionary with the additional modified peptides appended to the end.
     """
-
     modNo = 0
     for mod in modList:
         # Keep track of which modification is taking place

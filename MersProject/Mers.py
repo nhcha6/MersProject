@@ -37,7 +37,7 @@ NUM_PROC_TOTAL = 1000
 # The generation of processes is slowed to avoid an overload of memory due to spawned but uncompleted processes.
 # MAX_PROC_ALIVE defines the maximum number of processes that have been started (stored in Fasta.procGenCounter) and
 # not yet completed (as counted by Fasta.completedProcs).
-MAX_PROC_ALIVE = 40
+MAX_PROC_ALIVE = 25
 # Cis Process Size
 CIS_PROC_SIZE = 40
 

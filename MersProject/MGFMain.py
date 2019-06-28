@@ -44,7 +44,7 @@ def generateMGFList(protId, mgfObj, massDict, modList, finalModTable):
     Generates the list of unique peptides that have masses that match within the specified.
 
     """
-    print(finalModTable)
+    #print(finalModTable)
     if mgfObj.mgfDfList:
 
         # convert the list of dictionaries into dictionaries.

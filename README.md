@@ -195,15 +195,3 @@ The trans splicing filtered peptide database Fasta file has slightly different I
 
 **Figure x: annotated screenshot showing how to interpret the peptide ID in the trans spliced filtered peptide database Fasta.**
 
-### To be explained
-
-* Info file
-* All user selectable options.
-* Multiple outputs when memory is too large.
-
-### Confirming the Output
-
-Detail file naming and post output confirm program behaviour. Also detail the behaviour of the program while completing the output.
-
-Debugging: instructions on how to check console etc.
-
